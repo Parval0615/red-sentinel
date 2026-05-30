@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+
+# ML / Data
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+data/
+datasets/
+checkpoints/
+wandb/
+mlruns/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs & caches
+*.log
+.cache/
+.pytest_cache/
+.ruff_cache/
