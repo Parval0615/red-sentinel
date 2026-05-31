@@ -2,51 +2,68 @@
 
 ## 概述
 
-`Agent-Runtime-Security-Lab` 是一个 Agent 运行时安全实验工作区。
+**Agent Runtime Security Lab** — Agent 运行时安全研究基础设施。
 
 - **远程仓库：** https://github.com/Parval0615/Agent-Runtime-Security-Lab
-- **本地路径：** `d:\AI-lab`
+- **路线图：** [ROADMAP.md](./ROADMAP.md)
+- **架构：** [docs/architecture/README.md](./docs/architecture/README.md)
 
-## 工作区约定
+## 当前阶段
+
+**Phase 2 · Risk Injector & Goal Formalization（Week 7–12）**
+
+Phase 1 已完成：`arl.sandbox` → `arl.telemetry` → `arl.memory` → `arl.runner`
+
+当前优先：`docs/specs/goal-drift/` GDM v0.1 与 review checklist。
+
+Phase 2 代码（`arl.injectors`）在 Goal Drift 定义通过 review 前仅做受控注入规划或最小实现；Phase 3 检测逻辑不得提前实现。
+
+## 目录与阶段映射
+
+| 路径 | 阶段 | 说明 |
+|------|------|------|
+| `src/arl/sandbox/` | 1 | 多框架隔离执行、可重放 |
+| `src/arl/telemetry/` | 1 | Out-of-band 轨迹采集 |
+| `src/arl/memory/` | 1 | 向量 + 关系双轨存储 |
+| `src/arl/runner/` | 1 | 实验调度，读 `configs/scenarios/` |
+| `src/arl/injectors/` | 2 | 风险注入（memory / tool / goal） |
+| `src/arl/detection/` | 3 | GDM / TRS / MIS 检测 |
+| `src/arl/dashboard/` | 3 | 风险可视化 |
+| `schemas/` | 1 | Trajectory Schema v1 |
+| `docs/specs/goal-drift/` | 2 | GDM 形式化（W8 门禁） |
+| `benchmark/` | 4 | AgentRiskBench |
+| `research/` | 4 | 论文与博客 |
+
+## 开发约定
 
 - 与用户交流使用**简体中文**
-- 每个独立实验/项目建议放在独立子目录（如 `experiments/<name>/` 或 `projects/<name>/`）
-- 优先最小化改动范围，遵循各子项目已有约定
-- 未经明确要求，不要提交 git、不要推送远程
-
-## 目录结构（建议）
-
-```
-AI-lab/
-├── AGENTS.md          # 本文件：Agent 操作指南
-├── README.md          # 项目说明
-├── experiments/       # 短期实验、概念验证
-├── projects/          # 较完整的子项目
-└── .cursor/rules/     # Cursor 规则（代码规范）
-```
-
-## 新建子项目
-
-1. 在 `experiments/` 或 `projects/` 下创建目录
-2. 添加该目录的 `README.md` 说明目标与运行方式
-3. 若子项目有独特约定，可在子目录添加 `AGENTS.md` 覆盖/补充根级说明
+- 代码注释与文档可用中文或英文，保持模块内一致
+- **最小改动**：只改当前阶段相关模块
+- **可重放性优先**：任何实验代码必须支持 seed + 配置重跑
+- **观测解耦**：Telemetry 不得写入 Agent context window
+- 未经明确要求，不要 commit 或 push
 
 ## 常用命令
 
 | 操作 | 命令 |
 |------|------|
+| 安装（editable） | `pip install -e ".[all]"` |
+| 运行 sandbox smoke | `pytest tests/sandbox -q` |
+| 录制 LLM cassette | `$env:VCR_RECORD='1'; pytest tests/sandbox/test_replay_direct_api.py` |
+| 运行测试 | `pytest` |
+| Lint | `ruff check src tests` |
 | 查看状态 | `git status` |
-| 拉取远程 | `git pull origin main` |
-| 推送到远程 | `git push -u origin main` |
-| 初始化 Python 虚拟环境 | `python -m venv .venv` |
-| 激活 venv (Windows) | `.\.venv\Scripts\Activate.ps1` |
-| 安装 Python 依赖 | `pip install -r requirements.txt` |
 
-> 子项目建立后，请在本文件或子目录 `AGENTS.md` 中补充具体命令。
+## 门禁与风险
+
+- **W8 Goal Drift review** 通过前，不得实现 `arl.detection.goal_drift`
+- Phase 3 检测有效性依赖 Phase 1–2 数据质量，不可跳过工程底座
+- 不要提交 `.env`、API key、`datasets/raw/` 大文件
 
 ## Agent 行为准则
 
-- 动手前先阅读目标子目录的 README 与现有代码
-- 修复 bug 或实现功能前，先定位根因，避免盲目试错
-- 声称完成前须运行相关验证（测试、lint、手动检查）
-- 不要提交含密钥的文件（`.env`、凭证 JSON 等）
+1. 动手前读目标模块的 README 和对应 Phase 文档
+2. 新实验场景放 `configs/scenarios/`，遵循命名约定
+3. 轨迹数据必须符合 `schemas/trajectory-v1.schema.json`
+4. 声称完成前运行 pytest / ruff（如有相关测试）
+5. 遵循 ROADMAP 和 PAPER 阶段顺序，不越级实现，记录完成进度

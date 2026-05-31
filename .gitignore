@@ -17,10 +17,15 @@ node_modules/
 *.ckpt
 *.safetensors
 data/
-datasets/
+datasets/raw/
 checkpoints/
 wandb/
 mlruns/
+
+# Experiment outputs (reproducible from configs + seed)
+outputs/
+results/
+runs/
 
 # IDE / OS
 .idea/
