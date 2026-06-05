@@ -26,6 +26,8 @@ mlruns/
 outputs/
 results/
 runs/
+storage/
+logs/
 
 # IDE / OS
 .idea/
