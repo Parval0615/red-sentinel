@@ -21,7 +21,7 @@
 
 ```powershell
 pip install -e ".[all]"
-python -c "from arl.sandbox.run import run_scenario; print(run_scenario('configs/scenarios/p1-sandbox-5step-direct-api.yaml')['steps'][0]['step_type'])"
+python -c "from auto_evaluation_system.sandbox.run import run_scenario; print(run_scenario('auto_evaluation_system/configs/scenarios/p1-sandbox-5step-direct-api.yaml')['steps'][0]['step_type'])"
 ```
 
 ## Cassette 回放

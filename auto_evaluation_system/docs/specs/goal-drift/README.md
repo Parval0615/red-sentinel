@@ -69,7 +69,7 @@ False negative 风险：
 ## 校验入口
 
 ```python
-from arl.injectors.goal_perturbation import (
+from auto_attack_system.injectors.goal_perturbation import (
     GoalDriftProbe,
     GoalRepresentation,
     validate_goal_drift_spec,
