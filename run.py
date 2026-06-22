@@ -19,6 +19,17 @@ def main() -> int:
     repo_root = REPO_ROOT
     _add_source_paths(repo_root)
 
+    if args.comp2:
+        from auto_attack_system.comp2_campaign import run_comp2_demo
+
+        result = run_comp2_demo(
+            repo_root=repo_root,
+            runs_root=args.results_root,
+            force_offline=args.offline,
+        )
+        _print_comp2_summary(result)
+        return 0 if result.metrics["coverage_target_met"] else 1
+
     if args.demo:
         from auto_evaluation_system.runner import run_comp1_demo
 
@@ -54,6 +65,19 @@ def _parse_args() -> argparse.Namespace:
         "--demo",
         action="store_true",
         help="Run the COMP1 single-command closed-loop demo and write the runs/<timestamp>/ artifact bundle.",
+    )
+    parser.add_argument(
+        "--comp2",
+        action="store_true",
+        help=(
+            "Run the COMP2 Attack Agent campaign (attack history / failure reflection / "
+            "replanning) and write the attack-runs/<timestamp>/ artifact bundle."
+        ),
+    )
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="Force deterministic offline mode for the COMP2 campaign (no LLM API calls).",
     )
     parser.add_argument(
         "--results-root",
@@ -120,6 +144,23 @@ def _print_demo_summary(result) -> None:
     print(f"FALSE_POSITIVE_RATE={metrics['false_positive_rate']}")
     print(f"AUDIT_CHAIN_VALID={metrics['audit_chain_valid']}")
     print(f"PASSED={metrics['passed_pairs']}/{metrics['total_attack_pairs']}")
+
+
+def _print_comp2_summary(result) -> None:
+    metrics = result.metrics
+    print(f"RUN_DIR={result.run_dir}")
+    print("ARTIFACTS=" + ",".join(sorted(result.artifacts)))
+    print(f"LLM_MODE={metrics['llm_mode']}")
+    print(f"ROUNDS={metrics['rounds']}")
+    print(
+        f"COVERAGE={metrics['coverage_final']}/{metrics['total_threat_categories']} "
+        f"({metrics['coverage_rate']:.0%})"
+    )
+    print(f"COVERAGE_FIRST_ROUND={metrics['coverage_first_round']}")
+    print(f"REFLECTION_GAIN=+{metrics['coverage_gain_from_reflection']}")
+    print(f"ESCALATIONS={metrics['escalations']}")
+    print(f"ATTEMPTS={metrics['successful_attempts']}/{metrics['total_attempts']}")
+    print(f"COVERAGE_TARGET_MET={metrics['coverage_target_met']}")
 
 
 if __name__ == "__main__":

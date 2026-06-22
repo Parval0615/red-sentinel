@@ -79,3 +79,32 @@ print(result.answer)
 ```
 
 当前路线和任务见 [ROADMAP.md](./ROADMAP.md)。
+
+## COMP2 · Attack Agent 战役（攻击历史 / 失败反思 / 重规划）
+
+单条命令在 7 类威胁分类法上跑一场**自进化攻击战役**：攻击 Agent 规划攻击 →
+本地合成靶场判定 → 失败则反思并沿策略阶梯升级（重规划）→ 成功则沉淀进攻击经验库。
+覆盖率随反思迭代单调上升，证明"反思可见提升攻击面覆盖"。
+
+```bash
+python run.py --comp2            # 用项目里的 LLM API（读 .env 的 LLM_API_*）
+python run.py --comp2 --offline  # 强制离线确定性模式，无需 API key，可复现
+```
+
+三系统（攻击 / 评测 / 防御）共用 `auto_attack_system.llm_client.SharedLLMClient`，
+默认复用项目防御侧 `config.py` 的 `LLM_API_BASE / LLM_API_KEY / LLM_MODEL`
+（即 `.env` 同一套配置）；未配置 API key 时自动进入 deterministic fallback，
+保证核心 demo 离线可复现。后续切换模型只需改环境变量。
+
+产物落盘到 `attack-runs/<timestamp>/`：
+
+```text
+attack-runs/<timestamp>/
+  ├── attack_history.jsonl   # 每次攻击尝试的完整记录（含 rationale / 反思）
+  ├── reflection_log.json    # 失败反思 + 重规划/策略升级记录
+  ├── coverage_table.json    # 7 类威胁攻击面覆盖表（结构化 + 时间线）
+  ├── coverage_table.md      # 攻击面覆盖表（答辩用）
+  └── campaign_summary.md    # 战役一页摘要（收敛曲线 / 反思增量）
+```
+
+自定义输出父目录：`python run.py --comp2 --results-root <dir>`（默认 `attack-runs/`）。

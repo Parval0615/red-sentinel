@@ -83,8 +83,8 @@ Defense Agent                                                │
 
 | 阶段 | 目标 | 核心产出 | 退出标准 `[优化]` |
 |---|---|---|---|
-| **COMP1** 最小闭环 demo | 跑通 攻击→靶场→评测→防御决策→报告 | 一键 demo、trace、report、guard decisions、audit refs、答辩摘要 | 单命令离线复现，产出全 artifact |
-| **COMP2** Attack Agent | 加入攻击历史、失败反思、重规划 | 反思日志、攻击策略选择、攻击面覆盖表 | 覆盖≥6类威胁，reflection 可见提升覆盖 |
+| **COMP1** 最小闭环 demo ✅ | 跑通 攻击→靶场→评测→防御决策→报告 | 一键 demo、trace、report、guard decisions、audit refs、答辩摘要 | 单命令离线复现，产出全 artifact |
+| **COMP2** Attack Agent ✅ | 加入攻击历史、失败反思、重规划 | 反思日志、攻击策略选择、攻击面覆盖表 | 覆盖≥6类威胁，reflection 可见提升覆盖 |
 | **COMP3** Defense Agent | 据损伤报告自动选加固动作 | 加固策略、回归验证、前后指标对比 | 加固有效率≥70% 且 误伤率≤5% |
 | **COMP4** 竞赛证据包 | 汇总多轮对抗结果 | 收敛曲线、雷达图、消融实验、Benchmark 数据卡 | 收敛曲线单调下降且达标，消融证明各模块贡献 |
 
@@ -103,7 +103,9 @@ COMP4                              ███████████
 
 ## 当前任务
 
-当前 active：`COMP2 · Attack Agent（攻击历史 / 失败反思 / 重规划）`
+当前 active：`COMP3 · Defense Agent（据损伤报告自动选加固动作）`
+
+> COMP2 已完成：单命令 `python run.py --comp2 [--offline]` 跑通自进化攻击战役——攻击 Agent 在 7 类威胁上规划→执行→失败反思→重规划/升级，覆盖率随反思单调上升（离线确定性复现可达 2/7 → 7/7），产出 attack_history / reflection_log / coverage_table / campaign_summary。三系统 LLM 统一走 `SharedLLMClient`（复用项目 `config.py` 的 `LLM_API_*`，无 key 时离线 fallback）。运行方式见 [README.md](./README.md)。
 
 > COMP1 已完成：单命令 `python run.py --demo` 离线串起 攻击→靶场→评测→防御决策→回归+审计，产出固定 artifact 包（trace/report/guard_decisions/audit_refs/summary）。运行方式见 [README.md](./README.md)。
 
