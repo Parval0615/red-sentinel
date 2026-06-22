@@ -84,12 +84,12 @@ def _sign_entry(entry: dict) -> str | None:
 
 
 def _verify_entry_signature(entry: dict) -> bool:
-    """Verify Ed25519 signature on an entry. True if valid, no key configured, or legacy entry."""
+    """Verify Ed25519 signature on an entry. Legacy unsigned entries remain compatible."""
     sig_b64 = entry.get("sig")
     if sig_b64 is None:
         return True  # Legacy entry (pre-v3) — skip sig check
     if _public_key_bytes is None:
-        return True  # Can't verify without public key — skip
+        return False
     try:
         from cryptography.hazmat.primitives.asymmetric import ed25519
         import base64

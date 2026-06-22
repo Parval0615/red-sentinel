@@ -344,10 +344,10 @@ def _robust_parse_json(text: str) -> dict | None:
 
 def _layer2_classify(user_input: str) -> dict:
     """LLM-based semantic classification for ambiguous inputs."""
-    llm = _get_classifier_llm()
     prompt = CLASSIFIER_PROMPT.replace("{user_input}", user_input)
 
     try:
+        llm = _get_classifier_llm()
         response = llm.invoke(prompt)
         text = response.content.strip() if hasattr(response, 'content') else ""
         result = _robust_parse_json(text)
@@ -363,7 +363,7 @@ def _layer2_classify(user_input: str) -> dict:
             "risk_score": 50,
             "category": "unknown",
             "reasoning": "分类器响应解析失败，无法确定风险级别",
-            "should_block": False,
+            "should_block": True,
             "layer": 2,
         }
     except Exception as e:
@@ -375,7 +375,7 @@ def _layer2_classify(user_input: str) -> dict:
             "risk_score": 50,
             "category": "unknown",
             "reasoning": f"分类器调用失败: {str(e)[:100]}",
-            "should_block": False,
+            "should_block": True,
             "layer": 2,
         }
 

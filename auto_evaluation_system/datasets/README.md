@@ -7,7 +7,13 @@
 | 路径 | 阶段 | 说明 |
 |------|------|------|
 | `annotated/` | Phase 2–3 | 带风险标注的 trajectory（GDM/TRS/MIS ground truth） |
+| `acceptance/` | Phase 3 | detector contract acceptance fixtures |
 | `raw/` | — | 原始实验输出（**不提交 Git**，见 .gitignore） |
+
+## Acceptance
+
+- `acceptance/detectors/manifest.yaml`：MIS / GDM / TRS detector contract acceptance fixture manifest。
+- `acceptance/reports/paired-evaluation-report-v0.1.json`：paired evaluation golden report skeleton，初始 `test_status="not_run"`。
 
 ## 数据原则
 

@@ -36,6 +36,10 @@ Phase 2 每类 injector 均有 clean / controlled Direct API replay scenario，�
 
 小型标注样例位于 `datasets/annotated/phase2/`。
 
+## AttackSpec
+
+T1 引入 `auto_attack_system.attack_spec.AttackSpec` 和 scenario manifest，用于描述现有受控攻击与 clean / controlled scenario 配对。Injectors 仍只根据 `ScenarioConfig.injection` 执行受控注入；`AttackSpec` 不实现 mutation engine。
+
 ## Boundary
 
-本模块不实现 `arl.detection`，不计算 MIS / GDM / TRS，只生成可复现 ground truth 和 labeled trajectories。
+本模块不实现 `auto_evaluation_system.detection`，不计算 MIS / GDM / TRS，只生成可复现 ground truth 和 labeled trajectories。

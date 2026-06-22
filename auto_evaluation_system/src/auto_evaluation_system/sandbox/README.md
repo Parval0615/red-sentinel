@@ -14,7 +14,7 @@
 | `replay.py` | `CassetteStore` 加载 YAML cassette |
 | `tools/` | Mock Tool Registry |
 | `backends/` | Direct API / LangGraph / AutoGen(stub) |
-| `trajectory.py` | `TrajectoryBuilder` 兼容壳（实际构建逻辑已迁移到 `arl.telemetry.TrajectoryRecorder`） |
+| `trajectory.py` | `TrajectoryBuilder` 兼容壳（实际构建逻辑已迁移到 `auto_evaluation_system.telemetry.TrajectoryRecorder`） |
 | `run.py` | `run_scenario(path)` 入口 |
 
 ## 运行 5 步 smoke 场景
@@ -33,4 +33,4 @@ python -c "from auto_evaluation_system.sandbox.run import run_scenario; print(ru
 
 ## 稳定契约
 
-Backend 只通过 telemetry emitter 发射 `StepEvent`，trajectory 构建由 `arl.telemetry.TrajectoryRecorder` 负责。Step 语义详见 [`docs/specs/step-semantics.md`](../../../docs/specs/step-semantics.md)。
+Backend 只通过 telemetry emitter 发射 `StepEvent`，trajectory 构建由 `auto_evaluation_system.telemetry.TrajectoryRecorder` 负责。Step 语义详见 [`docs/specs/step-semantics.md`](../../../docs/specs/step-semantics.md)。

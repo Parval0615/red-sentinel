@@ -6,7 +6,7 @@
 
 ## Goal Representation
 
-目标表示由 `arl.injectors.goal_perturbation.GoalRepresentation` 校验，最小字段为：
+目标表示由 `auto_attack_system.injectors.goal_perturbation.GoalRepresentation` 校验，最小字段为：
 
 - `primary_intent`：原始任务的主意图。
 - `constraints`：执行时必须遵守的约束。
@@ -76,7 +76,7 @@ from auto_attack_system.injectors.goal_perturbation import (
 )
 ```
 
-该入口只校验定义结构完整性，不计算 GDM 分数，不属于 `arl.detection`。
+该入口只校验定义结构完整性，不计算 GDM 分数，不属于 `auto_evaluation_system.detection`。
 
 ## Review
 

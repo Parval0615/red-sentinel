@@ -31,7 +31,7 @@ if "messages" not in st.session_state:
 if "current_role" not in st.session_state:
     st.session_state.current_role = "user"
 if "retriever" not in st.session_state:
-    st.session_state.retriever = init_rag_retriever(persist=True)
+    st.session_state.retriever = None
 
 # ---------------------- 侧边栏控制面板 ----------------------
 with st.sidebar:

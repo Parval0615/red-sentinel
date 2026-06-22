@@ -39,12 +39,12 @@ Agent Runtime Security Lab 采用**分层解耦**架构：执行层、观测层�
 
 | 层 | 包路径 | 阶段 | 核心职责 |
 |----|--------|------|----------|
-| 执行层 | `arl.sandbox` | 1 | 多框架 Agent 隔离运行、可重放 |
-| 观测层 | `arl.telemetry` | 1 | 轨迹采集，与执行层物理隔离 |
-| 存储层 | `arl.memory` | 1 | 向量 + 关系双轨 memory |
-| 注入层 | `arl.injectors.*` | 2 | 受控风险注入 |
-| 检测层 | `arl.detection.*` | 3 | GDM / TRS / MIS 计算 |
-| 展示层 | `arl.dashboard` | 3 | 风险可视化 |
+| 执行层 | `auto_evaluation_system.sandbox` | 1 | 多框架 Agent 隔离运行、可重放 |
+| 观测层 | `auto_evaluation_system.telemetry` | 1 | 轨迹采集，与执行层物理隔离 |
+| 存储层 | `auto_evaluation_system.memory` | 1 | 向量 + 关系双轨 memory |
+| 注入层 | `auto_attack_system.injectors.*` | 2 | 受控风险注入 |
+| 检测层 | `auto_evaluation_system.detection.*` | 3 | GDM / TRS / MIS 计算 |
+| 展示层 | `auto_evaluation_system.dashboard` | 3 | 风险可视化 |
 
 ## 数据流
 

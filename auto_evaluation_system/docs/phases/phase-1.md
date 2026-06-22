@@ -6,11 +6,11 @@
 
 | ROADMAP 交付物 | 仓库位置 |
 |----------------|----------|
-| Sandbox SDK | `src/arl/sandbox/` |
-| Telemetry Schema v1 | `schemas/trajectory-v1.schema.json` + `src/arl/telemetry/` |
-| Memory Store | `src/arl/memory/` |
-| Experiment Runner | `src/arl/runner/` + `configs/scenarios/` |
-| Architecture Doc | `docs/architecture/` |
+| Sandbox SDK | `auto_evaluation_system/src/auto_evaluation_system/sandbox/` |
+| Telemetry Schema v1 | `auto_evaluation_system/schemas/trajectory-v1.schema.json` + `auto_evaluation_system/src/auto_evaluation_system/telemetry/` |
+| Memory Store | `auto_evaluation_system/src/auto_evaluation_system/memory/` |
+| Experiment Runner | `auto_evaluation_system/src/auto_evaluation_system/runner/` + `auto_evaluation_system/configs/scenarios/` |
+| Architecture Doc | `auto_evaluation_system/docs/architecture/` |
 
 ## 最高优先级
 
@@ -23,4 +23,4 @@
 - W5：Memory 双轨存储
 - W6：实验编排 + 集成测试
 
-详见 [ROADMAP.md](../../ROADMAP.md#phase-1--sandbox--telemetry-foundation)。
+详见根路线图的 [Phase Flow](../../../ROADMAP.md#phase-flow)。

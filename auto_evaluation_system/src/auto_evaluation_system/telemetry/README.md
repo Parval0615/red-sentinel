@@ -42,9 +42,9 @@ Out-of-band 观测层，与 Agent 执行层完全解耦。
 
 ## 依赖
 
-- `arl.sandbox` — 执行环境 hook 点
+- `auto_evaluation_system.sandbox` — 执行环境 hook 点
 
 ## 被依赖
 
-- `arl.runner` — 实验结果持久化
-- `arl.detection` — Phase 3 检测输入
+- `auto_evaluation_system.runner` — 实验结果持久化
+- `auto_evaluation_system.detection` — Phase 3 检测输入

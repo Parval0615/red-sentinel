@@ -285,7 +285,7 @@ def scan_retrieved_chunks(chunks: list, threshold: int = 50) -> list[dict]:
                     "text_preview": text[:200],
                     "risk_score": l1_result["risk_score"],
                     "category": "l1_fallback",
-                    "should_filter": l1_result["risk_score"] >= 80,
+                    "should_filter": l1_result["risk_score"] >= threshold,
                     "reasoning": f"L2 classify() failed, L1 risk={l1_result['risk_score']} flags={l1_result['flags']}",
                     "layer": 1,
                     "l1_flags": l1_result["flags"],

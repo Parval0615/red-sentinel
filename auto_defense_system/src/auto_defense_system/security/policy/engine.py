@@ -16,6 +16,8 @@
 import json
 import os
 import re
+from email.utils import parseaddr
+from urllib.parse import urlparse
 
 # ============================================================
 # 默认策略规则（可通过 JSON 文件覆盖）
@@ -84,6 +86,10 @@ DEFAULT_POLICY_RULES = {
             "note": "现有安全工具 — 只读检测，策略引擎不拦截",
             "risk_level": "low",
         },
+        "search_document": {
+            "note": "RAG search tool is read-only; policy engine does not block it.",
+            "risk_level": "low",
+        },
     },
     "rate_limits": {
         "max_calls_per_turn": 3,
@@ -105,7 +111,8 @@ DEFAULT_POLICY_RULES = {
 def _check_sql_policy(args: dict, policy: dict) -> tuple:
     """Check db_query SQL against policy rules."""
     sql = args.get("sql", "")
-    sql_upper = sql.strip().upper()
+    sql_no_comments = _strip_sql_comments(sql)
+    sql_upper = sql_no_comments.strip().upper()
 
     # Check: does the SQL contain only allowed operation keywords at the start?
     allowed = policy.get("allow_only", [])
@@ -129,7 +136,42 @@ def _check_sql_policy(args: dict, policy: dict) -> tuple:
             },
         )
 
+    if allowed:
+        allowed_ops = {op.upper() for op in allowed}
+        statements = [stmt.strip() for stmt in sql_no_comments.split(";") if stmt.strip()]
+        if not statements:
+            return _block_sql_disallowed_operation(policy, "empty")
+
+        for stmt in statements:
+            operation = _extract_sql_operation(stmt)
+            if operation not in allowed_ops:
+                return _block_sql_disallowed_operation(policy, operation or "unknown")
+
     return True, "", {"risk_level": "low", "blocked_reason": None, "rule_name": "db_query.passed"}
+
+
+def _strip_sql_comments(sql: str) -> str:
+    """Remove common SQL comments before policy checks."""
+    without_block_comments = re.sub(r"/\*.*?\*/", " ", sql, flags=re.DOTALL)
+    return re.sub(r"(--|#)[^\r\n]*", " ", without_block_comments)
+
+
+def _extract_sql_operation(sql: str) -> str:
+    """Return the first SQL operation token after leading whitespace/parentheses."""
+    match = re.match(r"^\s*\(*\s*([A-Za-z_]+)", sql)
+    return match.group(1).upper() if match else ""
+
+
+def _block_sql_disallowed_operation(policy: dict, operation: str) -> tuple:
+    return (
+        False,
+        f"{policy['message']} SQL operation '{operation}' is not in allow_only.",
+        {
+            "risk_level": policy["risk_level"],
+            "blocked_reason": f"disallowed_sql_operation: {operation}",
+            "rule_name": "db_query.allow_only",
+        },
+    )
 
 
 def _check_file_policy(args: dict, policy: dict) -> tuple:
@@ -184,11 +226,8 @@ def _check_api_policy(args: dict, policy: dict) -> tuple:
     method = args.get("method", "GET").upper()
 
     # Check if endpoint is internal
-    is_internal = False
-    for allowed in policy.get("allowed_domains", []):
-        if allowed.lower() in endpoint.lower():
-            is_internal = True
-            break
+    host = _extract_endpoint_host(endpoint)
+    is_internal = _host_matches_allowed_domains(host, policy.get("allowed_domains", []))
 
     if not is_internal and method in ("POST", "PUT") and policy.get("block_external_post", True):
         return (
@@ -202,6 +241,34 @@ def _check_api_policy(args: dict, policy: dict) -> tuple:
         )
 
     return True, "", {"risk_level": "low" if is_internal else "medium", "blocked_reason": None, "rule_name": "api_call.passed"}
+
+
+def _extract_endpoint_host(endpoint: str) -> str:
+    """Extract hostname without letting path/query text satisfy host policy."""
+    raw = str(endpoint or "").strip()
+    if not raw:
+        return ""
+    parsed = urlparse(raw if "://" in raw else f"//{raw}")
+    return (parsed.hostname or "").lower().rstrip(".")
+
+
+def _host_matches_allowed_domains(host: str, allowed_domains: list[str]) -> bool:
+    if not host:
+        return False
+    for allowed in allowed_domains:
+        pattern = str(allowed).lower().strip()
+        if not pattern:
+            continue
+        if pattern.startswith("."):
+            suffix = pattern[1:].rstrip(".")
+            if host == suffix or host.endswith(pattern):
+                return True
+        elif pattern.endswith("."):
+            if host.startswith(pattern):
+                return True
+        elif host == pattern:
+            return True
+    return False
 
 
 def _check_email_policy(args: dict, policy: dict) -> tuple:
@@ -229,7 +296,7 @@ def _check_email_policy(args: dict, policy: dict) -> tuple:
     if policy.get("block_external_recipients", True):
         internal_domains = policy.get("internal_domains", [])
         for r in recipients:
-            is_internal = any(d in r.lower() for d in internal_domains)
+            is_internal = _recipient_matches_internal_domain(r, internal_domains)
             if not is_internal:
                 return (
                     False,
@@ -256,6 +323,15 @@ def _check_email_policy(args: dict, policy: dict) -> tuple:
             )
 
     return True, "", {"risk_level": "low", "blocked_reason": None, "rule_name": "send_email.passed"}
+
+
+def _recipient_matches_internal_domain(recipient: str, internal_domains: list[str]) -> bool:
+    _, address = parseaddr(recipient)
+    domain = address.rsplit("@", 1)[-1].lower() if "@" in address else ""
+    if not domain:
+        return False
+    allowed_domains = [str(d).lower().strip().lstrip("@").rstrip(".") for d in internal_domains]
+    return any(domain == allowed for allowed in allowed_domains if allowed)
 
 
 # Policy checker dispatch table
@@ -309,7 +385,11 @@ def check_policy(tool_name: str, tool_args: dict, state: dict = None) -> tuple:
 
     if policy is None:
         # Unknown tool — allow by default (don't break existing tools)
-        return True, "", {"risk_level": "low", "blocked_reason": None, "rule_name": "unknown_tool.allowed"}
+        return (
+            False,
+            f"Tool '{tool_name}' has no policy entry and is blocked by default.",
+            {"risk_level": "high", "blocked_reason": "unknown_tool", "rule_name": "unknown_tool.blocked"},
+        )
 
     # If policy has a note but no blocking rules, it's a pass-through
     if "note" in policy and "block_sql_keywords" not in policy and "block_paths" not in policy and "block_actions" not in policy:
@@ -321,7 +401,11 @@ def check_policy(tool_name: str, tool_args: dict, state: dict = None) -> tuple:
         return checker(tool_args, policy)
 
     # No checker but has policy = unknown dangerous tool, allow with warning
-    return True, "", {"risk_level": "medium", "blocked_reason": None, "rule_name": f"{tool_name}.no_checker"}
+    return (
+        False,
+        f"Tool '{tool_name}' has policy rules but no checker implementation.",
+        {"risk_level": "high", "blocked_reason": "policy_checker_missing", "rule_name": f"{tool_name}.no_checker"},
+    )
 
 
 # ============================================================
@@ -419,7 +503,7 @@ def write_policy_audit(tool_name: str, tool_args: dict, allowed: bool, detail: d
         operation = "策略放行" if allowed else "策略拦截"
         risk_level = detail.get("risk_level", "low") if not allowed else "normal"
         input_content = f"{tool_name}: {str(tool_args)[:120]}"
-        result = detail.get("blocked_reason", "allowed")
+        result = detail.get("blocked_reason") or "allowed"
 
         write_audit_log(
             user_id=role,

@@ -77,15 +77,30 @@ def search_document(query: str) -> str:
 # Global tool name -> function mapping (tool_node needs it independent of role filtering)
 _ALL_TOOLS_BY_NAME = {t.name: t for t in SEC_AGENT_TOOLS}
 _ALL_TOOLS_BY_NAME["search_document"] = search_document
+_DANGEROUS_TOOL_NAMES: set[str] = set()
+try:
+    from auto_defense_system.tools.dangerous import DANGEROUS_TOOLS
+    for _tool in DANGEROUS_TOOLS:
+        _ALL_TOOLS_BY_NAME[_tool.name] = _tool
+        _DANGEROUS_TOOL_NAMES.add(_tool.name)
+except ImportError:
+    DANGEROUS_TOOLS = []
 
 
-llm = ChatOpenAI(
-    model=LLM_MODEL,
-    temperature=0.0,
-    max_tokens=1024,
-    openai_api_base=LLM_API_BASE,
-    openai_api_key=LLM_API_KEY
-)
+_llm = None
+
+
+def _get_llm():
+    global _llm
+    if _llm is None:
+        _llm = ChatOpenAI(
+            model=LLM_MODEL,
+            temperature=0.0,
+            max_tokens=1024,
+            openai_api_base=LLM_API_BASE,
+            openai_api_key=LLM_API_KEY
+        )
+    return _llm
 
 
 class AgentState(TypedDict):
@@ -114,7 +129,7 @@ Output ({len(full_content)} chars):
 Concise summary:"""
 
     try:
-        response = llm.invoke(prompt)
+        response = _get_llm().invoke(prompt)
         return response.content.strip() if hasattr(response, 'content') else full_content[:MAX_TOOL_RESULT] + "..."
     except Exception:
         return full_content[:MAX_TOOL_RESULT] + f"\n...[truncated, {len(full_content)} chars total]"
@@ -175,11 +190,7 @@ def agent_node(state: AgentState) -> dict:
 
     # Phase 4.1: Admin gets dangerous simulated tools for policy demo
     if role == "admin":
-        try:
-            from auto_defense_system.tools.dangerous import DANGEROUS_TOOLS
-            available_tools.extend(DANGEROUS_TOOLS)
-        except ImportError:
-            pass
+        available_tools.extend(DANGEROUS_TOOLS)
 
     role_labels = {
         "guest": "Guest (knowledge base only)",
@@ -215,6 +226,7 @@ Self-healing on tool errors:
 - If the fix isn't obvious from the error, explain to the user what's needed"""
 
     full_messages = [SystemMessage(content=system_prompt)] + list(state["messages"])
+    llm = _get_llm()
 
     if count >= RETRY_LIMIT:
         response = llm.invoke(full_messages)
@@ -335,6 +347,15 @@ def _format_tool_error(tool_name: str, args: dict, error: Exception) -> str:
     )
 
 
+def _tool_allowed_for_role(tool_name: str, role: str) -> bool:
+    allowed_names = set(get_allowed_tools(role))
+    if tool_name == "search_document":
+        return "search_knowledge_base" in allowed_names
+    if tool_name in allowed_names:
+        return True
+    return role == "admin" and tool_name in _DANGEROUS_TOOL_NAMES
+
+
 def tool_node(state: AgentState) -> dict:
     messages = state["messages"]
     last_msg = messages[-1]
@@ -343,11 +364,19 @@ def tool_node(state: AgentState) -> dict:
 
     count = state.get("tool_call_count", 0)
     tool_messages = []
+    role = state.get("user_role", DEFAULT_ROLE)
 
     for tc in last_msg.tool_calls:
         tool_name = tc["name"]
         tool_args = tc["args"]
         count += 1
+
+        if not _tool_allowed_for_role(tool_name, role):
+            tool_messages.append(ToolMessage(
+                content=f"[TOOL_PERMISSION_BLOCK] Role '{role}' cannot use tool '{tool_name}'.",
+                tool_call_id=tc["id"],
+            ))
+            continue
 
         tool_fn = _ALL_TOOLS_BY_NAME.get(tool_name)
         if not tool_fn:
@@ -480,7 +509,7 @@ Conversation:
 Summary (2-3 sentences in Chinese):"""
 
     try:
-        response = llm.invoke(prompt)
+        response = _get_llm().invoke(prompt)
         return response.content.strip() if hasattr(response, 'content') else ""
     except Exception:
         return ""

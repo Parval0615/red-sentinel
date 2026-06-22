@@ -16,6 +16,10 @@ evaluation = [
   "jsonschema>=4",
   "httpx>=0.27",
 ]
+product = [
+  "fastapi>=0.110",
+  "uvicorn>=0.27",
+]
 defense = [
   "langchain",
   "langchain-community",
@@ -39,7 +43,7 @@ attack = [
 ]
 dev = ["pytest", "ruff", "jsonschema>=4"]
 all = [
-  "ai-security-integrated-system[attack,defense,evaluation,dev]",
+  "ai-security-integrated-system[attack,defense,evaluation,product,dev]",
 ]
 
 [build-system]
@@ -51,6 +55,7 @@ where = [
   "auto_attack_system/src",
   "auto_defense_system/src",
   "auto_evaluation_system/src",
+  "sdk/python/src",
 ]
 
 [tool.ruff]
@@ -87,4 +92,5 @@ pythonpath = [
   "auto_attack_system/src",
   "auto_defense_system/src",
   "auto_evaluation_system/src",
+  "sdk/python/src",
 ]

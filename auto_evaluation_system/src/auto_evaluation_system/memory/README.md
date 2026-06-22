@@ -36,6 +36,6 @@
 
 ## 被依赖
 
-- `arl.sandbox` — session 级 memory store
-- `arl.injectors.memory_poisoning` — Phase 2 投毒入口
-- `arl.detection.memory_integrity` — Phase 3 MIS 计算
+- `auto_evaluation_system.sandbox` — session 级 memory store
+- `auto_attack_system.injectors.memory_poisoning` — Phase 2 投毒入口
+- `auto_evaluation_system.detection.memory_integrity` — Phase 3 MIS 计算

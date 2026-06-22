@@ -29,10 +29,19 @@ def detect_pdf_sensitive_info() -> str:
     【调用场景】用户询问上传的PDF里有没有敏感信息、隐私内容
     【注意】此工具仅用于命令行，网页端会直接在Agent里处理
     """
-    from auto_defense_system.rag.retriever import init_rag_retriever, rag_query
+    from pathlib import Path
+
+    from auto_defense_system.config import DEFAULT_TEST_PDF
+    from auto_defense_system.rag.retriever import init_rag_retriever
+
+    if not Path(DEFAULT_TEST_PDF).exists():
+        return "[SEARCH_FAIL] No default PDF is available. Upload a PDF before running this check."
+
     default_retriever = init_rag_retriever()
-    all_docs = default_retriever.invoke("")
-    full_text = "\n".join([doc.page_content for doc in all_docs])
+    all_docs = default_retriever.get("docs", [])
+    full_text = "\n".join(getattr(doc, "page_content", "") for doc in all_docs)
+    if not full_text.strip():
+        return "[SEARCH_FAIL] The loaded PDF did not contain extractable text."
     has_risk, result = detect_sensitive_info(full_text)
     return result
 

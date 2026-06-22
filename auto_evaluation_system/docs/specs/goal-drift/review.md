@@ -9,7 +9,7 @@
 - [x] Probe 协议不进入 agent context window。
 - [x] clean vs controlled 对照协议明确。
 - [x] false positive / false negative 边界已记录。
-- [x] Phase 3 detector 实现仍被明确隔离到 `arl.detection`。
+- [x] Phase 3 detector 实现仍被明确隔离到 `auto_evaluation_system.detection`。
 
 ## Review 结论
 

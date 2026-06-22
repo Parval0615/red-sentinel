@@ -12,14 +12,28 @@ RERANK_MODEL_PATH = "BAAI/bge-reranker-base"
 ENABLE_RERANK = True
 
 rerank_model = None
-if ENABLE_RERANK:
+_rerank_load_attempted = False
+
+
+def _get_rerank_model():
+    """Lazy-load reranker so importing the RAG module stays lightweight."""
+    global ENABLE_RERANK, rerank_model, _rerank_load_attempted
+    if not ENABLE_RERANK:
+        return None
+    if rerank_model is not None:
+        return rerank_model
+    if _rerank_load_attempted:
+        return None
+    _rerank_load_attempted = True
     try:
         from sentence_transformers import CrossEncoder
         rerank_model = CrossEncoder(RERANK_MODEL_PATH, local_files_only=True)
         print("[OK] 离线重排序模型加载成功")
+        return rerank_model
     except Exception as e:
         print(f"[WARN] 重排序模型加载失败：{str(e)}")
         ENABLE_RERANK = False
+        return None
 
 # ===================== OCR 扫描件支持 =====================
 _ocr_reader = None
@@ -448,11 +462,12 @@ def init_rag_retriever(pdf_path: str = None, force_reindex: bool = False,
     }
 
 def rerank_docs(query: str, docs, top_n: int = RERANK_TOP_N):
-    if not ENABLE_RERANK or not rerank_model or not docs:
+    model = _get_rerank_model()
+    if not model or not docs:
         return docs[:top_n]
-    
+
     pairs = [[query, doc.page_content] for doc in docs]
-    scores = rerank_model.predict(pairs)
+    scores = model.predict(pairs)
     sorted_docs = sorted(zip(docs, scores), key=lambda x: x[1], reverse=True)
     return [doc for doc, score in sorted_docs[:top_n]]
 

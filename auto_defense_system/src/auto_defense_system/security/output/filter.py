@@ -19,6 +19,8 @@ ILLEGAL_PATTERNS = [
     r"alter\s+table", r"create\s+table",
     # 高危系统命令执行
     r"system\(", r"shell_exec\(", r"exec\(", r"passthru\(", r"popen\(",
+    r"os\.system\(", r"subprocess\.", r"powershell\s+-", r"curl\s+.*\|\s*(sh|bash)",
+    r"wget\s+.*\|\s*(sh|bash)", r"rm\s+-rf\s+/", r"chmod\s+777",
     # 黑产违规内容
     r"免杀", r"远控木马", r"钓鱼网站", r"脱壳破解", r"暴力破解"
 ]
@@ -61,6 +63,7 @@ def check_output_compliance(text: str, is_rag_context: bool = False) -> tuple[bo
         EDU_SAFE_PATTERNS = [
             r"xp_cmdshell", r"exec\s+master\.", r"execute\s+sp_",
             r"shell_exec\(", r"passthru\(", r"popen\(",
+            r"os\.system\(", r"subprocess\.", r"curl\s+.*\|\s*(sh|bash)",
             r"免杀", r"远控木马", r"钓鱼网站", r"脱壳破解", r"暴力破解"
         ]
         patterns = EDU_SAFE_PATTERNS
