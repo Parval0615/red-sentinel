@@ -46,6 +46,28 @@ pip install -e ".[dev]"
 pytest -q
 ```
 
+## COMP1 · 最小闭环 Demo（一键离线复现）
+
+单条命令串起 **Attack Agent 规划 → 电商 RAG 靶场 → Evaluation Agent 检测 → Defense Agent 决策 → 回归 + 审计**，全程离线（基于录制好的 LLM cassette，无需 API key）：
+
+```bash
+python run.py --demo
+```
+
+产物落盘到 `runs/<timestamp>/`：
+
+```text
+runs/<timestamp>/
+  ├── trace.jsonl          # 端到端阶段轨迹（attack/target/evaluation/defense/audit）
+  ├── report.json          # 评测指标 + 损伤归因 + 攻击规划
+  ├── guard_decisions.json # 防御 Agent 决策记录（clean / controlled）
+  ├── audit_refs.json      # 防篡改审计引用（哈希链完整性）
+  └── summary.md           # 答辩用一页摘要
+```
+
+自定义输出父目录：`python run.py --demo --results-root <dir>`（默认 `runs/`）。
+不带 `--demo` 时 `run.py` 仍运行原始 closed-loop 评测。
+
 本地电商 Agent 示例：
 
 ```python

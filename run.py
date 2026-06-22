@@ -19,6 +19,16 @@ def main() -> int:
     repo_root = REPO_ROOT
     _add_source_paths(repo_root)
 
+    if args.demo:
+        from auto_evaluation_system.runner import run_comp1_demo
+
+        result = run_comp1_demo(
+            repo_root=repo_root,
+            runs_root=args.results_root,
+        )
+        _print_demo_summary(result)
+        return 0 if result.metrics["all_passed"] else 1
+
     from auto_evaluation_system.runner import run_closed_loop_evaluation
 
     results_root = _resolve_results_root(repo_root, args.results_root)
@@ -41,10 +51,19 @@ def _parse_args() -> argparse.Namespace:
         description="Run the deterministic offline Attack -> Defense -> Evaluation closed-loop experiment.",
     )
     parser.add_argument(
+        "--demo",
+        action="store_true",
+        help="Run the COMP1 single-command closed-loop demo and write the runs/<timestamp>/ artifact bundle.",
+    )
+    parser.add_argument(
         "--results-root",
         type=Path,
         default=None,
-        help="Directory for generated runs and closed-loop-report-v0.1.json. Defaults to runs/closed-loop-<timestamp>.",
+        help=(
+            "Output directory. In --demo mode this is the parent of the <timestamp>/ run "
+            "(defaults to runs/). Otherwise it is the closed-loop results root "
+            "(defaults to runs/closed-loop-<timestamp>)."
+        ),
     )
     return parser.parse_args()
 
@@ -88,6 +107,19 @@ def _print_summary(report) -> None:
         if record.failure_notes:
             for note in record.failure_notes:
                 print(f"  failure: {note}")
+
+
+def _print_demo_summary(result) -> None:
+    metrics = result.metrics
+    print(f"RUN_DIR={result.run_dir}")
+    print("ARTIFACTS=" + ",".join(sorted(result.artifacts)))
+    print(f"THREATS_COVERED={metrics['threat_category_count']}")
+    print(f"ASR_BEFORE={metrics['asr_before_defense']}")
+    print(f"ASR_AFTER={metrics['asr_after_defense']}")
+    print(f"MITIGATION={metrics['mitigation_effectiveness']}")
+    print(f"FALSE_POSITIVE_RATE={metrics['false_positive_rate']}")
+    print(f"AUDIT_CHAIN_VALID={metrics['audit_chain_valid']}")
+    print(f"PASSED={metrics['passed_pairs']}/{metrics['total_attack_pairs']}")
 
 
 if __name__ == "__main__":

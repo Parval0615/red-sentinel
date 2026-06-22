@@ -7,6 +7,7 @@ from auto_evaluation_system.runner.closed_loop import (
     ClosedLoopEvaluationReport,
     run_closed_loop_evaluation,
 )
+from auto_evaluation_system.runner.comp1_demo import Comp1DemoResult, run_comp1_demo
 from auto_evaluation_system.runner.core import ExperimentRunner, RunResult, diff_trajectories
 from auto_evaluation_system.runner.paired_evaluation import (
     GDMAcceptanceEvaluationResult,
@@ -30,6 +31,7 @@ __all__ = [
     "ClosedLoopDefenseDecision",
     "ClosedLoopEvaluationRecord",
     "ClosedLoopEvaluationReport",
+    "Comp1DemoResult",
     "ExperimentRunner",
     "GDMAcceptanceEvaluationResult",
     "MISAcceptanceEvaluationResult",
@@ -44,6 +46,7 @@ __all__ = [
     "build_trs_paired_report_with_status",
     "diff_trajectories",
     "run_closed_loop_evaluation",
+    "run_comp1_demo",
     "run_paired_evaluation_dry_run",
     "run_gdm_acceptance_evaluation",
     "run_mis_acceptance_evaluation",

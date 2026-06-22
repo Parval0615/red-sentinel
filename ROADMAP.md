@@ -103,19 +103,21 @@ COMP4                              ███████████
 
 ## 当前任务
 
-当前 active：`COMP1 · Minimum Closed-loop Competition Demo`
+当前 active：`COMP2 · Attack Agent（攻击历史 / 失败反思 / 重规划）`
 
-目标：复用现有电商 Agent、attack pack、closed-loop runner、report artifact 与 audit handoff，形成一个**可离线运行、可答辩展示**的最小闭环 demo。
+> COMP1 已完成：单命令 `python run.py --demo` 离线串起 攻击→靶场→评测→防御决策→回归+审计，产出固定 artifact 包（trace/report/guard_decisions/audit_refs/summary）。运行方式见 [README.md](./README.md)。
+
+COMP1 回顾——目标：复用现有电商 Agent、attack pack、closed-loop runner、report artifact 与 audit handoff，形成一个**可离线运行、可答辩展示**的最小闭环 demo。
 
 > `[优化]` 任务清单细化为可执行级别，每条补"具体动作"与"可验收信号"：
 
 | 任务 | 状态 | 具体动作 `[优化]` | 验收信号 |
 |---|---|---|---|
-| COMP1.1 扫描现有入口 | pending | 列出可复用的 demo / runner / artifact 路径及调用方式，输出一张"资产清单"映射到三 Agent | 资产清单文档；明确哪些复用、哪些缺口 |
-| COMP1.2 设计 demo 契约 | pending | 定义固定命令、输入 fixture、输出目录结构、摘要字段 schema | 写出 `demo --help` 契约 + 输出字段表 |
-| COMP1.3 实现 wrapper | pending | 单命令串起 攻击→靶场→评测→防御决策，落盘全 artifact | 一条命令生成 trace/report/guard decisions/audit refs |
-| COMP1.4 验证 | pending | focused tests + demo 命令端到端跑 + `git diff --check` | 测试通过、demo 离线可复现、无脏 diff |
-| COMP1.5 更新文档 | pending | README/ROADMAP 写入运行方式，置顶下一任务 COMP2 | 新人按 README 可一键复现 |
+| COMP1.1 扫描现有入口 | done | 列出可复用的 demo / runner / artifact 路径及调用方式，输出一张"资产清单"映射到三 Agent | 资产清单文档；明确哪些复用、哪些缺口 |
+| COMP1.2 设计 demo 契约 | done | 定义固定命令、输入 fixture、输出目录结构、摘要字段 schema | 写出 `demo --help` 契约 + 输出字段表 |
+| COMP1.3 实现 wrapper | done | 单命令串起 攻击→靶场→评测→防御决策，落盘全 artifact | 一条命令生成 trace/report/guard decisions/audit refs |
+| COMP1.4 验证 | done | focused tests + demo 命令端到端跑 + `git diff --check` | 测试通过、demo 离线可复现、无脏 diff |
+| COMP1.5 更新文档 | done | README/ROADMAP 写入运行方式，置顶下一任务 COMP2 | 新人按 README 可一键复现 |
 
 > `[优化]` **COMP1 输出目录建议固定为**（便于后续阶段累积证据，也便于答辩取材）：
 > ```text
