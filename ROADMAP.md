@@ -86,7 +86,7 @@ Defense Agent                                                │
 | **COMP1** 最小闭环 demo ✅ | 跑通 攻击→靶场→评测→防御决策→报告 | 一键 demo、trace、report、guard decisions、audit refs、答辩摘要 | 单命令离线复现，产出全 artifact |
 | **COMP2** Attack Agent ✅ | 加入攻击历史、失败反思、重规划 | 反思日志、攻击策略选择、攻击面覆盖表 | 覆盖≥6类威胁，reflection 可见提升覆盖 |
 | **COMP3** Defense Agent ✅ | 据损伤报告自动选加固动作 | 加固策略、回归验证、前后指标对比 | 加固有效率≥70% 且 误伤率≤5% |
-| **COMP4** 竞赛证据包 | 汇总多轮对抗结果 | 收敛曲线、雷达图、消融实验、Benchmark 数据卡 | 收敛曲线单调下降且达标，消融证明各模块贡献 |
+| **COMP4** 竞赛证据包 ✅ | 汇总多轮对抗结果 | 收敛曲线、雷达图、消融实验、Benchmark 数据卡 | 收敛曲线单调下降且达标，消融证明各模块贡献 |
 
 > `[优化]` **总进度甘特（按相对周排，建议总周期 8–10 周）**
 
@@ -103,7 +103,9 @@ COMP4                              ███████████
 
 ## 当前任务
 
-当前 active：`COMP4 · 竞赛证据包（汇总多轮对抗结果：收敛曲线 / 雷达图 / 消融 / Benchmark 数据卡）`
+当前 active：`全部 COMP1–COMP4 已完成 ✅ —— 进入答辩材料整理阶段`
+
+> COMP4 已完成：单命令 `python run.py --comp4 [--offline]` 汇总多轮对抗证据包——多轮"攻击↔加固"对抗使 ASR 单调下降并收敛（离线确定性：44% 经 7 轮 → 0%，达标线 ≤10%），产出收敛曲线 PNG（答辩王牌）、加固前后损伤雷达图、三组消融实验（去掉 Defense → ASR 高位不降 44%；去掉 Attack reflection → 覆盖停滞 2/7）与 AgentRiskBench-Ecommerce 数据卡。产出 convergence / convergence_curve.png / damage_radar.png / ablation / benchmark_datacard / evidence_pack。运行方式见 [README.md](./README.md)。
 
 > COMP3 已完成：单命令 `python run.py --comp3 [--offline]` 跑通自动加固闭环——攻击战役打基线靶场产出损伤报告，Defense Agent 据报告对每个被攻破类别从 prompt/rule/retrieval/rerank 4 类动作里自动选**精准**加固动作（复用项目现有防御模块），重打加固后靶场测有效率、跑良性回归测误伤率，并用一刀切(blanket)做消融对照。离线确定性结果：加固前 ASR 44% → 加固后 0%（**加固有效率 100% ≥70% 达标**），精准加固**误伤率 0% ≤5% 达标**，一刀切消融误伤率 100%——证明"精准选型既挡攻击又不破坏正常购物体验"。产出 hardening_decisions / regression_report / defense_summary。运行方式见 [README.md](./README.md)。
 

@@ -28,6 +28,7 @@ results/
 runs/
 attack-runs/
 defense-runs/
+evidence-runs/
 storage/
 logs/
 

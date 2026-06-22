@@ -136,3 +136,35 @@ defense-runs/<timestamp>/
 ```
 
 自定义输出父目录：`python run.py --comp3 --results-root <dir>`（默认 `defense-runs/`）。
+
+## COMP4 · 竞赛证据包（收敛曲线 / 雷达图 / 消融实验 / 数据卡）
+
+单条命令汇总多轮对抗结果,产出答辩证据：多轮"攻击↔加固"对抗使 **ASR 单调下降并收敛**,
+多维**损伤雷达图**展示加固前后,**三组消融实验**证明每个智能体不可或缺,
+并沉淀 **AgentRiskBench-Ecommerce 数据卡**。
+
+```bash
+python run.py --comp4            # 用项目里的 LLM API（读 .env 的 LLM_API_*）
+python run.py --comp4 --offline  # 强制离线确定性模式，无需 API key，可复现
+```
+
+离线确定性结果：收敛曲线 ASR 从 44% 经 7 轮加固单调降至 0%（达标线 ≤10%）；
+消融对照——去掉 Defense Agent 则 ASR 高位不降（44%）,去掉 Attack reflection 则
+攻击面覆盖停滞（2/7,完整系统可达全覆盖）。
+
+产物落盘到 `evidence-runs/<timestamp>/`：
+
+```text
+evidence-runs/<timestamp>/
+  ├── convergence.json          # 多轮 ASR / 覆盖收敛数据
+  ├── convergence_curve.png     # 攻击成功率收敛曲线（答辩王牌）
+  ├── damage_radar.png          # 加固前后多维损伤雷达图
+  ├── ablation.json             # 三组消融对照
+  ├── ablation_table.md         # 消融对照表
+  ├── benchmark_datacard.md     # AgentRiskBench-Ecommerce 数据卡
+  └── evidence_pack.md          # 证据包一页总览
+```
+
+> COMP4 图表生成依赖 `matplotlib`（已加入项目依赖）；图表标签用英文,避免无中文字体环境乱码。
+
+自定义输出父目录：`python run.py --comp4 --results-root <dir>`（默认 `evidence-runs/`）。

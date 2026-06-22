@@ -19,6 +19,17 @@ def main() -> int:
     repo_root = REPO_ROOT
     _add_source_paths(repo_root)
 
+    if args.comp4:
+        from auto_evaluation_system.comp4_evidence import run_comp4_demo
+
+        result = run_comp4_demo(
+            repo_root=repo_root,
+            runs_root=args.results_root,
+            force_offline=args.offline,
+        )
+        _print_comp4_summary(result)
+        return 0 if result.metrics["asr_target_met"] else 1
+
     if args.comp3:
         from auto_defense_system.comp3_demo import run_comp3_demo
 
@@ -95,9 +106,18 @@ def _parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--comp4",
+        action="store_true",
+        help=(
+            "Run the COMP4 competition evidence pack (multi-round adversarial convergence "
+            "curve, damage radar, ablation study, benchmark data card) and write the "
+            "evidence-runs/<timestamp>/ artifact bundle."
+        ),
+    )
+    parser.add_argument(
         "--offline",
         action="store_true",
-        help="Force deterministic offline mode for the COMP2/COMP3 runs (no LLM API calls).",
+        help="Force deterministic offline mode for the COMP2/COMP3/COMP4 runs (no LLM API calls).",
     )
     parser.add_argument(
         "--results-root",
@@ -209,6 +229,27 @@ def _print_comp3_summary(result) -> None:
         f"{metrics['benign_total']}"
     )
     print(f"EXIT_CRITERIA_MET={metrics['exit_criteria_met']}")
+
+
+def _print_comp4_summary(result) -> None:
+    metrics = result.metrics
+    print(f"RUN_DIR={result.run_dir}")
+    print("ARTIFACTS=" + ",".join(sorted(result.artifacts)))
+    print(f"LLM_MODE={metrics['llm_mode']}")
+    print(f"ASR_INITIAL={metrics['asr_initial']:.0%}")
+    print(f"ASR_FINAL={metrics['asr_final']:.0%}")
+    print(f"CONVERGENCE_ROUNDS={metrics['convergence_rounds']}")
+    print(f"ASR_MONOTONIC_DECREASING={metrics['asr_monotonic_decreasing']}")
+    print(f"ASR_TARGET_MET(<=10%)={metrics['asr_target_met']}")
+    print(
+        f"ABLATION_NO_DEFENSE_ASR={metrics['ablation_no_defense_asr']:.0%} "
+        f"(vs full {metrics['ablation_full_asr']:.0%})"
+    )
+    print(
+        f"ABLATION_NO_REFLECTION_COVERAGE={metrics['ablation_no_reflection_coverage']}/"
+        f"{metrics['total_threat_categories']} "
+        f"(vs full {metrics['ablation_full_coverage']}/{metrics['total_threat_categories']})"
+    )
 
 
 if __name__ == "__main__":
