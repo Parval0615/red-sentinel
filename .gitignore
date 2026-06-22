@@ -27,6 +27,7 @@ outputs/
 results/
 runs/
 attack-runs/
+defense-runs/
 storage/
 logs/
 

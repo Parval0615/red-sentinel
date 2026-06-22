@@ -19,6 +19,17 @@ def main() -> int:
     repo_root = REPO_ROOT
     _add_source_paths(repo_root)
 
+    if args.comp3:
+        from auto_defense_system.comp3_demo import run_comp3_demo
+
+        result = run_comp3_demo(
+            repo_root=repo_root,
+            runs_root=args.results_root,
+            force_offline=args.offline,
+        )
+        _print_comp3_summary(result)
+        return 0 if result.metrics["exit_criteria_met"] else 1
+
     if args.comp2:
         from auto_attack_system.comp2_campaign import run_comp2_demo
 
@@ -75,9 +86,18 @@ def _parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--comp3",
+        action="store_true",
+        help=(
+            "Run the COMP3 Defense Agent regression (auto-select hardening actions from "
+            "the damage report, measure mitigation effectiveness & false-positive rate) "
+            "and write the defense-runs/<timestamp>/ artifact bundle."
+        ),
+    )
+    parser.add_argument(
         "--offline",
         action="store_true",
-        help="Force deterministic offline mode for the COMP2 campaign (no LLM API calls).",
+        help="Force deterministic offline mode for the COMP2/COMP3 runs (no LLM API calls).",
     )
     parser.add_argument(
         "--results-root",
@@ -161,6 +181,34 @@ def _print_comp2_summary(result) -> None:
     print(f"ESCALATIONS={metrics['escalations']}")
     print(f"ATTEMPTS={metrics['successful_attempts']}/{metrics['total_attempts']}")
     print(f"COVERAGE_TARGET_MET={metrics['coverage_target_met']}")
+
+
+def _print_comp3_summary(result) -> None:
+    metrics = result.metrics
+    print(f"RUN_DIR={result.run_dir}")
+    print("ARTIFACTS=" + ",".join(sorted(result.artifacts)))
+    print(f"LLM_MODE={metrics['llm_mode']}")
+    print(f"ASR_BEFORE={metrics['asr_before']:.0%}")
+    print(f"ASR_AFTER={metrics['asr_after']:.0%}")
+    print(
+        f"MITIGATION={metrics['mitigation_effectiveness']:.0%} "
+        f"(target>=70%, met={metrics['mitigation_target_met']})"
+    )
+    print(
+        f"FALSE_POSITIVE_TARGETED={metrics['false_positive_rate_targeted']:.0%} "
+        f"(target<=5%, met={metrics['false_positive_target_met']})"
+    )
+    print(
+        f"FALSE_POSITIVE_BLANKET={metrics['false_positive_rate_blanket']:.0%} "
+        f"(ablation)"
+    )
+    print(
+        f"HARDENED={metrics['hardened_count']} categories | "
+        f"benign_blocked targeted={metrics['benign_blocked_targeted']}/"
+        f"{metrics['benign_total']} blanket={metrics['benign_blocked_blanket']}/"
+        f"{metrics['benign_total']}"
+    )
+    print(f"EXIT_CRITERIA_MET={metrics['exit_criteria_met']}")
 
 
 if __name__ == "__main__":

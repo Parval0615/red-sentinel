@@ -108,3 +108,31 @@ attack-runs/<timestamp>/
 ```
 
 自定义输出父目录：`python run.py --comp2 --results-root <dir>`（默认 `attack-runs/`）。
+
+## COMP3 · Defense Agent 加固（据损伤报告自动选加固动作 + 回归验证）
+
+单条命令完成**自动加固闭环**：攻击战役打基线靶场产出损伤报告 →
+Defense Agent 对每个被攻破类别从 4 类动作（prompt / rule / retrieval / rerank）
+里**自动选一个精准加固动作**（复用项目现有防御模块）→ 同一攻击战役重打加固后靶场
+测**加固有效率** → 良性请求回归测**误伤率** → 一刀切(blanket)消融对照。
+
+```bash
+python run.py --comp3            # 用项目里的 LLM API（读 .env 的 LLM_API_*）
+python run.py --comp3 --offline  # 强制离线确定性模式，无需 API key，可复现
+```
+
+离线确定性结果：加固前 ASR 44% → 加固后 0%，**加固有效率 100%（≥70% 达标）**；
+精准加固**误伤率 0%（≤5% 达标）**，一刀切消融误伤率 100%——证明"精准选型既挡攻击、
+又不破坏正常购物体验"。三系统同样共用 `SharedLLMClient`，加固选型 rationale 由 LLM
+生成，动作选择与 resistance 提升是确定性的，故有效率/误伤率离线完全可复现。
+
+产物落盘到 `defense-runs/<timestamp>/`：
+
+```text
+defense-runs/<timestamp>/
+  ├── hardening_decisions.json # 加固决策 + rationale + blanket 消融对照
+  ├── regression_report.json   # 加固前后 ASR / 有效率 / 误伤率 + 良性回归
+  └── defense_summary.md       # 加固一页摘要（答辩用）
+```
+
+自定义输出父目录：`python run.py --comp3 --results-root <dir>`（默认 `defense-runs/`）。
