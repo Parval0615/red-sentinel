@@ -32,6 +32,9 @@ evidence-runs/
 storage/
 logs/
 
+# Local nested clone used during manual merge
+Agent-Runtime-Security-Lab/
+
 # IDE / OS
 .idea/
 .vscode/

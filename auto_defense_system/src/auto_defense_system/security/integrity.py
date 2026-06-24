@@ -1,4 +1,4 @@
-"""Phase B.1: Tool / Plugin Integrity Verification — Ed25519签名 + Manifest校验。
+"""Tool / Plugin Integrity Verification — Ed25519签名 + Manifest校验。
 
 防止工具篡改、插件投毒、供应链污染。
 

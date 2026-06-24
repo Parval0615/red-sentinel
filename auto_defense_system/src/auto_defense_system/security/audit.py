@@ -1,7 +1,7 @@
 """审计日志模块 — 哈希链防篡改 + Ed25519签名 + JSON结构化。
 
-v2 (Phase 4.3): SHA256哈希链, 精确篡改检测
-v3 (Phase B.2): Ed25519签名 + trace_id + tool_call_id
+v2: SHA256哈希链, 精确篡改检测
+v3: Ed25519签名 + trace_id + tool_call_id
 
 格式:
   JSONL (每行一个JSON对象):

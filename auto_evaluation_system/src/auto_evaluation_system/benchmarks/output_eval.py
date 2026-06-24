@@ -702,7 +702,7 @@ def main():
 
 
 # ============================================================
-# Phase D: 多级分类 + Refusal Quality评测
+# Multi-class classification + refusal quality evaluation.
 # ============================================================
 
 OUTPUT_SAFETY_CATEGORIES = {
@@ -782,7 +782,7 @@ REFUSAL_QUALITY_PROBES = [
 
 
 def classify_output_multiclass(query: str, answer: str) -> dict:
-    """Multi-class output safety classification (Phase D).
+    """Multi-class output safety classification.
 
     Uses LLM to classify AI output into 7 safety categories.
     """

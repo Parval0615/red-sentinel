@@ -1,6 +1,6 @@
 from pathlib import Path
 from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
-"""Phase 4.2: 多租户数据隔离安全验证 — Chroma + LangGraph Checkpointer 双层隔离测试。
+"""多租户数据隔离安全验证 — Chroma + LangGraph Checkpointer 双层隔离测试。
 
 测试维度:
 1. Chroma collection_name 隔离 (已有, 从3.2迁移)
@@ -239,7 +239,7 @@ def test_chroma_direct_access():
 
 def main():
     print("=" * 70)
-    print("Phase 4.2: 多租户数据隔离安全验证")
+    print("多租户数据隔离安全验证")
     print("ChromA + LangGraph Checkpointer 双层隔离测试")
     print("=" * 70)
 

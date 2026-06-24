@@ -1,4 +1,4 @@
-"""Controlled memory poisoning injector for Phase 2."""
+"""Controlled memory poisoning injector."""
 
 from __future__ import annotations
 

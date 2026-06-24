@@ -1,4 +1,4 @@
-"""Goal perturbation utilities and GDM spec validation for Phase 2."""
+"""Goal perturbation utilities and GDM spec validation."""
 
 from __future__ import annotations
 

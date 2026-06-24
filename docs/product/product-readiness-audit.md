@@ -23,7 +23,8 @@ external attack targets.
 - Optional Hosted API:
   `auto_evaluation_system.product_api.app.create_app`
 - Demo:
-  `python -m auto_evaluation_system.product_api.demo`
+  `python -m auto_evaluation_system.product_api.demo` after editable install, or
+  `$env:PYTHONPATH="auto_evaluation_system/src;auto_defense_system/src;sdk/python/src"; python -m auto_evaluation_system.product_api.demo`
 - Reports:
   `agent-security-report-v0.1`, local interactive `agent-security-dashboard-v0.1.html`,
   `agent-security-comparison-v0.1`
@@ -70,7 +71,7 @@ external attack targets.
 - `python -m pytest auto_evaluation_system/tests -q`: 114 passed, 1 skipped.
 - `python -m pytest auto_evaluation_system/tests/product -q`: 18 passed,
   1 skipped.
-- `python -m pytest -q`: 191 passed, 1 skipped, 2 warnings.
+- `python -m pytest -q`: 215 passed, 1 skipped, 2 warnings.
 - `git diff --check`: passed; only Windows CRLF notices.
 
 ## Remaining Product Boundary

@@ -1,4 +1,4 @@
-"""Phase 1 · Experiment runner — scenario scheduling and result storage."""
+"""Experiment runner — scenario scheduling and result storage."""
 
 from auto_evaluation_system.runner.closed_loop import (
     ClosedLoopAuditIntegrity,

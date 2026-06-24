@@ -330,11 +330,11 @@ OWASP_LLM_TOP10_COVERAGE = {
     },
     "LLM07: Insecure Plugin Design": {
         "covered": False,
-        "detail": "Phase 4计划中 — Tool Policy Engine将覆盖此风险",
+        "detail": "Tool Policy Engine 将覆盖此风险",
     },
     "LLM08: Excessive Agency": {
         "covered": False,
-        "detail": "Phase 4计划中 — RBAC+权限策略引擎将限制工具调用权限",
+        "detail": "RBAC+权限策略引擎将限制工具调用权限",
     },
     "LLM09: Overreliance": {
         "covered": True,

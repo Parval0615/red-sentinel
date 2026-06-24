@@ -8,4 +8,4 @@ class AutoGenBackend:
     framework = "autogen"
 
     def run(self, session: SandboxSession) -> list[StepEvent]:
-        raise NotImplementedError("AutoGen backend is a Phase 1 scaffold only.")
+        raise NotImplementedError("AutoGen backend is a scaffold only.")

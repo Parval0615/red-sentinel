@@ -1,4 +1,4 @@
-"""Tool tampering proxy for controlled Phase 2 experiments."""
+"""Tool tampering proxy for controlled risk experiments."""
 
 from __future__ import annotations
 

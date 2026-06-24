@@ -1,8 +1,8 @@
 # Detection & Trajectory Modeling
 
-**Phase 3 · Week 13–19**
+**Detection & trajectory modeling · v0.1**
 
-基于 Phase 1–2 轨迹数据的风险检测与建模。有效性完全依赖上游数据质量。
+基于受控轨迹数据的风险检测与建模。有效性完全依赖上游数据质量。
 
 ## 子模块
 
@@ -14,7 +14,7 @@
 
 ## 评估
 
-以 Phase 2 受控注入实验为 ground truth，构建 ROC / precision-recall 框架。
+以受控注入实验为 ground truth，构建 ROC / precision-recall 框架。
 
 ## Detector Contract
 
@@ -35,9 +35,9 @@ T18 新增最小 MIS baseline scaffold：`auto_evaluation_system.detection.run_m
 `DetectorOutput(metric="MIS")` 与可解释 attribution。该 scaffold 只覆盖当前 MIS
 acceptance fixture；TRS / GDM detector 不在本任务包扩展。
 
-## Phase 3 Completion Gate
+## Completion Gate
 
-T22 将 Phase 3 detector v0.1 收口为三条可重放小闭环：
+T22 将 detector v0.1 收口为三条可重放小闭环：
 
 - TRS：`run_trs_baseline` + `run_trs_acceptance_evaluation` + TRS status fixture。
 - GDM：`run_gdm_baseline` + `run_gdm_acceptance_evaluation` + GDM status fixture。

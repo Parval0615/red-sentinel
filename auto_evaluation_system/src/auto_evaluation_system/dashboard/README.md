@@ -1,6 +1,6 @@
 # Risk Dashboard
 
-**Phase 3 · Week 18**
+**Risk dashboard · v0.1**
 
 实时可视化 TRS、GDM、MIS 三大核心指标。
 

@@ -1,4 +1,4 @@
-"""Phase A: Indirect Prompt Injection — 多格式投毒生成器。
+"""Indirect Prompt Injection — 多格式投毒生成器。
 
 扩展 doc_poison.py 的 PDF-only 模式，支持 HTML / Email (.eml) / Markdown 三种新格式。
 每种格式的注入向量针对该格式的结构性弱点设计。

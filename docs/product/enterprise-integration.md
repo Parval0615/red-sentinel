@@ -39,8 +39,16 @@ The static API contract is tracked in [`../api/openapi.yaml`](../api/openapi.yam
 
 ## Private Demo
 
+After `pip install -e ".[dev]"`, run:
+
 ```powershell
 python -m auto_evaluation_system.product_api.demo
+```
+
+From a source checkout without editable install, set the local source path:
+
+```powershell
+$env:PYTHONPATH="auto_evaluation_system/src;auto_defense_system/src;sdk/python/src"; python -m auto_evaluation_system.product_api.demo
 ```
 
 The demo registers the e-commerce guide agent, runs `ecommerce-security-v0.1`,

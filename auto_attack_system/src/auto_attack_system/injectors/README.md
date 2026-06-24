@@ -1,6 +1,6 @@
 # Risk Injectors
 
-**Phase 2 · Week 7-12 · 已完成 v0.1**
+**Risk injectors · v0.1**
 
 本模块实现受控风险注入，明确区分 controlled injection 与 observational run。注入结果通过 side-channel telemetry 进入 trajectory metadata / state_delta，不写入额外 agent context。
 
@@ -32,7 +32,7 @@
 
 ## Scenarios
 
-Phase 2 每类 injector 均有 clean / controlled Direct API replay scenario，位于 `configs/scenarios/`。
+每类 injector 均有 clean / controlled Direct API replay scenario，位于 `configs/scenarios/`。
 
 小型标注样例位于 `datasets/annotated/phase2/`。
 

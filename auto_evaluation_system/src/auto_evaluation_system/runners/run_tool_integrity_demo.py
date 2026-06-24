@@ -1,6 +1,6 @@
 from pathlib import Path
 from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
-"""Phase B.1: Tool Supply Chain Security — Ed25519 签名验证演示。
+"""Tool Supply Chain Security — Ed25519 签名验证演示。
 
 演示:
   1. 生成 Ed25519 密钥对

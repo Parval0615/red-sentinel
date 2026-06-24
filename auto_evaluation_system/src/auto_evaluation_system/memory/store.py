@@ -68,7 +68,7 @@ class MemoryAuditRecord:
 
 
 class InMemoryMemoryStore:
-    """Phase 1 local memory store with namespace isolation and audit log."""
+    """Local memory store with namespace isolation and audit log."""
 
     def __init__(self) -> None:
         self._records: dict[tuple[str, MemoryLayer, str], MemoryRecord] = {}

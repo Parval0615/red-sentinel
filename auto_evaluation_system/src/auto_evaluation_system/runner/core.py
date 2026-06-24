@@ -23,7 +23,7 @@ class RunResult:
 
 
 class ExperimentRunner:
-    """Phase 1 serial experiment runner with structured result storage."""
+    """Serial experiment runner with structured result storage."""
 
     def __init__(self, results_root: str | Path = "runs") -> None:
         self.results_root = Path(results_root)
@@ -32,7 +32,7 @@ class ExperimentRunner:
         scenario_path = Path(path)
         config = ScenarioConfig.from_yaml(scenario_path)
         if config.runner.parallel:
-            raise NotImplementedError("Parallel runner execution is not implemented in Phase 1 MVP.")
+            raise NotImplementedError("Parallel runner execution is not implemented in the MVP.")
 
         started_at = datetime.now(tz=timezone.utc)
         trajectory = run_sandbox_scenario(str(scenario_path))

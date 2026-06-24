@@ -188,7 +188,7 @@ def agent_node(state: AgentState) -> dict:
     if retriever and retriever.get("docs") and "search_knowledge_base" in allowed_names:
         available_tools.append(search_document)
 
-    # Phase 4.1: Admin gets dangerous simulated tools for policy demo
+    # Admin gets dangerous simulated tools for policy demo.
     if role == "admin":
         available_tools.extend(DANGEROUS_TOOLS)
 
@@ -385,7 +385,7 @@ def tool_node(state: AgentState) -> dict:
             ))
             continue
 
-        # Phase 4.1: Tool Policy Engine check
+        # Tool Policy Engine check.
         try:
             from auto_defense_system.security.policy.engine import check_policy, write_policy_audit
             allowed, reason, detail = check_policy(tool_name, tool_args, state)

@@ -1,4 +1,4 @@
-"""Phase 4.1: Tool Policy Engine — 可配置的工具权限策略引擎。
+"""Tool Policy Engine — 可配置的工具权限策略引擎。
 
 在 tool_node 执行前插入策略检查，拦截危险工具调用。
 规则 JSON 可配置，非硬编码。

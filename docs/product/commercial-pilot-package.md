@@ -11,7 +11,7 @@ shopping guide agent as the first enterprise agent under test.
 | Python SDK | `sdk/python/src/agent_security_sdk/` | White-box adapter integration |
 | Hosted API | `auto_evaluation_system.product_api.app.create_app` | Optional private API service |
 | OpenAPI contract | `docs/api/openapi.yaml` | Enterprise API review and client generation |
-| Demo command | `python -m auto_evaluation_system.product_api.demo` | One-command local pilot run |
+| Demo command | `python -m auto_evaluation_system.product_api.demo` after editable install, or set `PYTHONPATH` from a source checkout | One-command local pilot run |
 | Report JSON | `agent-security-report-v0.1.json` | Machine-readable security report |
 | Dashboard | `agent-security-dashboard-v0.1.html` | Local interactive executive / engineer view |
 | Retest comparison | `agent-security-comparison-v0.1.json` | Before / after remediation evidence |

@@ -129,7 +129,7 @@ def generate_document_guide(retriever_dict) -> str:
 
 1. 文档类型与主题
 2. 如果有分类/类别/类型字段，列出所有可选值
-3. 如果有状态/阶段字段，列出所有可选值
+3. 如果有状态字段，列出所有可选值
 4. 关键命名实体
 
 文档：
@@ -187,7 +187,7 @@ def _extract_categories_hint(text: str) -> str:
     if len(lines) < 4:
         return ""
 
-    # ---- Phase 1: Extract potential category values from line endings ----
+    # ---- Step 1: Extract potential category values from line endings ----
     # Category values often appear as 2-4 char CJK strings at end of longer lines
     ending_counter = Counter()
     ending_examples = defaultdict(list)
@@ -201,11 +201,11 @@ def _extract_categories_hint(text: str) -> str:
                     ending_examples[ending].append(desc)
                     break
 
-    # ---- Phase 2: Identify the most likely category values ----
+    # ---- Step 2: Identify the most likely category values ----
     # A true category value appears multiple times at line endings
     likely_categories = [(cat, cnt) for cat, cnt in ending_counter.most_common(20) if cnt >= 2]
 
-    # ---- Phase 3: Build structured summary ----
+    # ---- Step 3: Build structured summary ----
     hints = []
     if likely_categories:
         cat_names = [c for c, _ in likely_categories[:5]]
@@ -220,7 +220,7 @@ def _extract_categories_hint(text: str) -> str:
                     short = ex[:60] + ("..." if len(ex) > 60 else "")
                     hints.append(f"  - {short}")
 
-    # ---- Phase 4: Also extract short repeated lines (status values, headers) ----
+    # ---- Step 4: Also extract short repeated lines (status values, headers) ----
     short_lines = Counter([l for l in lines if 2 <= len(l) <= 6 and re.match(r'^[一-鿿]+$', l)])
     repeated_short = [(w, c) for w, c in short_lines.most_common(10) if c >= 2]
     if repeated_short:
@@ -362,7 +362,7 @@ def init_rag_retriever(pdf_path: str = None, force_reindex: bool = False,
     if pdf_path is None:
         from auto_defense_system.config import DEFAULT_TEST_PDF
         pdf_path = DEFAULT_TEST_PDF
-    # Phase A: Multi-format document loading
+    # Multi-format document loading.
     doc_fmt = _detect_format(pdf_path)
     docs = _load_document(pdf_path, doc_fmt)
 

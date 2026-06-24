@@ -1,8 +1,8 @@
 # Memory Store
 
-**Phase 1 · Week 4 · Task 3 已完成 v0.1**
+**Memory store · v0.1**
 
-本地 Memory Store MVP。Phase 1 目标是先稳定接口、namespace isolation、CRUD audit log 与 telemetry 对接；Chroma/Qdrant + PostgreSQL 双轨存储作为后续增强，不是 v0.1 门禁。
+本地 Memory Store MVP。当前目标是先稳定接口、namespace isolation、CRUD audit log 与 telemetry 对接；Chroma/Qdrant + PostgreSQL 双轨存储作为后续增强，不是 v0.1 门禁。
 
 ## 模块
 
@@ -37,5 +37,5 @@
 ## 被依赖
 
 - `auto_evaluation_system.sandbox` — session 级 memory store
-- `auto_attack_system.injectors.memory_poisoning` — Phase 2 投毒入口
-- `auto_evaluation_system.detection.memory_integrity` — Phase 3 MIS 计算
+- `auto_attack_system.injectors.memory_poisoning` — 投毒入口
+- `auto_evaluation_system.detection.memory_integrity` — MIS 计算

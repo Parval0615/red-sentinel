@@ -1,6 +1,6 @@
 # Sandbox SDK
 
-**Phase 1 · Week 1–2 · Task 1 已实现**
+**Sandbox SDK · v0.1**
 
 多框架 Agent 隔离执行环境。
 

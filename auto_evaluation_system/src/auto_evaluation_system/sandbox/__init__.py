@@ -1,3 +1,3 @@
-"""Phase 1 sandbox SDK."""
+"""Sandbox SDK."""
 
 __all__: list[str] = []

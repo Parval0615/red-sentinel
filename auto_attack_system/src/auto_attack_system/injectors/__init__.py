@@ -1,4 +1,4 @@
-"""Phase 2 controlled risk injection primitives."""
+"""Controlled risk injection primitives."""
 
 from __future__ import annotations
 

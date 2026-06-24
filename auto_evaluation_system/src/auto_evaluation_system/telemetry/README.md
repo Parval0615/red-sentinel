@@ -1,6 +1,6 @@
 # Telemetry
 
-**Phase 1 · Week 3 · Task 2 已完成 v0.1**
+**Telemetry · v0.1**
 
 Out-of-band 观测层，与 Agent 执行层完全解耦。
 
@@ -47,4 +47,4 @@ Out-of-band 观测层，与 Agent 执行层完全解耦。
 ## 被依赖
 
 - `auto_evaluation_system.runner` — 实验结果持久化
-- `auto_evaluation_system.detection` — Phase 3 检测输入
+- `auto_evaluation_system.detection` — 检测输入

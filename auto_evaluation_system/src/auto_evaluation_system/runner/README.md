@@ -1,8 +1,8 @@
 # Experiment Runner
 
-**Phase 1 · Week 5 · Task 4 已完成 v0.1**
+**Experiment runner · v0.1**
 
-串行实验调度与结果落盘 MVP。Phase 1 只支持串行执行；并行队列、复杂调度、大规模 diff 留到后续增强。
+串行实验调度与结果落盘 MVP。当前只支持串行执行；并行队列、复杂调度、大规模 diff 留到后续增强。
 
 ## 模块
 
@@ -40,7 +40,7 @@ runs/{experiment_id}/seed_{seed}/{run_id}/
 
 - `run_many()` 仅串行执行
 - 如果 scenario 配置 `runner.parallel: true`，明确抛出 `NotImplementedError`
-- 不实现 Phase 2 injector 调度逻辑
+- 不实现 injector 调度逻辑
 - `paired_evaluation.py` 只生成或校验 `not_run` 报告骨架，不运行 detector
 
 ## 验证
@@ -52,8 +52,8 @@ runs/{experiment_id}/seed_{seed}/{run_id}/
 
 ## 被依赖
 
-- `auto_attack_system.injectors` — Phase 2 注入实验
-- `benchmark/` — Phase 4 AgentRiskBench 场景集
+- `auto_attack_system.injectors` — 注入实验
+- `benchmark/` — AgentRiskBench 场景集
 
 ## Paired Evaluation Dry-run
 
@@ -161,9 +161,9 @@ acceptance evaluation 结果合并进 `paired-evaluation-report-v0.1` 骨架。
   `test_status="not_run"`，TRS 状态 helper 不扩展。
 - 不新增 report schema 字段，不调用真实 API，不写回 golden report fixture。
 
-## Phase 3 Runner Handoff
+## Runner Handoff
 
-T22 confirms the runner-side Phase 3 v0.1 handoff:
+T22 confirms the runner-side v0.1 handoff:
 
 - `run_trs_acceptance_evaluation(...)`, `run_gdm_acceptance_evaluation(...)`,
   and `run_mis_acceptance_evaluation(...)` each replay exactly one detector
