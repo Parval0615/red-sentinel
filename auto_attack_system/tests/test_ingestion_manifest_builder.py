@@ -61,6 +61,9 @@ evaluation:
     payload = result.manifest.model_dump(mode="json")
 
     assert AgentManifest.model_validate(payload) == result.manifest
+    assert result.valid is True
+    assert result.completeness_score == 1.0
+    assert result.missing_fields == []
     assert result.inferred_tools == ["listOrders", "createOrder", "deleteOrder"]
     assert {tool.name: tool.risk_level for tool in result.manifest.tools} == {
         "listOrders": "low",
@@ -94,5 +97,39 @@ evaluation:
     result = build_manifest_from_materials(load_agent_materials(material_path), base_dir=tmp_path)
 
     assert [node.id for node in result.manifest.nodes] == ["input", "docker_executor", "output"]
+    assert result.valid is False
+    assert "nodes" in result.missing_fields
     assert result.manifest.agent.entrypoint == "docker_adapter:invoke"
     assert "Docker runtime trajectory collection is reserved for M5" in " ".join(result.notes)
+
+
+def test_build_manifest_handles_source_materials(tmp_path: Path) -> None:
+    (tmp_path / "src").mkdir()
+    material_path = tmp_path / "materials.yaml"
+    material_path.write_text(
+        """
+schema_version: agent-materials-v1
+agent:
+  name: source_agent
+  domain: support
+  entrypoint: app:run
+integration:
+  type: source
+  source_path: src
+nodes:
+  - id: input
+    type: input_node
+    target: app:normalize
+evaluation:
+  attack_entries:
+    - prompt
+""".strip(),
+        encoding="utf-8",
+    )
+
+    result = build_manifest_from_materials(load_agent_materials(material_path), base_dir=tmp_path)
+
+    assert result.valid is False
+    assert result.manifest.agent.root_path == "src"
+    assert result.manifest.agent.entrypoint == "app:run"
+    assert "tools_or_openapi" in result.missing_fields

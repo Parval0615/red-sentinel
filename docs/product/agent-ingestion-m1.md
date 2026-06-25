@@ -2,6 +2,8 @@
 
 M1 defines the first material intake layer for external Agent onboarding. It does not modify the frozen `AgentManifest`, `AgentProfile`, or `OptimizationDirective` contracts.
 
+`auto_attack_system.ingestion` is a B-line pre-attack perception input module. It prepares material evidence for attack planning and does not replace formal onboarding under `agent_integration_system`.
+
 ## Scope
 
 - Read `agent-materials-v1` YAML files from a file path or material directory.
@@ -67,6 +69,21 @@ M1 scores whether the upload includes:
 
 Missing fields do not block draft generation. They are reported in `MaterialInspection.missing` and should be resolved by user input or M1.5 code profiling.
 
+The manifest builder also exposes gate fields for review:
+
+```json
+{
+  "valid": true,
+  "completeness_score": 1.0,
+  "missing_fields": [],
+  "warnings": []
+}
+```
+
 ## Contract Boundary
 
 For M1, API and Docker materials are mapped into the existing `agent-manifest-v1` shape without changing shared schemas. When node paths are absent, the builder creates draft nodes using the configured adapter entrypoint and records a note that the nodes were generated.
+
+## Docker Boundary
+
+B-line Docker material spec only describes how an external Docker Agent should be observed. Actual sandbox execution, network isolation, runtime telemetry collection, and enforcement are owned by C-line.

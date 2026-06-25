@@ -53,6 +53,9 @@ def test_evolve_attack_specs_from_report_findings() -> None:
     assert result.evolved_specs[0].risk_type == "tool_tampering"
     assert result.evolved_specs[0].intensity == "heavy"
     assert result.evolved_specs[0].metadata["source"] == "self_evolution"
+    assert result.evolved_specs[0].metadata["trigger_reason"] == "Finding f1 remained unresolved."
+    assert result.evolution_records[0]["mutation_strategy"] == "chain_hijack"
+    assert result.evolution_records[0]["expected_effect"] == "increase multi-step tool misuse coverage"
 
 
 def test_evolve_attack_specs_from_directive_and_failed_attempts_dedupes() -> None:
@@ -78,3 +81,31 @@ def test_evolve_attack_specs_from_directive_and_failed_attempts_dedupes() -> Non
     assert result.evolved_specs[0].risk_type == "memory_poisoning"
     assert result.evolved_specs[0].metadata["target_node_id"] == "memory"
     assert result.source_refs == ["trace-1"]
+
+
+def test_evolve_attack_specs_is_deterministic() -> None:
+    report = AgentSecurityReport(
+        tenant_id="t1",
+        agent_id="agent",
+        benchmark="local",
+        overall_score=60,
+        risk_level="high",
+        findings=[
+            Finding(
+                finding_id="f1",
+                scenario_id="tool-node",
+                severity="high",
+                title="tool_tampering: unsafe tool call",
+                description="Controlled attack was allowed.",
+                business_impact="unsafe action",
+                recommendation="Generate stronger tool_tampering variants.",
+            )
+        ],
+        scenario_results=[],
+        artifacts=ReportArtifacts(report_path="report.json"),
+    )
+
+    first = evolve_attack_specs([_base_spec()], report=report)
+    second = evolve_attack_specs([_base_spec()], report=report)
+
+    assert first.model_dump(mode="json") == second.model_dump(mode="json")

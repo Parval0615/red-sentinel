@@ -55,6 +55,7 @@ _PROFILE_RISK_TO_ATTACK: dict[str, tuple[AttackRiskType, str, AttackIntensity, s
 _FALLBACK_RISKS: tuple[AttackRiskType, ...] = (
     "prompt_injection",
     "knowledge_poisoning",
+    "unauthorized_retrieval",
     "tool_tampering",
     "memory_poisoning",
     "goal_drift",

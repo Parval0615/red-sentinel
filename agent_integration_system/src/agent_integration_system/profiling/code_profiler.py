@@ -33,7 +33,7 @@ class CandidateProfileDiff(BaseModel):
     added_nodes: list[str] = Field(default_factory=list)
     added_tools: list[str] = Field(default_factory=list)
     changed_rag_enabled: bool = False
-    evidence_refs: list[str] = Field(default_factory=list)
+    evidence_refs: list[dict[str, object]] = Field(default_factory=list)
 
 
 class CodeProfileCandidate(BaseModel):
@@ -52,6 +52,9 @@ class _FunctionEvidence(BaseModel):
     name: str
     node_type: NodeTypeName
     path: str
+    line_start: int
+    line_end: int
+    reason: str
 
     @property
     def target(self) -> str:
@@ -66,9 +69,16 @@ def analyze_source_profile(root_path: str | Path, base_profile: AgentProfile) ->
 
     added_nodes: list[AgentProfileNode] = []
     added_tools: list[AgentProfileTool] = []
-    evidence_refs: list[str] = []
+    evidence_refs: list[dict[str, object]] = []
     for item in functions:
-        evidence_refs.append(item.path)
+        evidence_refs.append(
+            {
+                "file": item.path,
+                "line_start": item.line_start,
+                "line_end": item.line_end,
+                "reason": item.reason,
+            }
+        )
         if item.target not in existing_targets:
             added_nodes.append(
                 AgentProfileNode(
@@ -98,7 +108,7 @@ def analyze_source_profile(root_path: str | Path, base_profile: AgentProfile) ->
         added_nodes=[node.id for node in added_nodes],
         added_tools=[tool.name for tool in added_tools],
         changed_rag_enabled=candidate.rag_enabled != base_profile.rag_enabled,
-        evidence_refs=sorted(set(evidence_refs)),
+        evidence_refs=_dedupe_evidence(evidence_refs),
     )
     return CodeProfileCandidate(
         candidate_profile=candidate,
@@ -125,12 +135,16 @@ def _collect_functions(root: Path) -> list[_FunctionEvidence]:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 node_type = _classify_function(node.name)
                 if node_type:
+                    reason = _classification_reason(node.name, node_type)
                     items.append(
                         _FunctionEvidence(
                             module=module,
                             name=node.name,
                             node_type=node_type,
                             path=str(path),
+                            line_start=node.lineno,
+                            line_end=getattr(node, "end_lineno", node.lineno),
+                            reason=reason,
                         )
                     )
     return items
@@ -142,6 +156,13 @@ def _classify_function(name: str) -> NodeTypeName | None:
         if any(keyword in lowered for keyword in keywords):
             return node_type
     return None
+
+
+def _classification_reason(name: str, node_type: NodeTypeName) -> str:
+    lowered = name.lower()
+    keywords = dict(_NODE_KEYWORDS)[node_type]
+    matched = next((keyword for keyword in keywords if keyword in lowered), keywords[0])
+    return f"function name {name} matched {node_type} heuristic keyword {matched}"
 
 
 def _module_name(root: Path, path: Path) -> str:
@@ -178,3 +199,15 @@ def _notes(root: Path, functions: list[_FunctionEvidence], diff: CandidateProfil
     if diff.added_nodes:
         notes.append("Candidate nodes were inferred from function names and should be reviewed.")
     return notes
+
+
+def _dedupe_evidence(items: list[dict[str, object]]) -> list[dict[str, object]]:
+    seen: set[tuple[object, object, object, object]] = set()
+    output: list[dict[str, object]] = []
+    for item in items:
+        key = (item.get("file"), item.get("line_start"), item.get("line_end"), item.get("reason"))
+        if key in seen:
+            continue
+        seen.add(key)
+        output.append(item)
+    return output

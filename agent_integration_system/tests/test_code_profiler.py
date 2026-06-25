@@ -36,7 +36,9 @@ def remember_user_preference(user_id, value):
     assert "execute_refund_tool" in candidate.diff.added_tools
     assert candidate.diff.added_nodes
     assert candidate.candidate_profile.rag_enabled is True
-    assert any(str(app_path) == ref for ref in candidate.diff.evidence_refs)
+    assert any(str(app_path) == ref["file"] for ref in candidate.diff.evidence_refs)
+    assert all({"file", "line_start", "line_end", "reason"} <= set(ref) for ref in candidate.diff.evidence_refs)
+    assert any("tool_node" in str(ref["reason"]) for ref in candidate.diff.evidence_refs)
 
 
 def test_code_profiler_keeps_base_profile_unchanged() -> None:

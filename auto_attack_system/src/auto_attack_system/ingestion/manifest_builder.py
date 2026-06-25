@@ -25,6 +25,10 @@ class ManifestBuildResult(BaseModel):
 
     manifest: AgentManifest
     inspection: MaterialInspection
+    valid: bool
+    completeness_score: float
+    missing_fields: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
     inferred_tools: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 
@@ -62,11 +66,16 @@ def build_manifest_from_materials(
         evaluation=materials.evaluation.model_copy(update={"attack_entries": attack_entries}),
     )
 
+    warnings = _notes(materials, inspection, bool(inferred_tools))
     return ManifestBuildResult(
         manifest=manifest,
         inspection=inspection,
+        valid=not inspection.missing,
+        completeness_score=inspection.completeness_score,
+        missing_fields=inspection.missing,
+        warnings=warnings,
         inferred_tools=[item.name for item in inferred_tools],
-        notes=_notes(materials, inspection, bool(inferred_tools)),
+        notes=warnings,
     )
 
 

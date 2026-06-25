@@ -25,6 +25,7 @@ class AttackEvolutionResult(BaseModel):
     evolved_specs: list[AttackSpec] = Field(default_factory=list)
     source_refs: list[str] = Field(default_factory=list)
     rationale: list[str] = Field(default_factory=list)
+    evolution_records: list[dict[str, Any]] = Field(default_factory=list)
 
 
 def evolve_attack_specs(
@@ -42,6 +43,7 @@ def evolve_attack_specs(
     evolved: list[AttackSpec] = []
     rationale: list[str] = []
     source_refs: list[str] = []
+    records: list[dict[str, Any]] = []
     for index, weak_point in enumerate(weak_points, start=1):
         risk_type = weak_point["risk_type"]
         base = base_by_risk.get(risk_type) or (base_specs[0] if base_specs else None)
@@ -62,11 +64,24 @@ def evolve_attack_specs(
                         "source": "self_evolution",
                         "target_node_id": weak_point["target_node_id"],
                         "evidence_ref": weak_point["evidence_ref"],
+                        "source_finding": weak_point["risk_type"],
+                        "trigger_reason": weak_point["reason"],
+                        "mutation_strategy": weak_point["strategy_hint"],
+                        "expected_effect": weak_point["expected_effect"],
                     },
                 }
             )
         )
         rationale.append(weak_point["reason"])
+        records.append(
+            {
+                "source_finding": weak_point["risk_type"],
+                "target_node_id": weak_point["target_node_id"],
+                "trigger_reason": weak_point["reason"],
+                "mutation_strategy": weak_point["strategy_hint"],
+                "expected_effect": weak_point["expected_effect"],
+            }
+        )
         if weak_point["evidence_ref"]:
             source_refs.append(weak_point["evidence_ref"])
 
@@ -74,6 +89,7 @@ def evolve_attack_specs(
         evolved_specs=evolved,
         source_refs=sorted(set(source_refs)),
         rationale=rationale,
+        evolution_records=records,
     )
 
 
@@ -154,6 +170,7 @@ def _weak_point(
         "success_criteria": f"evolved {risk_type} variant is blocked, attributed, or measured",
         "evidence_ref": evidence_ref,
         "reason": reason,
+        "expected_effect": _expected_effect(risk_type),
     }
 
 
@@ -204,3 +221,15 @@ def _strategy_hint(risk_type: AttackRiskType) -> str:
         "goal_drift": "incremental_creep",
         "pii_leakage": "encoded_request",
     }.get(risk_type, "targeted_probe")
+
+
+def _expected_effect(risk_type: AttackRiskType) -> str:
+    return {
+        "prompt_injection": "increase prompt hierarchy bypass coverage",
+        "knowledge_poisoning": "increase RAG poisoning coverage",
+        "unauthorized_retrieval": "increase cross-scope retrieval coverage",
+        "tool_tampering": "increase multi-step tool misuse coverage",
+        "memory_poisoning": "increase persistent memory poisoning coverage",
+        "goal_drift": "increase gradual objective shift coverage",
+        "pii_leakage": "increase sensitive output leakage coverage",
+    }.get(risk_type, "increase weak-node coverage")
