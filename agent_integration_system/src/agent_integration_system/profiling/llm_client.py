@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import gzip
 import urllib.error
 import urllib.request
 from typing import Any
@@ -41,12 +42,16 @@ class LLMClient:
             headers={
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
+                "Accept-Encoding": "gzip",
             },
             method="POST",
         )
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                payload = json.loads(response.read().decode("utf-8"))
+                raw = response.read()
+                if response.headers.get("Content-Encoding") == "gzip" or raw[:2] == b"\x1f\x8b":
+                    raw = gzip.decompress(raw)
+                payload = json.loads(raw.decode("utf-8"))
         except urllib.error.URLError as exc:
             raise ValueError(f"LLM request failed: {exc}") from exc
 
