@@ -18,18 +18,18 @@ pip install -e ".[dev]"
 ## 竞赛主链路复现
 
 ```powershell
-python run.py --closed-loop-demo
-python run.py --attack-campaign --offline
-python run.py --defense-regression --offline
-python run.py --evidence-pack --offline
+python run.py --demo
+python run.py --comp2 --offline
+python run.py --comp3 --offline
+python run.py --comp4 --offline
 ```
 
 预期摘要：
 
-- `--closed-loop-demo`：生成 trace、report、guard decisions 和 audit refs，证明旁路监督闭环跑通。
-- `--attack-campaign --offline`：攻击面覆盖 7/7，reflection gain +5。
-- `--defense-regression --offline`：ASR 44% → 0%，精准加固误伤率 0%。
-- `--evidence-pack --offline`：输出收敛曲线、损伤雷达图、消融实验和数据卡。
+- `--demo`：生成 trace、report、guard decisions 和 audit refs，证明旁路监督闭环跑通。
+- `--comp2 --offline`：攻击面覆盖 7/7，reflection gain +5。
+- `--comp3 --offline`：ASR 44% → 0%，精准加固误伤率 0%。
+- `--comp4 --offline`：输出收敛曲线、损伤雷达图、消融实验和数据卡。
 
 ## 产品评估 demo
 
@@ -43,11 +43,24 @@ python -m auto_evaluation_system.product_api.demo
 $env:PYTHONPATH="auto_evaluation_system/src;auto_defense_system/src;sdk/python/src"; python -m auto_evaluation_system.product_api.demo
 ```
 
+## Agent Onboarding M0 复现
+
+```powershell
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli validate agent_integration_system/examples/simple_agent/redsentinel.yaml
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli profile agent_integration_system/examples/simple_agent/redsentinel.yaml --output runs/m0-agent-profile.json
+```
+
+预期摘要：
+
+- `validate`: 输出 `CONFIG_VALID=true`、节点数量和攻击入口。
+- `profile`: 生成符合 `agent-profile-v1` 的 `runs/m0-agent-profile.json`。
+
 ## 回归验证
 
 ```powershell
 python -m pytest -q
-python -m compileall -q auto_attack_system auto_defense_system auto_evaluation_system sdk
+python -m pytest agent_integration_system/tests auto_evaluation_system/tests/contracts -q
+python -m compileall -q agent_integration_system auto_attack_system auto_defense_system auto_evaluation_system sdk
 ```
 
 当前固定验证结果：`215 passed, 1 skipped, 2 warnings`。
@@ -56,9 +69,10 @@ python -m compileall -q auto_attack_system auto_defense_system auto_evaluation_s
 
 | 目录 | 来源命令 | 内容 |
 |---|---|---|
-| `runs/` | `python run.py --closed-loop-demo` | 监督闭环 trace/report/audit |
-| `attack-runs/` | `python run.py --attack-campaign --offline` | 红队攻击历史、反思日志、覆盖表 |
-| `defense-runs/` | `python run.py --defense-regression --offline` | 加固决策、回归报告 |
-| `evidence-runs/` | `python run.py --evidence-pack --offline` | 收敛曲线、雷达图、消融和数据卡 |
+| `runs/` | `python run.py --demo` | 监督闭环 trace/report/audit |
+| `attack-runs/` | `python run.py --comp2 --offline` | 红队攻击历史、反思日志、覆盖表 |
+| `defense-runs/` | `python run.py --comp3 --offline` | 加固决策、回归报告 |
+| `evidence-runs/` | `python run.py --comp4 --offline` | 收敛曲线、雷达图、消融和数据卡 |
+| `runs/m0-agent-profile.json` | `agent_integration_system.cli profile ...` | 外部 Agent 标准画像 |
 
 提交包中的固定证据副本位于 [`evidence-pack/`](./evidence-pack/)。

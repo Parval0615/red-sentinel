@@ -30,13 +30,13 @@ RedSentinel 由三个智能体、一个本地靶场和一层旁路监督机制�
 
 ## 能力实现：150 秒
 
-第一项能力是攻防监督闭环。单条命令 `python run.py --closed-loop-demo` 可以离线串起攻击、靶场、监督、评测、防御和审计，生成 trace、report、guard decisions、audit refs 和 summary。
+第一项能力是攻防监督闭环。单条命令 `python run.py --demo` 可以离线串起攻击、靶场、监督、评测、防御和审计，生成 trace、report、guard decisions、audit refs 和 summary。
 
-第二项能力是红队攻击战役。命令是 `python run.py --attack-campaign --offline`。Attack Agent 会在 7 类威胁分类上进行攻击规划，失败后反思并升级策略。离线结果显示，加入 reflection 后攻击面覆盖可以达到 7/7。
+第二项能力是红队攻击战役。命令是 `python run.py --comp2 --offline`。Attack Agent 会在 7 类威胁分类上进行攻击规划，失败后反思并升级策略。离线结果显示，加入 reflection 后攻击面覆盖可以达到 7/7。
 
-第三项能力是防御策略回归。命令是 `python run.py --defense-regression --offline`。系统先跑基线攻击得到损伤报告，再让 Defense Agent 对每个被攻破类别选择精准加固动作，然后重打同一攻击战役，并用良性请求测试误伤。结果是 ASR 从 44% 降到 0%，精准加固误伤率 0%。
+第三项能力是防御策略回归。命令是 `python run.py --comp3 --offline`。系统先跑基线攻击得到损伤报告，再让 Defense Agent 对每个被攻破类别选择精准加固动作，然后重打同一攻击战役，并用良性请求测试误伤。结果是 ASR 从 44% 降到 0%，精准加固误伤率 0%。
 
-第四项能力是风险证据包。命令是 `python run.py --evidence-pack --offline`。它生成多轮 ASR 收敛曲线、加固前后损伤雷达图、三组消融实验和 AgentRiskBench-Ecommerce 数据卡。
+第四项能力是风险证据包。命令是 `python run.py --comp4 --offline`。它生成多轮 ASR 收敛曲线、加固前后损伤雷达图、三组消融实验和 AgentRiskBench-Ecommerce 数据卡。
 
 ## 实验结果：100 秒
 

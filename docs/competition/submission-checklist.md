@@ -13,6 +13,7 @@
 - `auto_attack_system/`
 - `auto_defense_system/`
 - `auto_evaluation_system/`
+- `agent_integration_system/`
 - `sdk/python/`
 - `run.py`
 - `pyproject.toml`
@@ -47,12 +48,15 @@
 ## 提交前验证命令
 
 ```powershell
-python run.py --closed-loop-demo
-python run.py --attack-campaign --offline
-python run.py --defense-regression --offline
-python run.py --evidence-pack --offline
+python run.py --demo
+python run.py --comp2 --offline
+python run.py --comp3 --offline
+python run.py --comp4 --offline
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli validate agent_integration_system/examples/simple_agent/redsentinel.yaml
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli profile agent_integration_system/examples/simple_agent/redsentinel.yaml --output runs/m0-agent-profile.json
 python -m pytest -q
-python -m compileall -q auto_attack_system auto_defense_system auto_evaluation_system sdk
+python -m pytest agent_integration_system/tests auto_evaluation_system/tests/contracts -q
+python -m compileall -q agent_integration_system auto_attack_system auto_defense_system auto_evaluation_system sdk
 ```
 
 ## 关键数字一致性
@@ -62,4 +66,6 @@ python -m compileall -q auto_attack_system auto_defense_system auto_evaluation_s
 - Attack reflection 消融：2/7 vs 7/7
 - Defense 消融：ASR 保持 44%
 - 精准加固误伤率：0%
+- P0/M0 契约：`agent-manifest-v1` / `agent-profile-v1` / `optimization-directive-v1`
+- M0 聚焦测试：14 passed
 - 全量测试：215 passed, 1 skipped, 2 warnings

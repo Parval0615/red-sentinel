@@ -51,10 +51,10 @@ RedSentinel 将现有 LLM 安全内核包装为“红队攻防 + 旁路监督”
 
 | 能力 | 命令 | 验证目标 |
 |---|---|---|
-| 攻防监督闭环 | `python run.py --closed-loop-demo` | 串通攻击、靶场、监督、评测、防御和审计 |
-| 红队攻击战役 | `python run.py --attack-campaign --offline` | 验证攻击历史、失败反思和重规划能扩大攻击面覆盖 |
-| 防御策略回归 | `python run.py --defense-regression --offline` | 验证精准加固降低 ASR 且不误伤正常请求 |
-| 风险证据包 | `python run.py --evidence-pack --offline` | 生成收敛曲线、损伤雷达图、消融实验和数据卡 |
+| 攻防监督闭环 | `python run.py --demo` | 串通攻击、靶场、监督、评测、防御和审计 |
+| 红队攻击战役 | `python run.py --comp2 --offline` | 验证攻击历史、失败反思和重规划能扩大攻击面覆盖 |
+| 防御策略回归 | `python run.py --comp3 --offline` | 验证精准加固降低 ASR 且不误伤正常请求 |
+| 风险证据包 | `python run.py --comp4 --offline` | 生成收敛曲线、损伤雷达图、消融实验和数据卡 |
 
 ## 6. 结果分析
 
@@ -93,10 +93,10 @@ RedSentinel 将现有 LLM 安全内核包装为“红队攻防 + 旁路监督”
 ## 10. 复现方式
 
 ```powershell
-python run.py --closed-loop-demo
-python run.py --attack-campaign --offline
-python run.py --defense-regression --offline
-python run.py --evidence-pack --offline
+python run.py --demo
+python run.py --comp2 --offline
+python run.py --comp3 --offline
+python run.py --comp4 --offline
 python -m pytest -q
 ```
 

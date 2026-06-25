@@ -2,7 +2,8 @@
 
 This package is the first private single-tenant delivery bundle for enterprise
 agent security evaluation. It uses the local e-commerce customer service /
-shopping guide agent as the first enterprise agent under test.
+shopping guide agent as the first enterprise agent under test, and now includes
+the M0 contract-first onboarding baseline for external agents.
 
 ## Delivery Bundle
 
@@ -16,6 +17,9 @@ shopping guide agent as the first enterprise agent under test.
 | Dashboard | `agent-security-dashboard-v0.1.html` | Local interactive executive / engineer view |
 | Retest comparison | `agent-security-comparison-v0.1.json` | Before / after remediation evidence |
 | Readiness audit | `docs/product/product-readiness-audit.md` | Product audit and regression evidence |
+| Agent onboarding manifest | `agent_integration_system/examples/simple_agent/redsentinel.yaml` | Example `agent-manifest-v1` input |
+| Shared contracts | `auto_evaluation_system/schemas/agent-*.schema.json`, `optimization-directive-v1.schema.json` | Frozen attack / defense / evaluation contracts |
+| Onboarding CLI | `python -m agent_integration_system.cli validate/profile ...` | Validate manifest and generate `agent-profile-v1` |
 
 ## Pilot Script
 
@@ -26,6 +30,22 @@ shopping guide agent as the first enterprise agent under test.
 4. Review the JSON report, Markdown report, and interactive dashboard.
 5. Apply remediation in the agent, guard, policy, or business rule layer.
 6. Run evaluation again and generate a retest comparison report.
+
+## External Agent Onboarding Script
+
+For a new enterprise agent, the M0 path is contract-first:
+
+1. Enterprise provides `redsentinel.yaml` in `agent-manifest-v1` shape.
+2. RedSentinel validates node targets, defenses, tools, RAG settings, and
+   evaluation scope.
+3. RedSentinel generates `agent-profile-v1`.
+4. Attack, defense, and evaluation workstreams consume the profile and future
+   `optimization-directive-v1` outputs.
+
+```powershell
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli validate agent_integration_system/examples/simple_agent/redsentinel.yaml
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli profile agent_integration_system/examples/simple_agent/redsentinel.yaml --output runs/m0-agent-profile.json
+```
 
 ## Acceptance Talk Track
 
@@ -54,6 +74,7 @@ shopping guide agent as the first enterprise agent under test.
 | Capability | Current state | Next market step |
 |---|---|---|
 | SDK integration | Python SDK MVP | Add JS/TS SDK and framework examples |
+| Agent onboarding | M0 manifest/profile contracts + CLI | Add T0 API/OpenAPI ingestion and T1 node config completeness scoring |
 | Hosted API | Optional FastAPI adapter + OpenAPI | Add auth, API keys, and request quotas |
 | Scenario library | 16 e-commerce clean/control pairs | Expand to 24+ controlled scenarios |
 | Business simulator | Mock Taobao-like store | Add richer catalog, campaigns, reviews, logistics states |
@@ -71,3 +92,6 @@ shopping guide agent as the first enterprise agent under test.
 - Production data must be sanitized or mocked before evaluation.
 - Any real-time guard deployment needs separate latency, availability, rollback,
   and legal approval gates.
+- M0 onboarding validates declared integration surfaces; automatic architecture
+  discovery, guard injection, and optimizer-led runtime changes are later
+  roadmap milestones.

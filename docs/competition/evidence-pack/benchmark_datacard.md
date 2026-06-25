@@ -30,7 +30,7 @@
 ## 复现
 
 ```bash
-python run.py --evidence-pack --offline
+python run.py --comp4 --offline
 ```
 
 ## 边界

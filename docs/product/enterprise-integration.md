@@ -1,7 +1,8 @@
 # Enterprise Integration MVP
 
 This productization track turns the local e-commerce agent into a private,
-single-tenant enterprise agent security evaluation MVP.
+single-tenant enterprise agent security evaluation MVP, and M0 extends the
+product baseline with a configurable onboarding contract for external agents.
 
 ## Deployment Boundary
 
@@ -11,9 +12,36 @@ single-tenant enterprise agent security evaluation MVP.
 - No real payment execution.
 - No real external attack target.
 
+## M0 Agent Onboarding
+
+M0 introduces a contract-first onboarding path. An enterprise provides a
+`redsentinel.yaml` manifest, RedSentinel validates it as `agent-manifest-v1`,
+and the CLI generates an `agent-profile-v1` security profile for downstream
+attack, defense, and evaluation workflows.
+
+```powershell
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli validate agent_integration_system/examples/simple_agent/redsentinel.yaml
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli profile agent_integration_system/examples/simple_agent/redsentinel.yaml --output runs/m0-agent-profile.json
+```
+
+The frozen shared contracts are:
+
+| Contract | Location | Purpose |
+|---|---|---|
+| `agent-manifest-v1` | `auto_evaluation_system/schemas/agent-manifest-v1.schema.json` | Enterprise-provided onboarding manifest |
+| `agent-profile-v1` | `auto_evaluation_system/schemas/agent-profile-v1.schema.json` | Shared attack / defense / evaluation profile |
+| `optimization-directive-v1` | `auto_evaluation_system/schemas/optimization-directive-v1.schema.json` | Evaluation-to-attack / defense optimization directive |
+
+The Pydantic models are exported from `auto_evaluation_system.contracts`.
+
+M0 does not include automatic source-code understanding, runtime guard
+injection, production gateway deployment, or generated attack execution.
+
 ## SDK Integration
 
-The first SDK adapter wraps the local e-commerce customer guide agent:
+The first SDK adapter wraps the local e-commerce customer guide agent. This is
+still the pilot runtime path; M0 onboarding is the new contract path for
+external agents that are not yet wired into the SDK runtime.
 
 ```python
 from agent_security_sdk import EcommerceEnterpriseAdapter
@@ -101,6 +129,8 @@ findings, and scenario deltas.
 
 ## Pilot Plan
 
+The overall multi-workflow product roadmap is tracked in
+[`../../ROADMAP.md`](../../ROADMAP.md).
 The enterprise pilot and dashboard delivery boundary is tracked in
 [`enterprise-pilot-dashboard-plan.md`](./enterprise-pilot-dashboard-plan.md).
 The latest readiness audit is tracked in

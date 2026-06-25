@@ -80,4 +80,4 @@ The first version supports:
 - Cross-system contract tests validate examples against those JSON Schema files.
 - Invalid configs return clear validation errors.
 - Tests cover loader, validator, and profile builder.
-- Existing attack, defense, evaluation packages are not changed beyond package discovery and test path configuration.
+- Existing attack, defense, and evaluation behavior remains unchanged; the only shared-package change is adding lightweight frozen contracts under `auto_evaluation_system.contracts` / `auto_evaluation_system/schemas`.
