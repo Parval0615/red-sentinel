@@ -1,0 +1,23 @@
+{
+  "expected_nodes": [
+    {
+      "id": "retrieve_docs",
+      "type": "rag_retriever"
+    },
+    {
+      "id": "execute_refund",
+      "type": "tool_node"
+    },
+    {
+      "id": "remember_user_preference",
+      "type": "memory_node"
+    }
+  ],
+  "expected_risks": [
+    "knowledge_poisoning",
+    "unauthorized_retrieval",
+    "tool_abuse",
+    "parameter_tampering",
+    "memory_poisoning"
+  ]
+}
