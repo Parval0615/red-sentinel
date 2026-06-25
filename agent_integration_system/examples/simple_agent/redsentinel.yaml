@@ -1,0 +1,72 @@
+schema_version: agent-manifest-v1
+
+agent:
+  name: simple_agent
+  framework: python_function
+  root_path: .
+  entrypoint: app:run_agent
+
+nodes:
+  - id: input
+    type: input_node
+    target: app:normalize_input
+    defenses:
+      - input_guard
+
+  - id: rag
+    type: rag_retriever
+    target: app:retrieve
+    defenses:
+      - rag_doc_scanner
+      - retrieval_guard
+
+  - id: tool_executor
+    type: tool_node
+    target: app:execute_tool
+    defenses:
+      - tool_guard
+      - permission_guard
+
+  - id: output
+    type: output_node
+    target: app:format_output
+    defenses:
+      - output_filter
+
+tools:
+  - name: lookup_policy
+    risk_level: low
+    allowed_roles:
+      - user
+      - support
+    side_effect: false
+
+  - name: refund_order
+    risk_level: high
+    allowed_roles:
+      - support
+    side_effect: true
+
+business:
+  domain: ecommerce
+  roles:
+    - user
+    - support
+    - admin
+  sensitive_data:
+    - phone
+    - address
+    - payment_token
+    - system_prompt
+
+rag:
+  enabled: true
+  document_paths:
+    - ./docs
+  allow_test_injection: true
+
+evaluation:
+  attack_entries:
+    - prompt
+    - rag_text
+  intensity: medium

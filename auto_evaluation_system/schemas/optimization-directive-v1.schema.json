@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://redsentinel.local/schemas/optimization-directive-v1.schema.json",
+  "title": "OptimizationDirective",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "directive_id",
+    "agent_name",
+    "source",
+    "target_node_id",
+    "risk_type",
+    "priority",
+    "recommended_actions",
+    "rationale",
+    "evidence_refs"
+  ],
+  "properties": {
+    "schema_version": { "const": "optimization-directive-v1" },
+    "directive_id": { "type": "string", "minLength": 1 },
+    "agent_name": { "type": "string", "minLength": 1 },
+    "source": { "enum": ["evaluation", "attack", "defense", "manual"] },
+    "target_node_id": { "type": "string", "minLength": 1 },
+    "risk_type": { "type": "string", "minLength": 1 },
+    "priority": { "enum": ["low", "medium", "high", "critical"] },
+    "recommended_actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "name", "parameters"],
+        "properties": {
+          "type": { "enum": ["add_defense", "tune_defense", "generate_attack", "manual_review"] },
+          "name": { "type": "string", "minLength": 1 },
+          "mode": { "type": ["string", "null"], "default": null },
+          "parameters": { "type": "object", "default": {} }
+        }
+      }
+    },
+    "rationale": { "type": "string", "minLength": 1 },
+    "evidence_refs": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

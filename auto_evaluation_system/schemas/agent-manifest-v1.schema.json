@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://redsentinel.local/schemas/agent-manifest-v1.schema.json",
+  "title": "AgentManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "agent", "nodes", "business"],
+  "properties": {
+    "schema_version": { "const": "agent-manifest-v1" },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "framework", "root_path", "entrypoint"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "framework": { "enum": ["python_function", "langgraph"] },
+        "root_path": { "type": "string", "minLength": 1 },
+        "entrypoint": { "type": "string", "minLength": 1 }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "target"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "type": {
+            "enum": ["input_node", "rag_retriever", "tool_node", "memory_node", "llm_node", "output_node"]
+          },
+          "target": { "type": "string", "minLength": 1 },
+          "defenses": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "default": []
+          }
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "risk_level"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "risk_level": { "enum": ["low", "medium", "high", "critical"] },
+          "allowed_roles": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "default": []
+          },
+          "side_effect": { "type": "boolean", "default": false }
+        }
+      },
+      "default": []
+    },
+    "business": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domain"],
+      "properties": {
+        "domain": { "type": "string", "minLength": 1 },
+        "roles": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "default": []
+        },
+        "sensitive_data": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "default": []
+        }
+      }
+    },
+    "rag": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "document_paths": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "default": []
+        },
+        "retriever_target": { "type": ["string", "null"], "minLength": 1, "default": null },
+        "allow_test_injection": { "type": "boolean", "default": false }
+      },
+      "default": {}
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "attack_entries": {
+          "type": "array",
+          "items": { "enum": ["prompt", "rag_text"] },
+          "default": ["prompt"]
+        },
+        "intensity": { "enum": ["low", "medium", "high"], "default": "medium" }
+      },
+      "default": {}
+    }
+  }
+}
