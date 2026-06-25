@@ -10,7 +10,7 @@ from agent_integration_system.profile.builder import build_agent_security_profil
 from agent_integration_system.profiling import analyze_source_profile
 from auto_attack_system.evolution import evolve_attack_specs
 from auto_attack_system.ingestion import build_manifest_from_materials, load_agent_materials
-from auto_attack_system.profile_driven import build_profile_driven_attack_plan
+from auto_attack_system.profile_driven import build_profile_driven_attack_plan_from_candidate
 from auto_evaluation_system.product_api.contracts import AgentSecurityReport, Finding, ReportArtifacts
 
 
@@ -79,7 +79,7 @@ paths:
     profile_diff_path = output / "candidate_profile_diff.json"
     _write_json(profile_diff_path, candidate.diff.model_dump(mode="json"))
 
-    attack_plan = build_profile_driven_attack_plan(candidate.candidate_profile)
+    attack_plan = build_profile_driven_attack_plan_from_candidate(candidate)
     targeted_attack_path = output / "targeted_attack_specs.json"
     _write_json(targeted_attack_path, [spec.model_dump(mode="json") for spec in attack_plan.specs])
 

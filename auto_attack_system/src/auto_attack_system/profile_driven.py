@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from agent_integration_system.profiling import CodeProfileCandidate
 from auto_attack_system.attack_spec import AttackIntensity, AttackRiskType, AttackSpec
 from auto_evaluation_system.contracts.agent_security import AgentProfile, AgentProfileNode
 
@@ -99,6 +100,16 @@ def build_profile_driven_attack_plan(profile: AgentProfile) -> ProfileDrivenAtta
     return ProfileDrivenAttackPlan(agent_name=profile.agent_name, targeted_specs=targeted, fallback_specs=fallback)
 
 
+def build_profile_driven_attack_plan_from_candidate(candidate: CodeProfileCandidate) -> ProfileDrivenAttackPlan:
+    plan = build_profile_driven_attack_plan(candidate.candidate_profile)
+    return plan.model_copy(
+        update={
+            "targeted_specs": [_with_candidate_metadata(spec, candidate) for spec in plan.targeted_specs],
+            "fallback_specs": [_with_candidate_metadata(spec, candidate) for spec in plan.fallback_specs],
+        }
+    )
+
+
 def _attack_for_surface(risk_surface: str) -> tuple[AttackRiskType, str, AttackIntensity, str] | None:
     if risk_surface == "tool_tampering":
         return ("tool_tampering", "response_replace", "heavy", "tool tampering is detected")
@@ -131,5 +142,22 @@ def _spec(
             "node_id": node.id,
             "node_type": node.type,
             "source": source,
+            "business_domain": profile.business_domain,
+            "sensitive_data": list(profile.sensitive_data),
+            "tool_names": [tool.name for tool in profile.tools],
+            "high_risk_tools": [tool.name for tool in profile.tools if tool.risk_level in {"high", "critical"} or tool.side_effect],
         },
+    )
+
+
+def _with_candidate_metadata(spec: AttackSpec, candidate: CodeProfileCandidate) -> AttackSpec:
+    return spec.model_copy(
+        update={
+            "metadata": {
+                **spec.metadata,
+                "profile_source": candidate.source,
+                "profile_confidence": candidate.confidence,
+                "profile_llm_used": candidate.llm_used,
+            }
+        }
     )
