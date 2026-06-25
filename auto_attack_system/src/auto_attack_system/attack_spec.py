@@ -6,7 +6,24 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
-AttackRiskType = Literal["memory_poisoning", "tool_tampering", "goal_perturbation"]
+AttackRiskType = Literal[
+    "prompt_injection",
+    "jailbreak",
+    "indirect_prompt_injection",
+    "knowledge_poisoning",
+    "unauthorized_retrieval",
+    "tool_abuse",
+    "privilege_escalation",
+    "parameter_tampering",
+    "memory_poisoning",
+    "cross_session_leakage",
+    "goal_perturbation",
+    "goal_drift",
+    "instruction_hijacking",
+    "pii_leakage",
+    "unsafe_output",
+    "tool_tampering",
+]
 AttackIntensity = Literal["light", "medium", "heavy"]
 AgentFramework = Literal["direct_api", "langgraph", "autogen"]
 
