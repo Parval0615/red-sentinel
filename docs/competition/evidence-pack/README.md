@@ -3,7 +3,7 @@
 本目录保存一份最终离线运行结果的固定副本，便于评委不运行代码也能直接查看 RedSentinel 的红队攻击面覆盖、旁路监督闭环和防御回归证据。原始生成命令为：
 
 ```powershell
-python run.py --evidence-pack --offline
+python run.py --comp4 --offline
 ```
 
 ## 文件说明

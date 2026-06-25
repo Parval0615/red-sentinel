@@ -1,16 +1,19 @@
 # Product Readiness Audit
 
-Date: 2026-06-09
+Date: 2026-06-25
 
 Scope: local e-commerce agent, SDK adapter, product API service, attack pack,
 pilot presets, report generation, dashboard artifact, retest comparison,
-business rules, guard wiring, and regression gates.
+business rules, guard wiring, regression gates, P0 shared contracts, and M0
+agent onboarding.
 
 ## Audit Result
 
 The private single-tenant MVP is ready as a local enterprise pilot package. It
 does not connect to real Taobao, real payment systems, real enterprise data, or
-external attack targets.
+external attack targets. The current roadmap baseline additionally freezes the
+agent onboarding and optimization contracts required for parallel attack,
+defense, and evaluation workstreams.
 
 ## Verified Product Surface
 
@@ -28,6 +31,16 @@ external attack targets.
 - Reports:
   `agent-security-report-v0.1`, local interactive `agent-security-dashboard-v0.1.html`,
   `agent-security-comparison-v0.1`
+- Agent onboarding:
+  `agent_integration_system.cli validate/profile`
+- Shared contracts:
+  `auto_evaluation_system.contracts.AgentManifest`,
+  `auto_evaluation_system.contracts.AgentProfile`,
+  `auto_evaluation_system.contracts.OptimizationDirective`
+- JSON Schema:
+  `auto_evaluation_system/schemas/agent-manifest-v1.schema.json`,
+  `auto_evaluation_system/schemas/agent-profile-v1.schema.json`,
+  `auto_evaluation_system/schemas/optimization-directive-v1.schema.json`
 
 ## Fixed During Audit
 
@@ -39,6 +52,18 @@ external attack targets.
 | Artifact path safety | tenant, agent, and report ids were used in local artifact paths without explicit component validation. | Added safe path component validation before registration, report lookup, tenant storage, and comparison. |
 | Audit evidence | Report artifacts had empty `audit_refs` even when audit events existed in trajectories. | Evaluation service now writes `audit-events.json` and links it from `artifacts.audit_refs`. |
 | Recommendation goal drift | The e-commerce guide allowed commission-biased recommendation requests. | Added Goal Guard bridge for recommendation goal drift and audit logging. |
+
+## Agent Onboarding Audit
+
+- `redsentinel.yaml` uses `schema_version: agent-manifest-v1`.
+- Config loading reuses the frozen `AgentManifest` Pydantic contract.
+- Validation checks root path, `module:callable` entrypoints, node target
+  importability, node ID uniqueness, defense compatibility, RAG source
+  completeness, and tool / evaluation enums.
+- Profile generation emits `agent-profile-v1` with deterministic node risk
+  surfaces.
+- `OptimizationDirective` is available as a frozen contract for the M3 optimizer
+  hub, but M0 does not generate directives at runtime.
 
 ## Business Rule Audit
 
@@ -71,6 +96,8 @@ external attack targets.
 - `python -m pytest auto_evaluation_system/tests -q`: 114 passed, 1 skipped.
 - `python -m pytest auto_evaluation_system/tests/product -q`: 18 passed,
   1 skipped.
+- `python -m pytest agent_integration_system/tests auto_evaluation_system/tests/contracts -q`:
+  14 passed.
 - `python -m pytest -q`: 215 passed, 1 skipped, 2 warnings.
 - `git diff --check`: passed; only Windows CRLF notices.
 
@@ -82,3 +109,6 @@ external attack targets.
   integration or real LLM shopping assistant.
 - Multi-tenant SaaS isolation, billing, user management, and PDF export remain
   future product packages.
+- Automatic architecture discovery, generated attacks, runtime guard injection,
+  optimizer-led hardening, and multi-tenant isolation remain roadmap milestones
+  after P0/M0.

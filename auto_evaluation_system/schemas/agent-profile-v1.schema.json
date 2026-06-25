@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://redsentinel.local/schemas/agent-profile-v1.schema.json",
+  "title": "AgentProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "agent_name",
+    "framework",
+    "root_path",
+    "entrypoint",
+    "business_domain",
+    "nodes",
+    "tools",
+    "attack_entries",
+    "sensitive_data",
+    "rag_enabled"
+  ],
+  "properties": {
+    "schema_version": { "const": "agent-profile-v1" },
+    "agent_name": { "type": "string", "minLength": 1 },
+    "framework": { "enum": ["python_function", "langgraph"] },
+    "root_path": { "type": "string", "minLength": 1 },
+    "entrypoint": { "type": "string", "minLength": 1 },
+    "business_domain": { "type": "string", "minLength": 1 },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "target", "risk_surfaces", "defenses"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "type": {
+            "enum": ["input_node", "rag_retriever", "tool_node", "memory_node", "llm_node", "output_node"]
+          },
+          "target": { "type": "string", "minLength": 1 },
+          "risk_surfaces": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "defenses": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "risk_level", "allowed_roles", "side_effect"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "risk_level": { "enum": ["low", "medium", "high", "critical"] },
+          "allowed_roles": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "side_effect": { "type": "boolean" }
+        }
+      }
+    },
+    "attack_entries": {
+      "type": "array",
+      "items": { "enum": ["prompt", "rag_text"] }
+    },
+    "sensitive_data": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "rag_enabled": { "type": "boolean" }
+  }
+}
