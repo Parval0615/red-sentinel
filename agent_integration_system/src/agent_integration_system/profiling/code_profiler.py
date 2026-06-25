@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -25,6 +25,7 @@ _NODE_KEYWORDS: list[tuple[NodeTypeName, tuple[str, ...]]] = [
 ]
 
 _HIGH_RISK_TOOL_KEYWORDS = ("delete", "payment", "refund", "update", "create", "write", "send")
+_EXCLUDE_DIRS = {".git", ".venv", "venv", "__pycache__", "node_modules", "dist", "build"}
 
 
 class CandidateProfileDiff(BaseModel):
@@ -43,6 +44,11 @@ class CodeProfileCandidate(BaseModel):
     diff: CandidateProfileDiff
     confidence: float
     notes: list[str] = Field(default_factory=list)
+    source: Literal["ast_baseline", "ast_plus_llm", "ast_baseline_fallback"] = "ast_baseline"
+    ast_summary: dict[str, Any] = Field(default_factory=dict)
+    llm_used: bool = False
+    llm_model: str | None = None
+    failed_safe: bool = False
 
 
 class _FunctionEvidence(BaseModel):
@@ -61,11 +67,19 @@ class _FunctionEvidence(BaseModel):
         return f"{self.module}:{self.name}"
 
 
-def analyze_source_profile(root_path: str | Path, base_profile: AgentProfile) -> CodeProfileCandidate:
+def analyze_source_profile(
+    root_path: str | Path,
+    base_profile: AgentProfile | None = None,
+    *,
+    materials: dict[str, Any] | None = None,
+    llm_client: Any = None,
+    enable_llm: bool = False,
+) -> CodeProfileCandidate:
     root = Path(root_path).resolve()
+    active_base_profile = base_profile or _default_base_profile(root)
     functions = _collect_functions(root)
-    existing_targets = {node.target for node in base_profile.nodes}
-    existing_tool_names = {tool.name for tool in base_profile.tools}
+    existing_targets = {node.target for node in active_base_profile.nodes}
+    existing_tool_names = {tool.name for tool in active_base_profile.tools}
 
     added_nodes: list[AgentProfileNode] = []
     added_tools: list[AgentProfileTool] = []
@@ -97,24 +111,55 @@ def analyze_source_profile(root_path: str | Path, base_profile: AgentProfile) ->
                 )
             )
 
-    candidate = base_profile.model_copy(
+    candidate = active_base_profile.model_copy(
         update={
-            "nodes": [*base_profile.nodes, *added_nodes],
-            "tools": [*base_profile.tools, *added_tools],
-            "rag_enabled": base_profile.rag_enabled or any(item.node_type == "rag_retriever" for item in functions),
+            "nodes": [*active_base_profile.nodes, *added_nodes],
+            "tools": [*active_base_profile.tools, *added_tools],
+            "rag_enabled": active_base_profile.rag_enabled or any(item.node_type == "rag_retriever" for item in functions),
         }
     )
     diff = CandidateProfileDiff(
         added_nodes=[node.id for node in added_nodes],
         added_tools=[tool.name for tool in added_tools],
-        changed_rag_enabled=candidate.rag_enabled != base_profile.rag_enabled,
+        changed_rag_enabled=candidate.rag_enabled != active_base_profile.rag_enabled,
         evidence_refs=_dedupe_evidence(evidence_refs),
     )
-    return CodeProfileCandidate(
+    ast_candidate = CodeProfileCandidate(
         candidate_profile=candidate,
         diff=diff,
         confidence=_confidence(functions),
         notes=_notes(root, functions, diff),
+        ast_summary=_ast_summary(root, functions, materials or {}),
+    )
+    if not enable_llm:
+        return ast_candidate
+
+    from agent_integration_system.profiling.llm_profiler import enhance_profile_with_llm
+
+    return enhance_profile_with_llm(
+        ast_candidate,
+        root_path=root,
+        base_profile=active_base_profile,
+        materials=materials or {},
+        llm_client=llm_client,
+    )
+
+
+def _default_base_profile(root: Path) -> AgentProfile:
+    return AgentProfile(
+        agent_name=root.name or "external_agent",
+        framework="python_function",
+        root_path=str(root),
+        entrypoint="redsentinel_adapter:invoke",
+        business_domain="unknown",
+        nodes=[
+            AgentProfileNode(
+                id="input",
+                type="input_node",
+                target="redsentinel_adapter:invoke",
+                risk_surfaces=list(RISK_SURFACES_BY_NODE_TYPE["input_node"]),
+            )
+        ],
     )
 
 
@@ -124,7 +169,7 @@ def _collect_functions(root: Path) -> list[_FunctionEvidence]:
     files = [root] if root.is_file() else sorted(root.rglob("*.py"))
     items: list[_FunctionEvidence] = []
     for path in files:
-        if "__pycache__" in path.parts:
+        if _skip_path(path):
             continue
         module = _module_name(root, path)
         try:
@@ -148,6 +193,10 @@ def _collect_functions(root: Path) -> list[_FunctionEvidence]:
                         )
                     )
     return items
+
+
+def _skip_path(path: Path) -> bool:
+    return any(part in _EXCLUDE_DIRS for part in path.parts)
 
 
 def _classify_function(name: str) -> NodeTypeName | None:
@@ -199,6 +248,41 @@ def _notes(root: Path, functions: list[_FunctionEvidence], diff: CandidateProfil
     if diff.added_nodes:
         notes.append("Candidate nodes were inferred from function names and should be reviewed.")
     return notes
+
+
+def _ast_summary(root: Path, functions: list[_FunctionEvidence], materials: dict[str, Any]) -> dict[str, Any]:
+    files: dict[str, dict[str, Any]] = {}
+    for item in functions:
+        entry = files.setdefault(item.path, {"file": item.path, "functions": []})
+        entry["functions"].append(
+            {
+                "name": item.name,
+                "target": item.target,
+                "inferred_node_type": item.node_type,
+                "line_start": item.line_start,
+                "line_end": item.line_end,
+                "reason": item.reason,
+            }
+        )
+    return {
+        "root_path": str(root),
+        "files": list(files.values()),
+        "materials": materials,
+        "heuristic_findings": [
+            {
+                "id": _node_id(item),
+                "type": item.node_type,
+                "target": item.target,
+                "evidence": {
+                    "file": item.path,
+                    "line_start": item.line_start,
+                    "line_end": item.line_end,
+                    "reason": item.reason,
+                },
+            }
+            for item in functions
+        ],
+    }
 
 
 def _dedupe_evidence(items: list[dict[str, object]]) -> list[dict[str, object]]:
