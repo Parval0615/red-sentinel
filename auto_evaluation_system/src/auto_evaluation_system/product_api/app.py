@@ -32,8 +32,8 @@ def create_app(storage_root: str | Path = "runs/product"):
         return service.get_evaluation(evaluation_id).model_dump(mode="json")
 
     @app.get("/v1/reports/{report_id}")
-    def get_report(report_id: str):
-        return service.get_report(report_id).model_dump(mode="json")
+    def get_report(report_id: str, tenant_id: str | None = None):
+        return service.get_report(report_id, tenant_id=tenant_id).model_dump(mode="json")
 
     @app.post("/v1/comparisons")
     def compare_reports(payload: dict):

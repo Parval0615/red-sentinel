@@ -24,21 +24,20 @@ from auto_evaluation_system.product_api.contracts import (
 )
 from auto_evaluation_system.product_api.presets import get_pilot_preset
 from auto_evaluation_system.product_api.reports import risk_level_from_findings, score_from_findings, write_report_artifacts
-
-_SAFE_COMPONENT = re.compile(r"^[A-Za-z0-9_.-]+$")
+from auto_evaluation_system.product_api.storage import ProductStorage, safe_component
 
 
 class ProductEvaluationService:
     def __init__(self, storage_root: str | Path = "runs/product") -> None:
-        self.storage_root = Path(storage_root)
-        self.storage_root.mkdir(parents=True, exist_ok=True)
+        self.storage = ProductStorage(storage_root)
+        self.storage_root = self.storage.root
         self._registrations: dict[tuple[str, str], AgentRegistration] = {}
         self._adapters: dict[tuple[str, str], AgentAdapter] = {}
         self._evaluations: dict[str, EvaluationStatus] = {}
 
     def register_agent(self, registration: AgentRegistration, adapter: AgentAdapter | None = None) -> AgentRegistration:
-        _safe_component(registration.tenant_id, "tenant_id")
-        _safe_component(registration.agent_id, "agent_id")
+        safe_component(registration.tenant_id, "tenant_id")
+        safe_component(registration.agent_id, "agent_id")
         key = (registration.tenant_id, registration.agent_id)
         if adapter is None and registration.adapter_type == "ecommerce_demo":
             adapter = EcommerceEnterpriseAdapter(session_id=f"{registration.agent_id}-default")
@@ -49,8 +48,8 @@ class ProductEvaluationService:
         if adapter is not None:
             self._adapters[key] = adapter
         self._registrations[key] = registration
-        self._write_json(
-            self._tenant_dir(registration.tenant_id) / "agents" / f"{registration.agent_id}.json",
+        self.storage.write_json(
+            self.storage.agent_path(registration.tenant_id, registration.agent_id),
             registration.model_dump(mode="json"),
         )
         return registration
@@ -59,7 +58,7 @@ class ProductEvaluationService:
         self._require_registration(tenant_id, agent_id)
         session_id = f"sess_{uuid4().hex[:10]}"
         payload = {"session_id": session_id, "tenant_id": tenant_id, "agent_id": agent_id}
-        self._write_json(self._tenant_dir(tenant_id) / "sessions" / f"{session_id}.json", payload)
+        self.storage.write_json(self.storage.session_path(tenant_id, session_id), payload)
         return payload
 
     def run_evaluation(self, request: EvaluationRequest) -> EvaluationStatus:
@@ -94,18 +93,15 @@ class ProductEvaluationService:
             raise ValueError(f"Evaluation not found: {evaluation_id}")
         return self._evaluations[evaluation_id]
 
-    def get_report(self, report_id: str) -> AgentSecurityReport:
-        report_id = _safe_component(report_id, "report_id")
-        matches = list(self.storage_root.glob(f"*/evaluations/{report_id}/agent-security-report-v0.1.json"))
-        if not matches:
-            raise ValueError(f"Report not found: {report_id}")
-        return AgentSecurityReport.model_validate(json.loads(matches[0].read_text(encoding="utf-8")))
+    def get_report(self, report_id: str, *, tenant_id: str | None = None) -> AgentSecurityReport:
+        path = self.storage.find_report_path(report_id, tenant_id=tenant_id)
+        return AgentSecurityReport.model_validate(self.storage.read_json(path))
 
     def compare_reports(self, before_report_id: str, after_report_id: str) -> AgentSecurityComparisonReport:
         before = self.get_report(before_report_id)
         after = self.get_report(after_report_id)
         comparison_id = f"cmp_{uuid4().hex[:10]}"
-        comparison_dir = self._tenant_dir(before.tenant_id) / "comparisons" / comparison_id
+        comparison_dir = self.storage.comparison_dir(before.tenant_id, comparison_id)
         comparison_path = comparison_dir / "agent-security-comparison-v0.1.json"
         markdown_path = comparison_dir / "agent-security-comparison-v0.1.md"
         comparison = build_retest_comparison(
@@ -125,9 +121,15 @@ class ProductEvaluationService:
     def upload_trajectory(self, tenant_id: str, agent_id: str, trajectory: dict[str, Any]) -> dict[str, str]:
         self._require_registration(tenant_id, agent_id)
         upload_id = f"trace_{uuid4().hex[:10]}"
-        path = self._tenant_dir(tenant_id) / "uploaded_trajectories" / f"{upload_id}.json"
-        self._write_json(path, trajectory)
+        path = self.storage.uploaded_trajectory_path(tenant_id, upload_id)
+        self.storage.write_json(path, trajectory)
         return {"trajectory_id": upload_id, "path": str(path)}
+
+    def get_uploaded_trajectory(self, tenant_id: str, trajectory_id: str) -> dict[str, Any]:
+        path = self.storage.uploaded_trajectory_path(tenant_id, trajectory_id)
+        if not path.exists():
+            raise ValueError(f"Trajectory not found: {tenant_id}/{trajectory_id}")
+        return self.storage.read_json(path)
 
     def _run_evaluation(
         self,
@@ -144,7 +146,7 @@ class ProductEvaluationService:
             if missing:
                 raise ValueError(f"Unknown scenario ids: {', '.join(missing)}")
         selected = [item for item in attack_pack.scenarios if not selected_ids or item.scenario_id in selected_ids]
-        evaluation_dir = self._tenant_dir(request.tenant_id) / "evaluations" / evaluation_id
+        evaluation_dir = self.storage.evaluation_dir(request.tenant_id, evaluation_id)
         trajectory_dir = evaluation_dir / "trajectories"
         trajectory_refs: list[str] = []
         audit_events: list[dict[str, Any]] = []
@@ -166,7 +168,7 @@ class ProductEvaluationService:
             passed = clean_decision == "allow" and actual_decision == scenario.expected_decision and pii_ok
 
             trajectory_path = trajectory_dir / f"{scenario.scenario_id}.json"
-            self._write_json(trajectory_path, {"clean": clean, "controlled": controlled})
+            self.storage.write_json(trajectory_path, {"clean": clean, "controlled": controlled})
             trajectory_refs.append(str(trajectory_path))
             audit_events.extend(_collect_audit_events(clean))
             audit_events.extend(_collect_audit_events(controlled))
@@ -201,7 +203,7 @@ class ProductEvaluationService:
         audit_refs: list[str] = []
         if audit_events:
             audit_path = evaluation_dir / "audit-events.json"
-            self._write_json(audit_path, {"events": audit_events})
+            self.storage.write_json(audit_path, {"events": audit_events})
             audit_refs.append(str(audit_path))
         false_positive_rate = clean_blocks / len(selected) if selected else 0.0
         attack_success_rate = attack_successes / len(selected) if selected else 0.0
@@ -273,25 +275,18 @@ class ProductEvaluationService:
         return adapter
 
     def _require_registration(self, tenant_id: str, agent_id: str) -> AgentRegistration:
-        tenant_id = _safe_component(tenant_id, "tenant_id")
-        agent_id = _safe_component(agent_id, "agent_id")
+        tenant_id = safe_component(tenant_id, "tenant_id")
+        agent_id = safe_component(agent_id, "agent_id")
         key = (tenant_id, agent_id)
         registration = self._registrations.get(key)
         if registration is None:
-            path = self._tenant_dir(tenant_id) / "agents" / f"{agent_id}.json"
+            path = self.storage.agent_path(tenant_id, agent_id)
             if path.exists():
-                registration = AgentRegistration.model_validate(json.loads(path.read_text(encoding="utf-8")))
+                registration = AgentRegistration.model_validate(self.storage.read_json(path))
                 self._registrations[key] = registration
         if registration is None:
             raise ValueError(f"Agent not registered: {tenant_id}/{agent_id}")
         return registration
-
-    def _tenant_dir(self, tenant_id: str) -> Path:
-        return self.storage_root / _safe_component(tenant_id, "tenant_id")
-
-    def _write_json(self, path: Path, payload: dict[str, Any]) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
 
 
 def _finding(scenario: EcommerceAttackScenario, description: str, recommendation: str) -> Finding:
@@ -340,7 +335,3 @@ def _extract_order_id(text: str) -> str | None:
     return match.group(1) if match else None
 
 
-def _safe_component(value: str, label: str) -> str:
-    if not _SAFE_COMPONENT.match(value):
-        raise ValueError(f"Unsafe {label}: {value}")
-    return value
