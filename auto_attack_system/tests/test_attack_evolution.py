@@ -47,14 +47,20 @@ def test_evolve_attack_specs_from_report_findings() -> None:
         artifacts=ReportArtifacts(report_path="report.json"),
     )
 
-    result = evolve_attack_specs([_base_spec()], report=report)
+    result = evolve_attack_specs([_base_spec()], report=report, round_index=2, based_on="round_1_report.json", seed=7)
 
     assert len(result.evolved_specs) == 1
     assert result.evolved_specs[0].risk_type == "tool_tampering"
     assert result.evolved_specs[0].intensity == "heavy"
     assert result.evolved_specs[0].metadata["source"] == "self_evolution"
     assert result.evolved_specs[0].metadata["trigger_reason"] == "Finding f1 remained unresolved."
-    assert result.evolution_records[0]["mutation_strategy"] == "chain_hijack"
+    assert result.evolution_records[0]["round"] == 2
+    assert result.evolution_records[0]["based_on"] == "round_1_report.json"
+    assert result.evolution_records[0]["seed"] == 7
+    assert result.evolution_records[0]["weakness"] == "defense_bypass"
+    assert result.evolution_records[0]["previous_attack_id"] == "agent:tool:tool_tampering:baseline"
+    assert result.evolution_records[0]["mutation_strategy"] == "exploit_hardening_chain_hijack_s7_i1"
+    assert result.evolution_records[0]["diff_from_previous"]["strategy"]["from"] == "baseline_probe"
     assert result.evolution_records[0]["expected_effect"] == "increase multi-step tool misuse coverage"
 
 
@@ -109,3 +115,28 @@ def test_evolve_attack_specs_is_deterministic() -> None:
     second = evolve_attack_specs([_base_spec()], report=report)
 
     assert first.model_dump(mode="json") == second.model_dump(mode="json")
+
+
+def test_evolve_attack_specs_changes_strategy_for_different_sources() -> None:
+    directive = OptimizationDirective(
+        directive_id="dir-1",
+        agent_name="agent",
+        source="evaluation",
+        target_node_id="memory",
+        risk_type="memory_poisoning",
+        priority="medium",
+        recommended_actions=[OptimizationAction(type="generate_attack", name="memory_variant")],
+        rationale="Memory poisoning missing.",
+        evidence_refs=["trace-1"],
+    )
+
+    from_directive = evolve_attack_specs([_base_spec()], directives=[directive], seed=3)
+    from_failed_attempt = evolve_attack_specs(
+        [_base_spec()],
+        failed_attempts=[{"risk_type": "memory_poisoning", "node_id": "memory", "attempt_id": "attempt-1"}],
+        seed=3,
+    )
+
+    assert from_directive.evolution_records[0]["weakness"] == "optimizer_directive"
+    assert from_failed_attempt.evolution_records[0]["weakness"] == "failed_attack_attempt"
+    assert from_directive.evolution_records[0]["mutation_strategy"] != from_failed_attempt.evolution_records[0]["mutation_strategy"]
