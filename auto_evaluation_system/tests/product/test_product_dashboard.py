@@ -51,11 +51,12 @@ def test_render_html_dashboard_escapes_report_content() -> None:
 
     html = render_html_dashboard(report)
 
+    assert "RedSentinel" in html
     assert "Agent Security Dashboard" in html
     assert 'id="dashboard-data"' in html
-    assert "function applyFilters" in html
+    assert "function renderScenarios" in html
     assert "runs/product/audit-events.json" in html
-    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+    assert "\\u003cscript\\u003ealert(1)\\u003c/script\\u003e" in html
     assert "<script>alert(1)</script>" not in html
     assert "FAIL" in html
 

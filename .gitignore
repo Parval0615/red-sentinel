@@ -4,12 +4,16 @@ __pycache__/
 .venv/
 venv/
 .env
+.env.local
 *.egg-info/
 dist/
 build/
+.python-version
 
 # Node
 node_modules/
+package-lock.json
+yarn.lock
 
 # ML / Data
 *.pt
@@ -47,3 +51,10 @@ Thumbs.db
 .cache/
 .pytest_cache/
 .ruff_cache/
+
+# TRAE IDE
+.trae/
+
+# Generated HTML (not in frontend/)
+*.html
+!frontend/*.html

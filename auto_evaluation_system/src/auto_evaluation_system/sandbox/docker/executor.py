@@ -1,0 +1,147 @@
+from __future__ import annotations
+
+import json
+import subprocess
+import tempfile
+import time
+from pathlib import Path
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from auto_attack_system.ingestion.deep import DockerTracePlan
+
+
+class TrajectoryArtifacts(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    trajectory_path: str | None = None
+    stdout_path: str | None = None
+    stderr_path: str | None = None
+    audit_path: str | None = None
+    container_id: str | None = None
+    exit_code: int | None = None
+    duration_ms: float = 0.0
+    error: str | None = None
+
+
+class DockerTraceExecutor:
+    def __init__(self, plan: DockerTracePlan, *, output_dir: str | Path | None = None) -> None:
+        self.plan = plan
+        self.output_dir = Path(output_dir) if output_dir else Path(tempfile.mkdtemp())
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+    def run(self) -> TrajectoryArtifacts:
+        start_time = time.time()
+        artifacts = TrajectoryArtifacts()
+        try:
+            result = self._execute_container()
+            artifacts = self._collect_artifacts(result)
+        except Exception as exc:
+            artifacts.error = str(exc)
+        artifacts.duration_ms = (time.time() - start_time) * 1000
+        return artifacts
+
+    def _execute_container(self) -> subprocess.CompletedProcess:
+        args = ["docker", "run", "--rm"]
+
+        if self.plan.network_policy == "disabled":
+            args.append("--network=none")
+        elif self.plan.network_policy == "internal_only":
+            args.append("--network=internal")
+
+        for mount_path in self.plan.read_only_mounts:
+            host_path = Path(mount_path).resolve()
+            container_path = f"/workspace/{host_path.name}"
+            args.extend(["-v", f"{host_path}:{container_path}:ro"])
+
+        args.extend(["-e", f"RED_SENTINEL_AGENT_NAME={self.plan.agent_name}"])
+        args.extend(["-e", "RED_SENTINEL_OUTPUT_DIR=/tmp/artifacts"])
+
+        for target in self.plan.node_targets:
+            args.extend(["-e", f"RED_SENTINEL_NODE_TARGET={target}"])
+
+        args.append(self.plan.docker_image)
+
+        return subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+
+    def _collect_artifacts(self, result: subprocess.CompletedProcess) -> TrajectoryArtifacts:
+        artifacts = TrajectoryArtifacts(exit_code=result.returncode)
+
+        stdout_path = self.output_dir / "stdout.log"
+        stderr_path = self.output_dir / "stderr.log"
+        stdout_path.write_text(result.stdout, encoding="utf-8")
+        stderr_path.write_text(result.stderr, encoding="utf-8")
+        artifacts.stdout_path = str(stdout_path)
+        artifacts.stderr_path = str(stderr_path)
+
+        trajectory_path = self.output_dir / "trajectory.jsonl"
+        if result.stdout:
+            self._parse_stdout_to_trajectory(result.stdout, trajectory_path)
+            artifacts.trajectory_path = str(trajectory_path)
+
+        audit_path = self.output_dir / "audit.log"
+        self._generate_audit_log(audit_path)
+        artifacts.audit_path = str(audit_path)
+
+        return artifacts
+
+    def _parse_stdout_to_trajectory(self, stdout: str, output_path: Path) -> None:
+        lines = stdout.strip().split("\n")
+        events: list[dict[str, Any]] = []
+        for line in lines:
+            if line.strip():
+                try:
+                    events.append(json.loads(line))
+                except json.JSONDecodeError:
+                    events.append({"type": "raw_output", "content": line})
+
+        with output_path.open("w", encoding="utf-8") as f:
+            for event in events:
+                f.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+    def _generate_audit_log(self, output_path: Path) -> None:
+        import hashlib
+        import uuid
+
+        audit_entries = [
+            {
+                "timestamp": time.time(),
+                "event_type": "docker_trace_start",
+                "agent_name": self.plan.agent_name,
+                "docker_image": self.plan.docker_image,
+                "network_policy": self.plan.network_policy,
+                "read_only_mounts": self.plan.read_only_mounts,
+                "trace_id": str(uuid.uuid4()),
+            },
+            {
+                "timestamp": time.time(),
+                "event_type": "docker_trace_complete",
+                "artifacts": [
+                    {"name": name, "hash": self._file_hash(getattr(self.output_dir, f"{name}_path", None))}
+                    for name in ["trajectory", "stdout", "stderr"]
+                ],
+            },
+        ]
+
+        with output_path.open("w", encoding="utf-8") as f:
+            for entry in audit_entries:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+    def _file_hash(self, path: str | None) -> str | None:
+        if not path or not Path(path).exists():
+            return None
+        h = hashlib.sha256()
+        with open(path, "rb") as f:
+            h.update(f.read())
+        return h.hexdigest()
+
+
+def execute_docker_trace(plan: DockerTracePlan, *, output_dir: str | Path | None = None) -> TrajectoryArtifacts:
+    executor = DockerTraceExecutor(plan, output_dir=output_dir)
+    return executor.run()

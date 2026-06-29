@@ -68,4 +68,4 @@ python -m compileall -q agent_integration_system auto_attack_system auto_defense
 - 精准加固误伤率：0%
 - P0/M0 契约：`agent-manifest-v1` / `agent-profile-v1` / `optimization-directive-v1`
 - M0 聚焦测试：14 passed
-- 全量测试：215 passed, 1 skipped, 2 warnings
+- 全量测试：302 collected (300 passed, 1 failed, 1 skipped)（安装 `.[all]` 后）

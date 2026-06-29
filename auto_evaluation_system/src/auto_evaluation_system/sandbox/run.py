@@ -21,6 +21,10 @@ def get_backend(framework: str):
         from auto_evaluation_system.sandbox.backends.autogen import AutoGenBackend
 
         return AutoGenBackend()
+    if framework == "docker":
+        from auto_evaluation_system.sandbox.backends.docker import DockerBackend
+
+        return DockerBackend()
     raise ValueError(f"Unsupported framework: {framework}")
 
 

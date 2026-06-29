@@ -10,6 +10,19 @@ from auto_attack_system.ingestion.materials import AgentMaterials, inspect_mater
 TraceArtifact = Literal["trajectory", "stdout", "stderr", "audit"]
 
 
+class TrajectoryArtifacts(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    trajectory_path: str | None = None
+    stdout_path: str | None = None
+    stderr_path: str | None = None
+    audit_path: str | None = None
+    container_id: str | None = None
+    exit_code: int | None = None
+    duration_ms: float = 0.0
+    error: str | None = None
+
+
 class DockerTracePlan(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -30,6 +43,8 @@ class DeepIngestionPlan(BaseModel):
     source_roots: list[str] = Field(default_factory=list)
     docker_trace_plan: DockerTracePlan | None = None
     material_missing: list[str] = Field(default_factory=list)
+    analysis_targets: list[str] = Field(default_factory=list)
+    skip_static_analysis: bool = False
 
 
 def build_deep_ingestion_plan(materials: AgentMaterials, *, base_dir: str | Path | None = None) -> DeepIngestionPlan:
@@ -55,9 +70,26 @@ def build_deep_ingestion_plan(materials: AgentMaterials, *, base_dir: str | Path
             ],
         )
 
+    analysis_targets = []
+    if materials.integration.type == "source" and source_roots:
+        analysis_targets.extend(source_roots)
+    for node in materials.nodes:
+        if node.target:
+            analysis_targets.append(node.target)
+
     return DeepIngestionPlan(
         agent_name=materials.agent.name,
         source_roots=source_roots,
         docker_trace_plan=docker_plan,
         material_missing=inspection.missing,
+        analysis_targets=analysis_targets,
     )
+
+
+def execute_docker_trace(plan: DockerTracePlan, *, output_dir: str | Path | None = None) -> TrajectoryArtifacts:
+    try:
+        from auto_evaluation_system.sandbox.docker.executor import execute_docker_trace as sandbox_execute
+
+        return sandbox_execute(plan, output_dir=output_dir)
+    except (ImportError, ModuleNotFoundError):
+        return TrajectoryArtifacts(error="Docker sandbox executor not available")

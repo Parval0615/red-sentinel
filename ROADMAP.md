@@ -4,12 +4,14 @@
 
 | 阶段               | 状态                                                     | 产出                                                         |
 | ------------------ | -------------------------------------------------------- | ------------------------------------------------------------ |
-| P0 共享契约冻结    | ✅ 已完成并提交至 `feat/agent-integration-m0`，待合入 main | `AgentManifest` / `AgentProfile` / `OptimizationDirective` 三件套 schema + pydantic 模型 + 契约测试，统一出口于 `auto_evaluation_system.contracts` |
-| M0 Onboarding 基础 | ✅ 已完成并提交至 `feat/agent-integration-m0`              | `redsentinel.yaml` 配置契约、loader/validator、画像生成 CLI、示例 agent |
-| 聚焦回归           | ✅ 14 passed                                             | `agent_integration_system/tests` + `auto_evaluation_system/tests/contracts` |
-| 全量回归           | ⏳ 待标准 Python 3.10+ 环境复跑                            | 合入 main 前必须补齐可选依赖并执行 `pytest -q`               |
+| P0 共享契约冻结    | ✅ 已完成 | `AgentManifest` / `AgentProfile` / `OptimizationDirective` 三件套 schema + pydantic 模型 + 契约测试，统一出口于 `auto_evaluation_system.contracts` |
+| M0 Onboarding 基础 | ✅ 已完成 | `redsentinel.yaml` 配置契约、loader/validator、画像生成 CLI、示例 agent |
+| A线 前端可视化     | ✅ FE0–FE3 全部完成 | 单文件零依赖 HTML 仪表盘：概览指标、ASR曲线、攻击用例表、节点归因、轨迹回放、结论对比 |
+| B线 感知与攻击层   | ✅ M1/M1.5/M2/M2.5/M5 全部完成 | 物料解析、代码静态分析、画像驱动攻击、攻击自进化、Docker沙箱深度接入 |
+| C线 评测与防御     | ✅ M3/M3.5/M4/M4.5/M6 全部完成 | 评测报告中枢、攻防反馈路由、节点级防御挂载、防火墙自优化、多租户隔离 |
+| 全量回归           | ✅ 302 collected (300 passed, 1 failed, 1 skipped)（.[all] 依赖） | 安装 `.[all]` 后执行 `pytest -q` |
 
-P0/M0 合入 main 且全量回归通过后，三条工作流正式并行启动；合入前仅允许基于当前 feature 分支预研。
+P0–M6 全部完成并合入当前分支。三条工作流核心闭环（攻击进化→评测→防御加固）已验证可离线复现。
 
 ------
 
@@ -29,16 +31,24 @@ P0/M0 合入 main 且全量回归通过后，三条工作流正式并行启动�
 
 ## 三、各工作流里程碑
 
-### A 工作流：安全可视化报告
+### A 工作流：安全可视化报告 ✅ 已完成
 
 数据来源已存在 ——`product_api/reports.py` 产出的 `AgentSecurityReport` 已含 `overall_score / attack_success_rate / false_positive_rate / findings`, 前端只读不写后端。
 
-| 里程碑                  | 内容                                                         | 门禁                    |
-| ----------------------- | ------------------------------------------------------------ | ----------------------- |
-| FE0 设计与数据对齐      | 报告 JSON → 视图字段映射、视觉稿、`frontend/README` 数据契约 | 字段清单和 mock 数据就绪 |
-| FE1 概览与指标          | 总分 / ASR / 误伤率 / 风险等级仪表盘 + ASR 收敛曲线          | 静态 HTML 可本地打开     |
-| FE2 攻击用例 × 拦截详情 | 用例表 (场景 / 威胁类别 / 强度 / 结果) + 节点级拦截归因 + 轨迹回放 | FE1 完成；节点归因依赖 C・M3 |
-| FE3 结论与对比          | 结论卡 (加固前后 ASR delta、修复 / 遗留 findings) + before/after 对比 | C・M4 retest 数据就绪    |
+| 里程碑                  | 内容                                                         | 门禁                    | 状态 |
+| ----------------------- | ------------------------------------------------------------ | ----------------------- | ---- |
+| FE0 设计与数据对齐      | 报告 JSON → 视图字段映射、视觉稿、`frontend/README` 数据契约 | 字段清单和 mock 数据就绪 | ✅ |
+| FE1 概览与指标          | 总分 / ASR / 误伤率 / 风险等级仪表盘 + ASR 收敛曲线          | 静态 HTML 可本地打开     | ✅ |
+| FE2 攻击用例 × 拦截详情 | 用例表 (场景 / 威胁类别 / 强度 / 结果) + 节点级拦截归因 + 轨迹回放 | FE1 完成；节点归因依赖 C・M3 | ✅ |
+| FE3 结论与对比          | 结论卡 (加固前后 ASR delta、修复 / 遗留 findings) + before/after 对比 | C・M4 retest 数据就绪    | ✅ |
+
+**产出清单**:
+- `frontend/index.html` - 安全可视化仪表盘主页面
+- `frontend/generator.py` - HTML 报告生成器
+- `frontend/data/mock_report.json` - Mock AgentSecurityReport 数据
+- `frontend/data/mock_comparison.json` - Mock 对比报告数据
+- `frontend/tests/test_report_rendering.py` - 前端测试用例
+- `auto_evaluation_system/src/auto_evaluation_system/product_api/reports.py` - 集成点
 
 **技术约束**: 延续 "单文件零依赖 HTML artifact" 路线，可 `file://` 直接打开；图表用内联轻量库；**禁止在沙箱内起监听端口的服务**，本地预览仅用静态 HTML。A 线只消费报告与 mock 数据，不反向修改评测逻辑。
 

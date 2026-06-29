@@ -42,7 +42,7 @@ class ToolCallPayload(BaseModel):
     arguments: dict[str, Any] = Field(default_factory=dict)
     response: Any
     parent_turn_index: int
-    latency_ms: float
+    latency_ms: float | None = None
 
 
 class MemoryOpPayload(BaseModel):

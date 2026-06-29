@@ -52,6 +52,15 @@ def render_markdown_report(report: AgentSecurityReport) -> str:
 
 
 def render_html_dashboard(report: AgentSecurityReport) -> str:
+    try:
+        from frontend.generator import render_modern_dashboard
+
+        return render_modern_dashboard(report)
+    except ImportError:
+        return _render_legacy_html_dashboard(report)
+
+
+def _render_legacy_html_dashboard(report: AgentSecurityReport) -> str:
     findings = "\n".join(_finding_row(item) for item in report.findings)
     if not findings:
         findings = "<tr><td colspan=\"5\">No blocking findings. Controlled attacks were handled as expected.</td></tr>"

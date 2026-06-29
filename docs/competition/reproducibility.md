@@ -12,24 +12,32 @@
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
+pip install -e ".[all,dev]"
 ```
+
+> **注意**：全量测试通过需安装 `.[all,dev]`（包含 attack/defense/evaluation/product 全部可选依赖）。若只安装 `.[dev]`，核心竞赛命令仍可运行，但部分测试会因缺少可选依赖而跳过。
 
 ## 竞赛主链路复现
 
 ```powershell
-python run.py --demo
-python run.py --comp2 --offline
-python run.py --comp3 --offline
-python run.py --comp4 --offline
+python run-demo.py
+python run-comp2.py --offline
+python run-comp3.py --offline
+python run-comp4.py --offline
+```
+
+一键复现所有实验：
+
+```powershell
+bash reproduce-all.sh
 ```
 
 预期摘要：
 
-- `--demo`：生成 trace、report、guard decisions 和 audit refs，证明旁路监督闭环跑通。
-- `--comp2 --offline`：攻击面覆盖 7/7，reflection gain +5。
-- `--comp3 --offline`：ASR 44% → 0%，精准加固误伤率 0%。
-- `--comp4 --offline`：输出收敛曲线、损伤雷达图、消融实验和数据卡。
+- `run-demo.py`：生成 trace、report、guard decisions 和 audit refs，证明旁路监督闭环跑通。
+- `run-comp2.py --offline`：攻击面覆盖 7/7，reflection gain +5。
+- `run-comp3.py --offline`：ASR 44% → 0%，精准加固误伤率 0%。
+- `run-comp4.py --offline`：输出收敛曲线、损伤雷达图、消融实验和数据卡。
 
 ## 产品评估 demo
 
@@ -63,7 +71,7 @@ python -m pytest agent_integration_system/tests auto_evaluation_system/tests/con
 python -m compileall -q agent_integration_system auto_attack_system auto_defense_system auto_evaluation_system sdk
 ```
 
-当前固定验证结果：`215 passed, 1 skipped, 2 warnings`。
+当前固定验证结果：`302 collected (300 passed, 1 failed, 1 skipped)`（安装 `.[all]` 全量依赖后）；最小依赖下约 222 passed。
 
 ## 运行产物位置
 

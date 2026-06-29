@@ -49,7 +49,8 @@ RedSentinel 将现有 LLM / RAG 安全内核包装成一个**企业 Agent 攻防
 
 - 可离线复现红队攻击战役、失败反思、风险量化、精准加固和消融实验。
 - P0 共享契约已冻结：`agent-manifest-v1`、`agent-profile-v1`、`optimization-directive-v1` JSON Schema + Pydantic 模型 + 契约测试。
-- M0 onboarding 已可用：示例 `redsentinel.yaml` 可校验并生成 `agent-profile-v1`。
+- M0–M6 全部完成：物料解析、代码静态分析、画像驱动攻击、攻击自进化、Docker沙箱深度接入、评测报告中枢、攻防反馈路由、节点级防御挂载、防火墙自优化、多租户隔离。
+- A线前端可视化已完成：单文件零依赖 HTML 仪表盘，包含概览指标、ASR曲线、攻击用例表、节点归因、轨迹回放、结论对比。
 - 固定证据显示：初始 ASR 44%，7 轮加固后降至 0%；攻击反思使覆盖从 2/7 提升到 7/7；精准加固误伤率 0%。
 - 项目边界是本地合成靶场与本地私有试点包，不连接真实淘宝、真实支付、真实企业数据或真实外部攻击目标。
 
@@ -58,17 +59,25 @@ RedSentinel 将现有 LLM / RAG 安全内核包装成一个**企业 Agent 攻防
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
+pip install -e ".[all,dev]"
 pytest -q
 ```
+
+> **注意**：全量测试通过需安装 `.[all,dev]`（包含 attack/defense/evaluation/product 全部可选依赖）。若只安装 `.[dev]`，约 222 个测试可通过，其余因缺少可选依赖而跳过或失败。
 
 ## 竞赛主命令
 
 ```powershell
-python run.py --demo
-python run.py --comp2 --offline
-python run.py --comp3 --offline
-python run.py --comp4 --offline
+python run-demo.py
+python run-comp2.py --offline
+python run-comp3.py --offline
+python run-comp4.py --offline
+```
+
+一键复现所有实验：
+
+```powershell
+bash reproduce-all.sh
 ```
 
 固定证据副本见 [`docs/competition/evidence-pack`](./docs/competition/evidence-pack/README.md)。

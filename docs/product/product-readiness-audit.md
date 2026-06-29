@@ -98,7 +98,7 @@ defense, and evaluation workstreams.
   1 skipped.
 - `python -m pytest agent_integration_system/tests auto_evaluation_system/tests/contracts -q`:
   14 passed.
-- `python -m pytest -q`: 215 passed, 1 skipped, 2 warnings.
+- `python -m pytest -q`: 302 collected (300 passed, 1 failed, 1 skipped) with `.[all]`; ~222 passed with minimal deps.
 - `git diff --check`: passed; only Windows CRLF notices.
 
 ## Remaining Product Boundary
