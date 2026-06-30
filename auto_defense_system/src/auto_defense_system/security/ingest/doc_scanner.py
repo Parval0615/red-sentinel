@@ -8,12 +8,11 @@ L2（检索时）：级联策略——仅L1标记可疑的chunk调LLM classify()
 """
 
 import re
-import base64
 import unicodedata
 
 # Reuse existing firewall components
 from auto_defense_system.security.firewall.classifier import (
-    _normalize_input, COMPOUND_PAIRS, _check_compound_pairs, classify
+    _normalize_input, _check_compound_pairs, classify
 )
 from auto_defense_system.security.firewall.input_guard import check_malicious_input
 

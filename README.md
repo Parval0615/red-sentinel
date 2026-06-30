@@ -56,14 +56,80 @@ RedSentinel 将现有 LLM / RAG 安全内核包装成一个**企业 Agent 攻防
 
 ## 快速开始
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e ".[all,dev]"
-pytest -q
+推荐使用 Python 3.10；当前验收解释器为 `/Users/bytedance/.pyenv/versions/3.10.14/bin/python`。
+
+```bash
+PY=/Users/bytedance/.pyenv/versions/3.10.14/bin/python
+$PY -m pip install -e ".[all,dev]"
+$PY -m pytest -q
 ```
 
 > **注意**：全量测试通过需安装 `.[all,dev]`（包含 attack/defense/evaluation/product 全部可选依赖）。若只安装 `.[dev]`，约 222 个测试可通过，其余因缺少可选依赖而跳过或失败。
+
+## 本地产品运行与认证验收
+
+前端会请求同源 `/v1/...` 接口，建议用 Product API 同时托管 API 和 `frontend/index.html`，不要直接用 `file://` 打开产品工作区。
+
+安装产品依赖：
+
+```bash
+PY=/Users/bytedance/.pyenv/versions/3.10.14/bin/python
+$PY -m pip install -e ".[product]"
+```
+
+认证配置读取以下环境变量：
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `RED_SENTINEL_JWT_SECRET` | `red-sentinel-development-jwt-secret-do-not-use-in-production` | JWT HS256 签名密钥。开发环境可省略并使用该默认值；生产环境必须设置强随机密钥。 |
+| `RED_SENTINEL_ENV` | `development` | 设为 `production` 或 `prod` 时，会拒绝默认密钥或长度小于 32 的密钥。 |
+| `RED_SENTINEL_ACCESS_TOKEN_EXPIRE_MINUTES` | `60` | 普通登录和注册后 token 有效期，单位分钟。 |
+| `RED_SENTINEL_REMEMBER_ME_EXPIRE_MINUTES` | `43200` | 勾选“记住登录状态”后的 token 有效期，默认 30 天。 |
+
+当前 JWT 签发和校验使用项目内 `product_api.auth_service` 的标准库 HMAC-SHA256 实现，不需要 PyJWT 或 python-jose。生产或共享环境启动前应显式设置密钥：
+
+```bash
+export RED_SENTINEL_JWT_SECRET="replace-with-a-random-secret-at-least-32-chars"
+```
+
+启动 Product API：
+
+```bash
+PY=/Users/bytedance/.pyenv/versions/3.10.14/bin/python
+export PYTHONPATH="agent_integration_system/src:auto_attack_system/src:auto_defense_system/src:auto_evaluation_system/src:sdk/python/src"
+$PY -m uvicorn auto_evaluation_system.product_api.app:create_app --factory --host 127.0.0.1 --port 8000
+```
+
+打开 `http://127.0.0.1:8000/` 后按顺序验收认证与产品链路：
+
+1. `首页`：未登录访问 `/` 看到公开 Landing Page，可进入“立即注册”或“登录使用”。
+2. `注册`：提交用户名、邮箱和密码后，后端写入 JSON 用户记录并返回 JWT；前端进入登录态并跳转工作区。
+3. `登录`：账号可用用户名或邮箱；未勾选“记住登录状态”时 token 写入 `sessionStorage`，勾选时写入 `localStorage`；前端不保存明文密码。
+4. `产品工作区`：Agent 接入、dashboard、评测、报告、next-round 和日志请求都会携带 `Authorization: Bearer <token>`；后端用当前用户名绑定租户边界，覆盖前端传入的 `tenant_id`。
+5. `退出登录`：调用 `/v1/auth/logout` 后清理浏览器 token，页面回到公开首页，未登录访问工作区会被引导到登录页。
+
+登录后可继续验收原产品流程：
+
+1. `Agent 接入`：选择 `source`、`docker` 或 `api` 之一并提交。
+2. `去评测`：选择 `ecommerce-security-v0.1` 和版本，启动 benchmark。
+3. `是否进行下轮攻击`：基于完成报告生成 next-round benchmark 版本。
+4. `查日志`：查看 evaluation log、prompt、RAG 文档、目标节点和绕过节点。
+5. `报告查看`：评测完成后页面会刷新真实 report 摘要；JSON/Markdown/HTML artifacts 写入 `runs/product/<username>/evaluations/<eval_id>/`。
+
+局域网访问时将监听地址改为 `0.0.0.0`，再从同一网络设备打开 `http://<本机局域网 IP>:8000/`：
+
+```bash
+$PY -m uvicorn auto_evaluation_system.product_api.app:create_app --factory --host 0.0.0.0 --port 8000
+```
+
+局域网或共享演示不要使用默认 JWT 密钥；确认本机防火墙允许 8000 端口，并优先保持前端和 API 同源访问。
+
+本轮验收命令：
+
+```bash
+/Users/bytedance/.pyenv/versions/3.10.14/bin/python -m pytest frontend/tests/test_report_rendering.py
+/Users/bytedance/.pyenv/versions/3.10.14/bin/python -m ruff check . --select F401,F841,F821,F811
+```
 
 ## 竞赛主命令
 
@@ -94,6 +160,22 @@ $env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; pytho
 - `agent-manifest-v1`: 企业提供的 Agent 接入声明。
 - `agent-profile-v1`: 攻击、防御、评测共享的标准画像。
 - `optimization-directive-v1`: 评测中枢向攻击侧和防御侧输出的优化指令。
+
+当前产品页支持三种 Agent 接入物料：
+
+- `source`：上传源码包、配置或说明，用于生成接入画像；不等于已对真实源码做自动 guard 注入。
+- `docker`：上传镜像说明、compose 或运行配置，用于生成接入画像；不等于已接入真实外部容器 runtime adapter。
+- `api`：填写 HTTP endpoint；提供 API key 时使用 `hosted_api` 进程内 adapter，否则可走无密钥 demo。
+
+`hosted_api` 的 API key 不写入 JSON、material、profile 或 report。持久化数据只保留 `has_api_key`、`masked_api_key` 和 `local://.../api_key` 形式的 `secret_ref`；进程重启后需重新提交密钥。`offline_trace` 始终使用内置 `EcommerceEnterpriseAdapter` 电商 demo 路径，用来跑完整产品流程，不代表已经调用外部商业 Agent。
+
+## 常见问题
+
+- Benchmark 显示 incomplete：通常是必测节点缺少 attack/clean 用例或结果数量不匹配；这类 report 不进入 dashboard summary 指标。
+- next-round 不可用：需要先有完成态 evaluation，并能通过 `report_id` 读取报告。
+- 日志为空：确认 Agent 已注册、至少完成一轮评测，并且日志请求带有同一 `tenant_id`。
+- Docker bounded capture：Docker sandbox 会限制 stdout/stderr 捕获大小，避免异常输出撑爆内存；这不改变 onboarding 的物料边界。
+- AutoGen：当前仅保留 scaffold 声明，不是可运行 sandbox backend。
 
 ## 边界
 

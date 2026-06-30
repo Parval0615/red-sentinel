@@ -205,6 +205,20 @@ def render_modern_dashboard(report: AgentSecurityReport) -> str:
     const reportData = JSON.parse(document.getElementById('dashboard-data').textContent);
     let currentTrajectory = [], currentStep = 0, isPlaying = false, playInterval = null;
 
+    function escapeHtml(value) {{
+      return String(value ?? '').replace(/[&<>"']/g, char => ({{
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }}[char]));
+    }}
+
+    function safeCssToken(value, fallback = '') {{
+      return String(value ?? '').toLowerCase().replace(/[^a-z0-9_-]/g, '') || fallback;
+    }}
+
     function render() {{
       renderMetrics(); renderASRChart(); renderScenarios(); renderFindings();
     }}
@@ -233,15 +247,15 @@ def render_modern_dashboard(report: AgentSecurityReport) -> str:
 
     function renderScenarios() {{
       const tbody = document.getElementById('scenarios-body');
-      tbody.innerHTML = reportData.scenario_results.map((s, i) => `
+      tbody.innerHTML = (reportData.scenario_results || []).map((s, i) => `
         <tr class="expandable-row" data-index="${{i}}" onclick="toggleDetails(${{i}})">
           <td><span class="status-badge ${{s.passed?'pass':'fail'}}">${{s.passed?'PASS':'FAIL'}}</span></td>
-          <td><code>${{s.scenario_id}}</code></td>
-          <td>${{s.category}}</td>
-          <td><span class="severity-badge ${{s.severity}}">${{s.severity.toUpperCase()}}</span></td>
-          <td><span class="decision-badge ${{s.expected_decision}}">${{s.expected_decision.toUpperCase()}}</span></td>
-          <td><span class="decision-badge ${{s.actual_decision}}">${{s.actual_decision.toUpperCase()}}</span></td>
-          <td>${{s.business_impact}}</td>
+          <td><code>${{escapeHtml(s.scenario_id || '--')}}</code></td>
+          <td>${{escapeHtml(s.category || '--')}}</td>
+          <td><span class="severity-badge ${{safeCssToken(s.severity, 'medium')}}">${{escapeHtml(String(s.severity || '--').toUpperCase())}}</span></td>
+          <td><span class="decision-badge ${{safeCssToken(s.expected_decision)}}">${{escapeHtml(String(s.expected_decision || '--').toUpperCase())}}</span></td>
+          <td><span class="decision-badge ${{safeCssToken(s.actual_decision)}}">${{escapeHtml(String(s.actual_decision || '--').toUpperCase())}}</span></td>
+          <td>${{escapeHtml(s.business_impact || '--')}}</td>
           <td><button onclick="event.stopPropagation(); openTrajectory(${{i}})" style="background:none;border:none;color:#2563eb;cursor:pointer;text-decoration:underline;">View</button></td>
         </tr>
         <tr id="details-${{i}}"><td colspan="8"><div class="details-panel" id="details-panel-${{i}}"></div></td></tr>
@@ -256,7 +270,9 @@ def render_modern_dashboard(report: AgentSecurityReport) -> str:
         const status = document.getElementById('status-filter').value;
         document.querySelectorAll('.expandable-row').forEach(row => {{
           const s = reportData.scenario_results[row.dataset.index];
-          const match = (!search || s.scenario_id.toLowerCase().includes(search) || s.category.toLowerCase().includes(search)) &&
+          const scenarioId = String(s.scenario_id || '').toLowerCase();
+          const category = String(s.category || '').toLowerCase();
+          const match = (!search || scenarioId.includes(search) || category.includes(search)) &&
                         (!severity || s.severity === severity) &&
                         (!status || (status === 'pass' && s.passed) || (status === 'fail' && !s.passed));
           row.style.display = match ? '' : 'none';
@@ -275,22 +291,24 @@ def render_modern_dashboard(report: AgentSecurityReport) -> str:
 
     function renderNodeAttribution(panel, i) {{
       const attr = reportData.scenario_results[i].node_attribution || {{}};
+      const attackPath = attr.attack_path || [];
+      const interceptedNode = attr.intercepted_node || '';
       let html = '';
-      if (attr.attack_path) {{
+      if (attackPath.length) {{
         html += '<div class="attack-path">';
-        attr.attack_path.forEach((node, j) => {{
-          html += `<div class="path-node ${{node === attr.intercepted_node ? 'intercepted' : (attr.intercepted_node ? j < attr.attack_path.indexOf(attr.intercepted_node) ? 'passed' : '' : 'passed')}}">${{node}}</div>`;
-          if (j < attr.attack_path.length - 1) html += '<span class="path-arrow">→</span>';
+        attackPath.forEach((node, j) => {{
+          html += `<div class="path-node ${{node === interceptedNode ? 'intercepted' : (interceptedNode ? j < attackPath.indexOf(interceptedNode) ? 'passed' : '' : 'passed')}}">${{escapeHtml(node)}}</div>`;
+          if (j < attackPath.length - 1) html += '<span class="path-arrow">→</span>';
         }});
         html += '</div>';
       }}
-      html += attr.intercepted_node ? `<p><strong>✅ Intercepted:</strong> ${{attr.intercepted_node}} (${{attr.defense_type || 'unknown'}})</p>` : '<p><strong>❌ Not intercepted!</strong></p>';
+      html += interceptedNode ? `<p><strong>✅ Intercepted:</strong> ${{escapeHtml(interceptedNode)}} (${{escapeHtml(attr.defense_type || 'unknown')}})</p>` : '<p><strong>❌ Not intercepted!</strong></p>';
       panel.innerHTML = html;
     }}
 
     function renderFindings() {{
-      document.getElementById('findings-body').innerHTML = reportData.findings.map(f => `
-        <tr><td><span class="severity-badge ${{f.severity}}">${{f.severity.toUpperCase()}}</span></td><td><code>${{f.scenario_id}}</code></td><td>${{f.title}}</td><td>${{f.business_impact}}</td><td>${{f.recommendation}}</td></tr>
+      document.getElementById('findings-body').innerHTML = (reportData.findings || []).map(f => `
+        <tr><td><span class="severity-badge ${{safeCssToken(f.severity, 'medium')}}">${{escapeHtml(String(f.severity || '--').toUpperCase())}}</span></td><td><code>${{escapeHtml(f.scenario_id || '-')}}</code></td><td>${{escapeHtml(f.title || '-')}}</td><td>${{escapeHtml(f.business_impact || '-')}}</td><td>${{escapeHtml(f.recommendation || '-')}}</td></tr>
       `).join('');
     }}
 
@@ -309,13 +327,14 @@ def render_modern_dashboard(report: AgentSecurityReport) -> str:
       if (!currentTrajectory.length) {{ content.innerHTML = '<p>No data</p>'; return; }}
       document.getElementById('replay-progress').textContent = `Step ${{currentStep+1}} / ${{currentTrajectory.length}}`;
       const s = currentTrajectory[currentStep];
+      const stepType = s.step_type || 'unknown';
+      const stepBody = stepType === 'llm_inference' ?
+        `<p><strong>Model:</strong> ${{escapeHtml(s.model || '-')}}</p><p><strong>Output:</strong> ${{escapeHtml(s.output_content || '(empty)')}}</p>` :
+        `<p><strong>Tool:</strong> ${{escapeHtml(s.name || '-')}}</p><p><strong>Args:</strong> ${{escapeHtml(JSON.stringify(s.arguments || {{}}))}}</p><p><strong>Response:</strong> ${{escapeHtml(JSON.stringify(s.response || {{}}))}}</p>`;
       content.innerHTML = `
-        <div class="trajectory-step ${{s.step_type}}">
-          <div class="step-header"><span class="step-type ${{s.step_type}}">${{s.step_type.replace('_',' ')}}</span><span class="step-time">${{s.timestamp}}</span></div>
-          <div class="step-content">${{s.step_type === 'llm_inference' ? 
-            `<p><strong>Model:</strong> ${{s.model}}</p><p><strong>Output:</strong> ${{s.output_content || '(empty)'}}</p>` :
-            `<p><strong>Tool:</strong> ${{s.name}}</p><p><strong>Args:</strong> ${{JSON.stringify(s.arguments)}}</p><p><strong>Response:</strong> ${{JSON.stringify(s.response)}}</p>`
-          }}</div>
+        <div class="trajectory-step ${{safeCssToken(stepType, 'unknown')}}">
+          <div class="step-header"><span class="step-type ${{safeCssToken(stepType, 'unknown')}}">${{escapeHtml(String(stepType).replace('_',' '))}}</span><span class="step-time">${{escapeHtml(s.timestamp || '')}}</span></div>
+          <div class="step-content">${{stepBody}}</div>
         </div>
       `;
       document.getElementById('btn-prev').disabled = currentStep === 0;

@@ -13,7 +13,7 @@
 | `llm/vcr_client.py` | Cassette 回放 LLM（按 turn index） |
 | `replay.py` | `CassetteStore` 加载 YAML cassette |
 | `tools/` | Mock Tool Registry |
-| `backends/` | Direct API / LangGraph / AutoGen(stub) |
+| `backends/` | Direct API / LangGraph / Docker；AutoGen scaffold 仅保留内部占位，不是可运行 scenario framework |
 | `trajectory.py` | `TrajectoryBuilder` 兼容壳（实际构建逻辑已迁移到 `auto_evaluation_system.telemetry.TrajectoryRecorder`） |
 | `run.py` | `run_scenario(path)` 入口 |
 

@@ -20,7 +20,6 @@ RedSentinel · 灵哨 - COMP1 旁路监督闭环 Demo
 from __future__ import annotations
 
 import sys
-from datetime import datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent

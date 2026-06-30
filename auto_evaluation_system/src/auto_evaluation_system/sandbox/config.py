@@ -13,10 +13,11 @@ class ReproducibilityConfig(BaseModel):
 
 
 class AgentConfig(BaseModel):
-    framework: Literal["direct_api", "langgraph", "autogen"]
+    framework: Literal["direct_api", "langgraph", "docker"]
     goal: str
     system_prompt: str
     model: str = "gpt-4o-mini"
+    framework_config: dict[str, Any] = Field(default_factory=dict)
 
 
 class MemoryConfig(BaseModel):

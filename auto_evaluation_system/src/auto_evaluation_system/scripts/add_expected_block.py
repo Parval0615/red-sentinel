@@ -2,7 +2,7 @@ from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 """为 Garak CSV 添加 expected_block 列 + 修正检测类别"""
 
 import csv
-from collections import defaultdict, Counter
+from collections import defaultdict
 
 CSV_PATH = "data/benchmarks/garak_full_20260512_155931.csv"
 OUT_PATH = "data/benchmarks/garak_full_20260512_155931_v2.csv"

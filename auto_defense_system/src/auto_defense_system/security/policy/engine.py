@@ -365,7 +365,6 @@ def check_policy(tool_name: str, tool_args: dict, state: dict = None) -> tuple:
     rate_limits = rules.get("rate_limits", {})
     if state:
         tool_call_count = state.get("tool_call_count", 0)
-        max_per_turn = rate_limits.get("max_calls_per_turn", 3)
         max_total = rate_limits.get("max_total_calls_per_session", 10)
 
         if tool_call_count >= max_total:

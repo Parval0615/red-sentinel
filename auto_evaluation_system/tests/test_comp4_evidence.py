@@ -14,7 +14,6 @@ from pathlib import Path
 
 from auto_attack_system.attack_agent import AttackAgent
 from auto_attack_system.llm_client import SharedLLMClient
-from auto_attack_system.threat_taxonomy import SyntheticTarget
 
 from auto_evaluation_system.comp4_evidence import run_comp4_demo
 
@@ -54,7 +53,7 @@ def test_ablation_proves_each_agent_indispensable(tmp_path: Path) -> None:
 
 
 def test_demo_writes_full_evidence_bundle(tmp_path: Path) -> None:
-    result = run_comp4_demo(runs_root=tmp_path, timestamp="t", force_offline=True)
+    run_comp4_demo(runs_root=tmp_path, timestamp="t", force_offline=True)
     run_dir = tmp_path / "t"
     for name in (
         "convergence.json",

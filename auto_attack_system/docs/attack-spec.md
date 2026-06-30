@@ -30,7 +30,7 @@
 | `clean_scenario` | repo-relative clean scenario path |
 | `controlled_scenario` | repo-relative controlled scenario path |
 | `seed` | paired replay seed |
-| `framework` | paired backend framework |
+| `framework` | paired runnable backend framework；AutoGen 当前仅为 scaffold，不可写入公开 manifest |
 | `controlled_label` | 与 controlled scenario 的 `injection.label` 一致 |
 
 ## 边界

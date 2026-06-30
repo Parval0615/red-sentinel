@@ -18,9 +18,9 @@ def get_backend(framework: str):
 
         return LangGraphBackend()
     if framework == "autogen":
-        from auto_evaluation_system.sandbox.backends.autogen import AutoGenBackend
-
-        return AutoGenBackend()
+        raise ValueError(
+            "AutoGen backend is scaffold-only and is not a runnable sandbox framework."
+        )
     if framework == "docker":
         from auto_evaluation_system.sandbox.backends.docker import DockerBackend
 

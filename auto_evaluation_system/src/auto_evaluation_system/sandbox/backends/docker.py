@@ -1,18 +1,23 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from typing import Any
 
 from auto_evaluation_system.events.models import StepEvent, StepType, ToolCallPayload, LLMInferencePayload
 from auto_evaluation_system.sandbox.backends.base import utcnow
+from auto_evaluation_system.sandbox.docker.capture import DEFAULT_MAX_OUTPUT_BYTES, run_bounded_capture
 from auto_evaluation_system.sandbox.session import SandboxSession
 
 
 class DockerBackend:
     framework = "docker"
 
+    def __init__(self, *, max_output_bytes: int = DEFAULT_MAX_OUTPUT_BYTES) -> None:
+        self.max_output_bytes = max_output_bytes
+        self.last_error: str | None = None
+
     def run(self, session: SandboxSession) -> list[StepEvent]:
+        self.last_error = None
         config = session.config
         docker_image = config.agent.framework_config.get("docker_image", "")
         if not docker_image:
@@ -27,17 +32,22 @@ class DockerBackend:
 
         args.append(docker_image)
 
-        try:
-            result = subprocess.run(
-                args,
-                capture_output=True,
-                text=True,
-                timeout=300,
-            )
-        except (subprocess.TimeoutExpired, TimeoutError):
+        result = run_bounded_capture(
+            args,
+            timeout=getattr(getattr(config, "runner", None), "timeout_seconds", 300),
+            max_output_bytes=self.max_output_bytes,
+        )
+        if result.error:
+            self.last_error = result.error
             return []
 
-        return self._parse_output_to_events(result.stdout, result.stderr)
+        events = self._parse_output_to_events(result.stdout_text(), result.stderr_text())
+        emitter = getattr(session, "emitter", None)
+        emit = getattr(emitter, "emit", None)
+        if callable(emit):
+            for event in events:
+                emit(event)
+        return events
 
     def _parse_output_to_events(self, stdout: str, stderr: str) -> list[StepEvent]:
         events: list[StepEvent] = []

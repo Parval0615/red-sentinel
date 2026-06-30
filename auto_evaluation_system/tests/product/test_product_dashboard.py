@@ -68,6 +68,7 @@ def test_write_report_artifacts_writes_dashboard(tmp_path: Path) -> None:
         benchmark="ecommerce-security-v0.1",
         overall_score=100,
         risk_level="low",
+        summary={"api_key": "sk-raw-secret", "masked_api_key": "sk-r...cret"},
         artifacts=ReportArtifacts(
             report_path=str(tmp_path / "agent-security-report-v0.1.json"),
             markdown_path=str(tmp_path / "agent-security-report-v0.1.md"),
@@ -85,3 +86,5 @@ def test_write_report_artifacts_writes_dashboard(tmp_path: Path) -> None:
     assert (tmp_path / "agent-security-report-v0.1.json").exists()
     assert (tmp_path / "agent-security-report-v0.1.md").exists()
     assert (tmp_path / "agent-security-dashboard-v0.1.html").exists()
+    assert "sk-raw-secret" not in (tmp_path / "agent-security-report-v0.1.json").read_text(encoding="utf-8")
+    assert "sk-raw-secret" not in (tmp_path / "agent-security-dashboard-v0.1.html").read_text(encoding="utf-8")

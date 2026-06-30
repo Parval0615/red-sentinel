@@ -14,7 +14,6 @@ Saves results to data/pdf_parser_comparison_{timestamp}.json.
 """
 import os
 import re
-import sys
 import json
 import time
 import tempfile
@@ -26,7 +25,7 @@ from difflib import SequenceMatcher
 # PDF generation (reportlab)
 # ---------------------------------------------------------------------------
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.enums import TA_LEFT
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.pdfbase import pdfmetrics

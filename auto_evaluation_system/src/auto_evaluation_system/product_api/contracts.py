@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 
 RiskLevel = Literal["low", "medium", "high", "critical"]
@@ -10,6 +11,133 @@ EvaluationMode = Literal["sdk", "hosted_api", "offline_trace"]
 EvaluationState = Literal["queued", "running", "completed", "failed"]
 FindingComparisonStatus = Literal["resolved", "new", "persisted"]
 ScenarioComparisonStatus = Literal["improved", "regressed", "unchanged_pass", "unchanged_fail"]
+IntegrationType = Literal["source", "docker", "api"]
+AgentStatus = Literal["created", "profiling", "benchmarking", "ready", "failed"]
+BenchmarkCaseType = Literal["attack", "clean"]
+Decision = Literal["allow", "block"]
+ReportStatus = Literal["complete", "incomplete"]
+OnboardingStageName = Literal["agent_record", "profile_analysis", "initial_benchmark", "default_defense_mount"]
+OnboardingStageStatus = Literal["completed", "failed", "skipped"]
+AuthUserStatus = Literal["active", "disabled"]
+AuthErrorCode = Literal[
+    "invalid_auth_request",
+    "invalid_credentials",
+    "auth_required",
+    "token_invalid",
+    "token_expired",
+    "user_conflict",
+    "user_disabled",
+    "auth_service_error",
+]
+
+
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def masked_api_key(value: str | None) -> str | None:
+    if not value:
+        return None
+    if len(value) <= 8:
+        return "*" * len(value)
+    return f"{value[:4]}...{value[-4:]}"
+
+
+def _has_text(value: str | None) -> bool:
+    return bool(value and value.strip())
+
+
+class AuthRegisterRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["auth-register-request-v0.1"] = "auth-register-request-v0.1"
+    username: str = Field(min_length=3, max_length=64, pattern=r"^[A-Za-z0-9_.-]+$")
+    email: str = Field(min_length=3, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    password: SecretStr = Field(min_length=8, max_length=256, exclude=True)
+
+
+class AuthLoginRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["auth-login-request-v0.1"] = "auth-login-request-v0.1"
+    account: str = Field(min_length=1, max_length=254)
+    password: SecretStr = Field(min_length=1, max_length=256, exclude=True)
+    remember_me: bool = False
+
+
+class AuthUserSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["auth-user-summary-v0.1"] = "auth-user-summary-v0.1"
+    user_id: str = Field(min_length=1)
+    username: str = Field(min_length=1)
+    email: str = Field(min_length=3)
+    status: AuthUserStatus = "active"
+
+
+class AuthUserRecord(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["auth-user-record-v0.1"] = "auth-user-record-v0.1"
+    user_id: str = Field(min_length=1)
+    username: str = Field(min_length=3, max_length=64, pattern=r"^[A-Za-z0-9_.-]+$")
+    email: str = Field(min_length=3, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    password_hash: str = Field(min_length=1)
+    password_salt: str = Field(min_length=1)
+    created_at: str = Field(default_factory=utc_now_iso)
+    updated_at: str = Field(default_factory=utc_now_iso)
+    last_login_at: str | None = None
+    status: AuthUserStatus = "active"
+
+
+class AuthTokenResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["auth-token-response-v0.1"] = "auth-token-response-v0.1"
+    access_token: str = Field(min_length=1)
+    token_type: Literal["bearer"] = "bearer"
+    expires_in: int = Field(gt=0)
+    user: AuthUserSummary
+
+
+class AuthRegisterResponse(AuthTokenResponse):
+    schema_version: Literal["auth-register-response-v0.1"] = "auth-register-response-v0.1"
+
+
+class AuthLoginResponse(AuthTokenResponse):
+    schema_version: Literal["auth-login-response-v0.1"] = "auth-login-response-v0.1"
+
+
+class AuthCurrentUserResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["auth-current-user-response-v0.1"] = "auth-current-user-response-v0.1"
+    user: AuthUserSummary
+
+
+class AuthLogoutResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["auth-logout-response-v0.1"] = "auth-logout-response-v0.1"
+    success: bool = True
+    message: str = Field(default="Logged out.", min_length=1)
+
+
+class AuthFieldError(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    field: str = Field(min_length=1)
+    message: str = Field(min_length=1)
+    error_code: str | None = Field(default=None, min_length=1)
+
+
+class AuthErrorResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["auth-error-response-v0.1"] = "auth-error-response-v0.1"
+    error_code: AuthErrorCode
+    message: str = Field(min_length=1)
+    field_errors: list[AuthFieldError] = Field(default_factory=list)
 
 
 class ToolSpecModel(BaseModel):
@@ -25,13 +153,255 @@ class AgentRegistration(BaseModel):
 
     schema_version: Literal["agent-registration-v0.1"] = "agent-registration-v0.1"
     tenant_id: str = Field(default="private_tenant", min_length=1)
+    username: str | None = None
     agent_id: str = Field(min_length=1)
     name: str = Field(min_length=1)
+    domain: str = Field(default="general", min_length=1)
+    integration_type: IntegrationType = "source"
     framework: str = Field(default="sdk", min_length=1)
     adapter_type: Literal["ecommerce_demo", "external_sdk", "http_endpoint"] = "ecommerce_demo"
     endpoint_url: str | None = None
+    secret_ref: str | None = None
+    has_api_key: bool = False
+    masked_api_key: str | None = None
+    status: AgentStatus = "created"
+    remarks: str | None = None
+    created_at: str = Field(default_factory=utc_now_iso)
     tool_specs: list[ToolSpecModel] = Field(default_factory=list)
     data_boundary: dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentApiCredential(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    secret_ref: str | None = None
+    has_api_key: bool = False
+    masked_api_key: str | None = None
+
+
+class AgentOnboardingRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["agent-onboarding-request-v0.1"] = "agent-onboarding-request-v0.1"
+    tenant_id: str = Field(default="private_tenant", min_length=1)
+    username: str | None = None
+    agent_id: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    domain: str = Field(default="general", min_length=1)
+    integration_type: IntegrationType
+    framework: str = Field(default="sdk", min_length=1)
+    remarks: str | None = None
+    source_path: str | None = None
+    openapi_path: str | None = None
+    docker_image: str | None = None
+    endpoint_url: str | None = None
+    uploaded_files: list[str] = Field(default_factory=list)
+    api_key: SecretStr | None = Field(default=None, exclude=True)
+
+    @model_validator(mode="after")
+    def validate_integration_material(self) -> "AgentOnboardingRequest":
+        has_uploaded_file = any(_has_text(item) for item in self.uploaded_files)
+        if self.integration_type == "source" and not (
+            _has_text(self.source_path) or _has_text(self.openapi_path) or has_uploaded_file
+        ):
+            raise ValueError("source onboarding requires source_path, openapi_path, or uploaded_files.")
+        if self.integration_type == "docker" and not (_has_text(self.docker_image) or has_uploaded_file):
+            raise ValueError("docker onboarding requires docker_image or uploaded_files.")
+        if self.integration_type == "api" and not _has_text(self.endpoint_url):
+            raise ValueError("api onboarding requires endpoint_url.")
+        return self
+
+    def credential_summary(self, secret_ref: str | None = None) -> AgentApiCredential:
+        value = self.api_key.get_secret_value() if self.api_key is not None else None
+        return AgentApiCredential(
+            secret_ref=secret_ref,
+            has_api_key=value is not None,
+            masked_api_key=masked_api_key(value),
+        )
+
+
+class AgentMaterial(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["agent-material-v0.1"] = "agent-material-v0.1"
+    material_id: str = Field(min_length=1)
+    tenant_id: str = Field(default="private_tenant", min_length=1)
+    agent_id: str = Field(min_length=1)
+    type: IntegrationType
+    source_path: str | None = None
+    openapi_path: str | None = None
+    docker_image: str | None = None
+    endpoint_url: str | None = None
+    secret_ref: str | None = None
+    has_api_key: bool = False
+    masked_api_key: str | None = None
+    uploaded_files: list[str] = Field(default_factory=list)
+    created_at: str = Field(default_factory=utc_now_iso)
+
+
+class AgentProfileNode(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    node_id: str = Field(min_length=1)
+    node_type: str = Field(min_length=1)
+    required: bool = True
+    critical: bool = False
+    risk_surfaces: list[str] = Field(default_factory=list)
+    defenses: list[str] = Field(default_factory=list)
+
+
+class AgentProfile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["agent-profile-v0.1"] = "agent-profile-v0.1"
+    profile_id: str = Field(min_length=1)
+    tenant_id: str = Field(default="private_tenant", min_length=1)
+    agent_id: str = Field(min_length=1)
+    created_at: str = Field(default_factory=utc_now_iso)
+    nodes: list[AgentProfileNode] = Field(default_factory=list)
+    tools: list[ToolSpecModel] = Field(default_factory=list)
+    rag: dict[str, Any] = Field(default_factory=dict)
+    memory: dict[str, Any] = Field(default_factory=dict)
+    data_boundary: dict[str, Any] = Field(default_factory=dict)
+    risk_surface: list[str] = Field(default_factory=list)
+    generated_at: str = Field(default_factory=utc_now_iso)
+
+
+class AgentOnboardingStage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: OnboardingStageName
+    status: OnboardingStageStatus
+    mode: str | None = None
+    evaluation_id: str | None = None
+    message: str | None = None
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class AgentOnboardingResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["agent-onboarding-response-v0.1"] = "agent-onboarding-response-v0.1"
+    tenant_id: str = Field(default="private_tenant", min_length=1)
+    agent_id: str = Field(min_length=1)
+    status: AgentStatus
+    ready: bool = False
+    agent: AgentRegistration
+    material: AgentMaterial
+    profile: AgentProfile
+    stages: list[AgentOnboardingStage] = Field(default_factory=list)
+
+
+class BenchmarkCase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["benchmark-case-v0.1"] = "benchmark-case-v0.1"
+    case_id: str = Field(min_length=1)
+    benchmark_id: str = Field(min_length=1)
+    version: str = Field(min_length=1)
+    case_type: BenchmarkCaseType
+    prompt: str = Field(min_length=1)
+    rag_documents: list[str] = Field(default_factory=list)
+    rag_document_summary: str | None = None
+    target_node: str = Field(min_length=1)
+    expected_decision: Decision
+    severity: RiskLevel = "medium"
+    tags: list[str] = Field(default_factory=list)
+
+
+class BenchmarkVersion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["benchmark-version-v0.1"] = "benchmark-version-v0.1"
+    benchmark_id: str = Field(min_length=1)
+    version: str = Field(min_length=1)
+    source_report_id: str | None = None
+    generation_record: dict[str, Any] = Field(default_factory=dict)
+    case_count: int = Field(default=0, ge=0)
+    node_coverage: dict[str, int] = Field(default_factory=dict)
+    cases: list[BenchmarkCase] = Field(default_factory=list)
+    created_at: str = Field(default_factory=utc_now_iso)
+
+
+class Benchmark(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["benchmark-v0.1"] = "benchmark-v0.1"
+    benchmark_id: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    description: str = Field(default="", min_length=0)
+    domain: str = Field(default="general", min_length=1)
+    active_version: str = Field(min_length=1)
+    created_at: str = Field(default_factory=utc_now_iso)
+
+
+class BenchmarkSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["benchmark-summary-v0.1"] = "benchmark-summary-v0.1"
+    benchmark_id: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    description: str = Field(default="", min_length=0)
+    domain: str = Field(default="general", min_length=1)
+    active_version: str = Field(min_length=1)
+    version_count: int = Field(default=0, ge=0)
+    case_count: int = Field(default=0, ge=0)
+    attack_case_count: int = Field(default=0, ge=0)
+    clean_case_count: int = Field(default=0, ge=0)
+    created_at: str | None = None
+
+
+class BenchmarkVersionSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["benchmark-version-summary-v0.1"] = "benchmark-version-summary-v0.1"
+    benchmark_id: str = Field(min_length=1)
+    version: str = Field(min_length=1)
+    source_report_id: str | None = None
+    case_count: int = Field(default=0, ge=0)
+    attack_case_count: int = Field(default=0, ge=0)
+    clean_case_count: int = Field(default=0, ge=0)
+    node_count: int = Field(default=0, ge=0)
+    created_at: str | None = None
+
+
+class BenchmarkVersionDetail(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["benchmark-version-detail-v0.1"] = "benchmark-version-detail-v0.1"
+    benchmark_id: str = Field(min_length=1)
+    version: str = Field(min_length=1)
+    source_report_id: str | None = None
+    generation_record: dict[str, Any] = Field(default_factory=dict)
+    case_count: int = Field(default=0, ge=0)
+    attack_case_count: int = Field(default=0, ge=0)
+    clean_case_count: int = Field(default=0, ge=0)
+    node_coverage: dict[str, int] = Field(default_factory=dict)
+    cases: list[BenchmarkCase] = Field(default_factory=list)
+    created_at: str | None = None
+
+
+class NextRoundResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["next-round-response-v0.1"] = "next-round-response-v0.1"
+    source_evaluation_id: str = Field(min_length=1)
+    source_report_id: str = Field(min_length=1)
+    benchmark_id: str = Field(min_length=1)
+    benchmark_version: str = Field(min_length=1)
+    version: BenchmarkVersionDetail
+    attack_generation: dict[str, Any] = Field(default_factory=dict)
+    defense_suggestions: list[str] = Field(default_factory=list)
+
+
+class EvaluationProgress(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    total_cases: int = Field(default=0, ge=0)
+    completed_cases: int = Field(default=0, ge=0)
+    percent: float = Field(default=0.0, ge=0.0, le=100.0)
+    current_case: str | None = None
+    current_node: str | None = None
 
 
 class EvaluationRequest(BaseModel):
@@ -40,6 +410,8 @@ class EvaluationRequest(BaseModel):
     tenant_id: str = Field(default="private_tenant", min_length=1)
     agent_id: str = Field(min_length=1)
     benchmark: str = Field(default="ecommerce-security-v0.1", min_length=1)
+    benchmark_id: str | None = None
+    benchmark_version: str | None = None
     mode: EvaluationMode = "sdk"
     pilot_preset: str | None = None
     attack_intensity: Literal["light", "medium", "heavy"] = "medium"
@@ -57,10 +429,46 @@ class EvaluationStatus(BaseModel):
     evaluation_id: str = Field(min_length=1)
     tenant_id: str = Field(min_length=1)
     agent_id: str = Field(min_length=1)
+    benchmark_id: str | None = None
+    benchmark_version: str | None = None
     status: EvaluationState
+    progress: EvaluationProgress | None = None
+    current_case: str | None = None
+    current_node: str | None = None
     report_id: str | None = None
     report_path: str | None = None
     error: str | None = None
+
+
+class EvaluationRecord(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["evaluation-v0.1"] = "evaluation-v0.1"
+    evaluation_id: str = Field(min_length=1)
+    tenant_id: str = Field(default="private_tenant", min_length=1)
+    agent_id: str = Field(min_length=1)
+    benchmark_id: str = Field(min_length=1)
+    benchmark_version: str = Field(min_length=1)
+    status: EvaluationState
+    progress: EvaluationProgress = Field(default_factory=EvaluationProgress)
+    started_at: str = Field(default_factory=utc_now_iso)
+    completed_at: str | None = None
+
+
+class EvaluationResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["evaluation-result-v0.1"] = "evaluation-result-v0.1"
+    result_id: str = Field(min_length=1)
+    evaluation_id: str = Field(min_length=1)
+    case_id: str = Field(min_length=1)
+    case_type: BenchmarkCaseType
+    target_node: str = Field(min_length=1)
+    expected_decision: Decision
+    actual_decision: Decision
+    blocked_node: str | None = None
+    bypassed_nodes: list[str] = Field(default_factory=list)
+    trajectory_ref: str | None = None
 
 
 class Finding(BaseModel):
@@ -80,6 +488,7 @@ class ScenarioResult(BaseModel):
 
     scenario_id: str = Field(min_length=1)
     category: str = Field(min_length=1)
+    target_node: str | None = None
     severity: RiskLevel
     expected_decision: Literal["allow", "block"]
     actual_decision: Literal["allow", "block"]
@@ -87,6 +496,9 @@ class ScenarioResult(BaseModel):
     passed: bool
     business_impact: str = Field(min_length=1)
     trajectory_ref: str = Field(min_length=1)
+    blocked_node: str | None = None
+    bypassed_nodes: list[str] = Field(default_factory=list)
+    node_status: dict[str, Any] = Field(default_factory=dict)
 
 
 class ReportArtifacts(BaseModel):
@@ -99,6 +511,113 @@ class ReportArtifacts(BaseModel):
     dashboard_path: str | None = None
 
 
+class MetricInputs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attack_case_count: int = Field(default=0, ge=0)
+    clean_case_count: int = Field(default=0, ge=0)
+    attack_success_count: int = Field(default=0, ge=0)
+    attack_blocked_count: int = Field(default=0, ge=0)
+    clean_blocked_count: int = Field(default=0, ge=0)
+    bypassed_critical_node_count: int = Field(default=0, ge=0)
+    critical_node_test_count: int = Field(default=0, ge=0)
+    critical_attack_bypass_count: int = Field(default=0, ge=0)
+    tested_node_count: int = Field(default=0, ge=0)
+    total_required_node_count: int = Field(default=0, ge=0)
+    failed_attack_severity_weights: list[int] = Field(default_factory=list)
+
+
+class DeterministicMetrics(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    attack_case_count: int = Field(default=0, ge=0)
+    clean_case_count: int = Field(default=0, ge=0)
+    attack_success_count: int = Field(default=0, ge=0)
+    attack_blocked_count: int = Field(default=0, ge=0)
+    clean_blocked_count: int = Field(default=0, ge=0)
+    bypassed_critical_node_count: int = Field(default=0, ge=0)
+    critical_node_test_count: int = Field(default=0, ge=0)
+    critical_attack_bypass_count: int = Field(default=0, ge=0)
+    tested_node_count: int = Field(default=0, ge=0)
+    total_required_node_count: int = Field(default=0, ge=0)
+    asr: float = Field(default=0.0, ge=0.0, le=1.0)
+    dsr: float = Field(default=0.0, ge=0.0, le=1.0)
+    fpr: float = Field(default=0.0, ge=0.0, le=1.0)
+    coverage_gap: float = Field(default=0.0, ge=0.0, le=1.0)
+    critical_node_bypass_rate: float = Field(default=0.0, ge=0.0, le=1.0)
+    severity_penalty: float = Field(default=0.0, ge=0.0, le=10.0)
+
+
+class ScoreBreakdown(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    score: int = Field(ge=0, le=100)
+    risk_level: RiskLevel
+    raw_score: float
+    penalties: dict[str, float] = Field(default_factory=dict)
+
+
+class MetricSnapshot(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["metric-snapshot-v0.1"] = "metric-snapshot-v0.1"
+    snapshot_id: str = Field(min_length=1)
+    tenant_id: str = Field(default="private_tenant", min_length=1)
+    agent_id: str = Field(min_length=1)
+    latest_report_id: str | None = None
+    evaluation_id: str | None = None
+    benchmark_id: str | None = None
+    benchmark_version: str | None = None
+    score: int = Field(ge=0, le=100)
+    risk_level: RiskLevel
+    asr: float = Field(default=0.0, ge=0.0, le=1.0)
+    dsr: float = Field(default=0.0, ge=0.0, le=1.0)
+    fpr: float = Field(default=0.0, ge=0.0, le=1.0)
+    coverage_gap: float = Field(default=0.0, ge=0.0, le=1.0)
+    critical_node_bypass_rate: float = Field(default=0.0, ge=0.0, le=1.0)
+    created_at: str = Field(default_factory=utc_now_iso)
+
+
+class DashboardTrendPoint(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str = Field(min_length=1)
+    round: int = Field(ge=1)
+    source: Literal["report", "metric_snapshot"]
+    evaluation_id: str | None = None
+    report_id: str | None = None
+    snapshot_id: str | None = None
+    benchmark_id: str | None = None
+    benchmark_version: str | None = None
+    score: int | None = Field(default=None, ge=0, le=100)
+    risk_level: RiskLevel | None = None
+    asr: float | None = Field(default=None, ge=0.0, le=1.0)
+    fpr: float | None = Field(default=None, ge=0.0, le=1.0)
+    created_at: str | None = None
+
+
+class DashboardSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["dashboard-summary-v0.1"] = "dashboard-summary-v0.1"
+    tenant_id: str = Field(default="private_tenant", min_length=1)
+    agent_id: str = Field(min_length=1)
+    has_data: bool
+    empty_reason: str | None = None
+    current_security_score: int | None = Field(default=None, ge=0, le=100)
+    current_risk_level: RiskLevel | None = None
+    recent_asr: float | None = Field(default=None, ge=0.0, le=1.0)
+    recent_fpr: float | None = Field(default=None, ge=0.0, le=1.0)
+    latest_source: Literal["report", "metric_snapshot"] | None = None
+    latest_evaluation_id: str | None = None
+    latest_report_id: str | None = None
+    latest_snapshot_id: str | None = None
+    benchmark_id: str | None = None
+    benchmark_version: str | None = None
+    updated_at: str | None = None
+    trend: list[DashboardTrendPoint] = Field(default_factory=list)
+
+
 class AgentSecurityReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -106,6 +625,10 @@ class AgentSecurityReport(BaseModel):
     tenant_id: str = Field(min_length=1)
     agent_id: str = Field(min_length=1)
     benchmark: str = Field(min_length=1)
+    benchmark_id: str | None = None
+    benchmark_version: str | None = None
+    evaluation_id: str | None = None
+    status: ReportStatus = "complete"
     overall_score: int = Field(ge=0, le=100)
     risk_level: Literal["low", "medium", "high", "critical"]
     summary: dict[str, Any] = Field(default_factory=dict)
@@ -114,8 +637,43 @@ class AgentSecurityReport(BaseModel):
     guard_effectiveness: dict[str, Any] = Field(default_factory=dict)
     false_positive_rate: float = Field(default=0.0, ge=0)
     attack_success_rate: float = Field(default=0.0, ge=0)
+    defense_success_rate: float = Field(default=0.0, ge=0)
+    deterministic_metrics: DeterministicMetrics | None = None
+    score_breakdown: ScoreBreakdown | None = None
     business_impact: dict[str, Any] = Field(default_factory=dict)
     artifacts: ReportArtifacts
+
+
+class LogSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["log-summary-v0.1"] = "log-summary-v0.1"
+    evaluation_id: str = Field(min_length=1)
+    tenant_id: str = Field(default="private_tenant", min_length=1)
+    agent_id: str = Field(min_length=1)
+    benchmark_version: str | None = None
+    score: int | None = Field(default=None, ge=0, le=100)
+    risk_level: RiskLevel | None = None
+    asr: float | None = Field(default=None, ge=0.0, le=1.0)
+    fpr: float | None = Field(default=None, ge=0.0, le=1.0)
+    weakest_link: str | None = None
+    evaluated_at: str | None = None
+    status: EvaluationState
+
+
+class LogDetail(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["log-detail-v0.1"] = "log-detail-v0.1"
+    summary: LogSummary
+    metrics: DeterministicMetrics | None = None
+    total_case_count: int = Field(default=0, ge=0)
+    prompts: list[str] = Field(default_factory=list)
+    rag_documents: list[str] = Field(default_factory=list)
+    target_nodes: list[str] = Field(default_factory=list)
+    bypassed_nodes: list[str] = Field(default_factory=list)
+    critical_node_blocked: dict[str, bool] = Field(default_factory=dict)
+    trajectory_refs: list[str] = Field(default_factory=list)
 
 
 class ComparisonFinding(BaseModel):

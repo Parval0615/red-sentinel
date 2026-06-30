@@ -13,6 +13,8 @@ Phase 1 Experiment Runner 读取此目录下的 YAML/JSON 场景描述。
 
 见 [example-baseline.yaml](./example-baseline.yaml)。
 
+公开 scenario template 只声明可运行 backend。AutoGen backend 当前仅保留为内部 scaffold，占位测试会直接覆盖 `AutoGenBackend`，公开 YAML 不应使用 `framework: autogen`。
+
 ## Scenario Manifest
 
 `manifest.yaml` 记录 clean / controlled scenario 配对，用于连接 `AttackSpec`、Phase 2 replay scenarios 和后续 AgentRiskBench 打包。

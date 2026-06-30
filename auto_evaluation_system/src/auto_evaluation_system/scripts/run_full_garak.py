@@ -6,7 +6,7 @@ from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 遇限流自动停止, 00:05 自动恢复, 所有结果在同一CSV
 """
 
-import os, sys, csv, time, json, importlib
+import os, csv, time, json, importlib
 from datetime import datetime
 
 
@@ -105,7 +105,6 @@ def call_classifier(content):
     """调用防火墙分类, 返回 (result_dict, error_string).
     如果遇到限流, 设置 RATE_LIMITED = True."""
     global RATE_LIMITED
-    import auto_defense_system.config as cfg
     import auto_defense_system.security.firewall.classifier as clf
 
     for attempt in range(MAX_RETRIES_PER_TEST):

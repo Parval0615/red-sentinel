@@ -5,8 +5,6 @@ from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 纯命令行脚本，不需要 Streamlit UI。
 """
 
-import os
-import sys
 
 
 from auto_defense_system.agent.graph import graph_invoke

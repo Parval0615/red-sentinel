@@ -8,7 +8,6 @@ verifying that Chroma's collection_name-based isolation is effective.
 Also tests edge cases: same PDF name + different session_id, direct Chroma access.
 """
 import os
-import sys
 import json
 import tempfile
 from datetime import datetime

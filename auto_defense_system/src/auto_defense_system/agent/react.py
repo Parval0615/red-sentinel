@@ -2,7 +2,7 @@ from langchain_openai import ChatOpenAI
 from auto_defense_system.config import LLM_MODEL, LLM_API_BASE, LLM_API_KEY
 from auto_defense_system.tools.sec_tools import SEC_AGENT_TOOLS
 from auto_defense_system.rag.retriever import init_rag_retriever, rag_query
-from auto_defense_system.security.permission import check_tool_permission, DEFAULT_ROLE, get_allowed_tools
+from auto_defense_system.security.permission import check_tool_permission, DEFAULT_ROLE
 from auto_defense_system.security.firewall.input_guard import check_malicious_input
 from auto_defense_system.security.output.filter import mask_sensitive_info, check_output_compliance
 from auto_defense_system.security.audit import write_audit_log

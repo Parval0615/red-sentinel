@@ -1,8 +1,29 @@
-# RedSentinel Frontend Dashboard
+# RedSentinel Frontend
 
 ## Overview
 
-单文件零依赖的安全评测可视化报告，数据来自 `auto_evaluation_system.product_api.reports` 产出的 `AgentSecurityReport`。
+`frontend/index.html` 是 RedSentinel 产品的单文件前端入口，包含公开首页、登录/注册认证页和登录后可访问的 Agent 安全评测工作区。工作区继续展示 `auto_evaluation_system.product_api.reports` 产出的 `AgentSecurityReport`，并通过同源 `/v1/...` Product API 完成 Agent 接入、评测、报告、日志和 next-round 操作。
+
+## Product Views
+
+| View | Route / Anchor | Access | Behavior |
+|---|---|---|---|
+| 公开首页 | `/` / `#public-home` | 公开 | 展示产品价值、核心能力、使用流程、信任信息和“立即注册/登录使用/进入工作区”入口。 |
+| 登录页 | `#login` | 公开 | 校验账号和密码，调用 `POST /v1/auth/login`，成功后进入工作区。 |
+| 注册页 | `#register` | 公开 | 校验用户名、邮箱、密码、确认密码和协议确认，调用 `POST /v1/auth/register`，成功后进入工作区。 |
+| 产品工作区 | `#product-workspace` | 需要 JWT | 未登录访问会跳转登录页；已登录后展示当前用户名和退出登录入口。 |
+
+## Authentication And Storage
+
+- 前端只保存认证 token，不保存明文密码。
+- token key 为 `redsentinel.auth.token`。
+- 登录时勾选“记住登录状态”：token 写入 `localStorage`，浏览器重开后仍可恢复登录态。
+- 登录时未勾选“记住登录状态”：token 写入 `sessionStorage`，浏览器会话结束后失效。
+- 注册成功后直接进入登录态，当前实现按非记住登录处理，token 写入 `sessionStorage`。
+- 前端启动时会用 `GET /v1/auth/me` 校验已保存 token；无效或过期会清理本地 token。
+- 受保护工作区请求会携带 `Authorization: Bearer <token>`，包括 Agent 接入、dashboard summary、评测、报告、日志和 next-round。
+- 退出登录会调用 `POST /v1/auth/logout`，随后清理 `localStorage` 和 `sessionStorage` 中的 token，并回到公开首页。
+- API Key 只随 Agent 接入请求提交给后端，不写入浏览器存储。
 
 ## Data Contract
 
@@ -130,6 +151,19 @@ frontend/
 
 ## Usage
 
+启动完整产品前端时，用 Product API 托管 `index.html`，保证前端和 `/v1/...` API 同源：
+
+```bash
+PY=/Users/bytedance/.pyenv/versions/3.10.14/bin/python
+export PYTHONPATH="agent_integration_system/src:auto_attack_system/src:auto_defense_system/src:auto_evaluation_system/src:sdk/python/src"
+$PY -m pip install -e ".[product]"
+$PY -m uvicorn auto_evaluation_system.product_api.app:create_app --factory --host 127.0.0.1 --port 8000
+```
+
+打开 `http://127.0.0.1:8000/` 后可按“首页 → 注册/登录 → 产品工作区”的顺序访问。直接用 `file://` 打开 `index.html` 时，公开静态内容和 mock/fallback 报告可见，但认证和受保护 API 请求不会作为完整产品链路工作。
+
+报告生成器仍可独立使用：
+
 ```bash
 # Generate report from JSON
 python -m frontend.generator --input data/mock_report.json --output report.html
@@ -140,6 +174,8 @@ open report.html
 
 ## Technical Constraints
 
-- **Single file**: All CSS/JS embedded in HTML
-- **Zero dependencies**: No external libraries required
-- **file:// protocol**: Must work when opened directly from filesystem
+- **Single file product shell**: 首页、认证页、工作区 CSS/JS 均内嵌在 `index.html`，无前端构建步骤。
+- **Same-origin API**: 完整产品体验依赖 Product API 托管页面并提供 `/v1/...` 接口。
+- **Protected workspace**: 工作区入口和租户相关 API 依赖有效 JWT；公开首页、认证页和公开 benchmark 列表无需登录。
+- **Safe client storage**: 浏览器只保存 token，不保存明文密码；API Key 不写入 `localStorage` 或 `sessionStorage`。
+- **Report fallback**: 静态报告和 generator 输出仍应能在本地文件场景展示 mock/fallback 数据。

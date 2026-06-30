@@ -6,7 +6,6 @@ from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 保存结果到 data/output_eval_results/
 """
 import os
-import sys
 import json
 from datetime import datetime
 

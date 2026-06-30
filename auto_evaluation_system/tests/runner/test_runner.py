@@ -35,6 +35,20 @@ def test_runner_writes_schema_valid_trajectory(tmp_path: Path) -> None:
     validate(instance=trajectory, schema=SCHEMA)
 
 
+def test_trajectory_schema_accepts_docker_framework() -> None:
+    validate(
+        instance={
+            "schema_version": "1.0",
+            "session_id": "sess_docker",
+            "experiment_id": "p1-sandbox-docker",
+            "seed": 42,
+            "framework": "docker",
+            "steps": [],
+        },
+        schema=SCHEMA,
+    )
+
+
 def test_runner_repeated_runs_create_distinct_directories(tmp_path: Path) -> None:
     runner = ExperimentRunner(results_root=tmp_path / "runs")
 

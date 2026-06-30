@@ -8,7 +8,7 @@ from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 运行: python data/run_full_hackaprompt.py
 """
 
-import os, sys, csv, time, json, random
+import os, csv, time, json, random
 from datetime import datetime
 
 
@@ -61,7 +61,6 @@ def load_samples():
 
 def call_classifier(content):
     global RATE_LIMITED
-    import auto_defense_system.config as cfg
     import auto_defense_system.security.firewall.classifier as clf
 
     last_error = ""
@@ -137,7 +136,6 @@ def main():
         for idx in range(start_idx, TOTAL):
             s = samples[idx]
             content, lvl = s["content"], s["level"]
-            expected = s["expected_block"]
 
             t0 = time.time()
             result, error = call_classifier(content)

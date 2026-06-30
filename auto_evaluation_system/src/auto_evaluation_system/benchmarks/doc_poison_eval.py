@@ -14,17 +14,14 @@
 """
 
 import os
-import sys
-import json
 import time
 import tempfile
-from datetime import datetime
 
 
 from auto_attack_system.doc_poison import (
-    generate_poison_pdf, generate_all_poison_pdfs, extract_pdf_text, POISON_SCENARIOS
+    generate_poison_pdf, POISON_SCENARIOS
 )
-from auto_defense_system.security.ingest.doc_scanner import scan_chunk_l1, scan_retrieved_chunks
+from auto_defense_system.security.ingest.doc_scanner import scan_chunk_l1
 
 # Queries designed to trigger retrieval of poisoned content
 EVAL_QUERIES = [
@@ -156,16 +153,11 @@ def run_poison_evaluation(
 
         # Ingest with defense hooks (pre-retrieval sanitization)
         try:
-            from auto_defense_system.rag.retriever import init_rag_retriever, rag_query
+            from auto_defense_system.rag.retriever import init_rag_retriever
 
             # For "none" and "post_only", skip pre-retrieval sanitization
             # by patching sanitize_splits temporarily
             if defense_mode in ("none", "post_only"):
-                # Re-ingest without sanitization: we monkey-patch the import
-                import auto_defense_system.rag.retriever as rag_module
-                original_sanitize = getattr(rag_module, '__sanitize_disabled', False)
-                # Actually, simpler approach: directly call init without sanitize
-                # We'll set environment variable to signal
                 os.environ["POISON_EVAL_SKIP_SANITIZE"] = "1"
 
             retriever = init_rag_retriever(pdf_path, persist=False, force_reindex=True)

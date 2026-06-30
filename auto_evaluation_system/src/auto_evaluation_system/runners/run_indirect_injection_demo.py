@@ -10,11 +10,8 @@ from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 """
 
 import os
-import sys
-import json
 import tempfile
 import shutil
-from datetime import datetime
 
 
 
@@ -29,7 +26,7 @@ def demo_scenario_a_html_exfil():
     print_sep("场景A: 恶意HTML → 数据外泄 (api_call)")
 
     from auto_attack_system.indirect_injection import generate_html_poison, HTML_POISON_SCENARIOS
-    from auto_defense_system.rag.retriever import init_rag_retriever, rag_query
+    from auto_defense_system.rag.retriever import init_rag_retriever
     from auto_defense_system.agent.graph import graph_invoke, clear_history
 
     # Step 1: Generate poisoned HTML
@@ -114,7 +111,7 @@ def demo_scenario_b_email_sql():
     print_sep("场景B: 恶意Email → SQL注入 (db_query DELETE)")
 
     from auto_attack_system.indirect_injection import generate_email_poison, EMAIL_POISON_SCENARIOS
-    from auto_defense_system.rag.retriever import init_rag_retriever, rag_query
+    from auto_defense_system.rag.retriever import init_rag_retriever
     from auto_defense_system.agent.graph import graph_invoke, clear_history
 
     scenario = EMAIL_POISON_SCENARIOS[0]  # email_001: subject line injection
@@ -170,7 +167,7 @@ def demo_scenario_c_markdown_file():
     print_sep("场景C: 恶意Markdown → 文件操作 (file_operation delete)")
 
     from auto_attack_system.indirect_injection import generate_markdown_poison, MARKDOWN_POISON_SCENARIOS
-    from auto_defense_system.rag.retriever import init_rag_retriever, rag_query
+    from auto_defense_system.rag.retriever import init_rag_retriever
     from auto_defense_system.agent.graph import graph_invoke, clear_history
 
     scenario = MARKDOWN_POISON_SCENARIOS[2]  # md_003: code comment injection

@@ -7,7 +7,6 @@ Architecture:
 
 import contextvars
 import operator
-import os
 import re
 import sqlite3
 from typing import Annotated, Optional, TypedDict
@@ -15,7 +14,7 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langgraph.checkpoint.sqlite import SqliteSaver
 
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, BaseMessage, ToolMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
 from langchain_core.tools import tool
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
@@ -24,7 +23,6 @@ from auto_defense_system.config import LLM_MODEL, LLM_API_BASE, LLM_API_KEY, CHE
 from auto_defense_system.tools.sec_tools import SEC_AGENT_TOOLS
 from auto_defense_system.rag.retriever import rag_query
 from auto_defense_system.security.permission import get_allowed_tools, DEFAULT_ROLE
-from auto_defense_system.security.firewall.input_guard import check_malicious_input  # kept for backward compat
 from auto_defense_system.security.output.filter import mask_sensitive_info
 from auto_defense_system.security.audit import write_audit_log
 from auto_defense_system.security.firewall.classifier import classify_with_old_fallback, classify_with_context

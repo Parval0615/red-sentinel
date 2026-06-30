@@ -2,7 +2,6 @@ from pathlib import Path
 from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 """Batch generate all 12 poisoned PDFs into data/poison_pdfs/."""
 import os
-import sys
 import json
 from datetime import datetime
 
