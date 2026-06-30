@@ -156,7 +156,6 @@ def compare_classifiers() -> dict:
         print(f"{cat_name:<20} {old_rate:<10}% {new_rate:<10}%")
 
     print("\n--- 新版误拦的正常查询 ---")
-    new_fps = [d for d in new_results["details"] if not d["blocked"]]
     if new_results["false_positives"] > 0:
         for q in NORMAL_QUERIES:
             r = new_classify(q)

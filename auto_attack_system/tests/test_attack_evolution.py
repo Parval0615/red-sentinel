@@ -7,7 +7,6 @@ from auto_evaluation_system.product_api.contracts import (
     AgentSecurityReport,
     Finding,
     ReportArtifacts,
-    ScenarioResult,
 )
 
 

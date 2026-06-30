@@ -1,4 +1,3 @@
-from pathlib import Path
 from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 """Tool Supply Chain Security — Ed25519 签名验证演示。
 
@@ -11,8 +10,6 @@ from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
   6. 删除 manifest → 检测到 manifest_missing → 拒绝加载
 """
 import os
-import sys
-import json
 import tempfile
 import shutil
 
@@ -27,7 +24,7 @@ def print_sep(title):
 def main():
     from auto_defense_system.security.integrity import (
         generate_keypair, sign_tool, verify_tool_integrity,
-        verify_and_load, batch_verify_tools, compute_file_hash,
+        verify_and_load,
     )
 
     # 1. Generate keypair
@@ -40,10 +37,6 @@ def main():
 
     # 2. Sign all 4 dangerous tools
     print_sep("2. 签名 4 个危险工具")
-    tools_dir = os.path.join(str(Path(__file__).resolve().parents[2]), "core")
-    tool_files = [
-        os.path.join(tools_dir, "dangerous_tools.py"),
-    ]
 
     # Create individual tool files for signing demo
     demo_dir = tempfile.mkdtemp(prefix="tool_signing_demo_")

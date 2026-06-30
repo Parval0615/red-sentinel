@@ -1,8 +1,7 @@
 from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 """对 garak测试数据.xlsx 跑防火墙, 填写拦截/风险分/是否合格"""
 
-import os, sys, time, pandas as pd
-from datetime import datetime
+import os, time, pandas as pd
 
 
 # 从 SiliconFlow 结果继续（已有 400 行）— 只补未填充的行

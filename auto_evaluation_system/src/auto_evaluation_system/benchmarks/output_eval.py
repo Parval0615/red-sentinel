@@ -3,7 +3,6 @@
 import json
 import os
 import re
-import time
 from datetime import datetime
 from pathlib import Path
 
@@ -432,7 +431,7 @@ def compare_granularity_levels(samples=None, verbose=True) -> dict:
             try:
                 response = llm.invoke(sample["query"])
                 answer = response.content if hasattr(response, 'content') else str(response)
-            except Exception as e:
+            except Exception:
                 continue
 
             filter_result = apply_output_filter(answer, level=level_key)

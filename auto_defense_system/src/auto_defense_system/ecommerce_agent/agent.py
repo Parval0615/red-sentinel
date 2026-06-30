@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from auto_defense_system.ecommerce_agent.fixtures import create_demo_store
-from auto_defense_system.ecommerce_agent.models import AuditEvent, BusinessEvent, RiskLevel, ToolCallRecord, ToolExecution
+from auto_defense_system.ecommerce_agent.models import AuditEvent, RiskLevel, ToolCallRecord, ToolExecution
 from auto_defense_system.ecommerce_agent.store import EcommerceStore
 from auto_defense_system.ecommerce_agent import tools
 from auto_defense_system.security import audit

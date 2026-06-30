@@ -11,6 +11,7 @@ SOURCE_DIRS = (
     "auto_attack_system/src",
     "auto_defense_system/src",
     "auto_evaluation_system/src",
+    "agent_integration_system/src",
 )
 
 
@@ -248,7 +249,7 @@ def _print_comp4_summary(result) -> None:
     print(
         f"ABLATION_NO_REFLECTION_COVERAGE={metrics['ablation_no_reflection_coverage']}/"
         f"{metrics['total_threat_categories']} "
-        f"(vs full {metrics['ablation_full_coverage']}/{metrics['total_threat_categories']})"
+        f"(vs full attack {metrics['ablation_full_coverage']}/{metrics['total_threat_categories']})"
     )
 
 

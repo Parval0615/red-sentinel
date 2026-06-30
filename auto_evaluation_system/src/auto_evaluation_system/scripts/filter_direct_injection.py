@@ -2,7 +2,7 @@ from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 """过滤 Garak CSV: 只保留直接Prompt Injection, 按5类重新标注"""
 
 import csv
-from collections import defaultdict, Counter
+from collections import defaultdict
 
 CSV_PATH = "data/benchmarks/garak_full_20260512_155931.csv"
 OUT_PATH = "data/benchmarks/garak_direct_injection.csv"

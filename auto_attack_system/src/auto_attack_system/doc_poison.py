@@ -10,8 +10,6 @@
 
 import os
 import base64
-import re
-import unicodedata
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
@@ -441,7 +439,7 @@ def _add_fitz_annotation(pdf_path: str, annotation_text: str):
         if len(doc) > 0:
             page = doc[0]
             # Add a sticky note annotation
-            annot = page.add_text_annot(
+            page.add_text_annot(
                 (50, 50),  # position
                 annotation_text,
                 icon="Note"

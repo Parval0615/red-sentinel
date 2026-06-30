@@ -20,6 +20,8 @@ evaluation = [
 product = [
   "fastapi>=0.110",
   "uvicorn>=0.27",
+  # JWT HS256 signing/verification uses Python stdlib HMAC in product_api.auth_service.
+  # No third-party JWT package is required for the current product implementation.
 ]
 defense = [
   "langchain",

@@ -2,7 +2,6 @@ from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 """修正 Garak CSV: 按探针实际类型重新标注类别 + 重新判定PASS/FAIL"""
 
 import csv
-import json
 import importlib
 from collections import defaultdict
 

@@ -24,7 +24,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from auto_attack_system.attack_agent import AttackAgent, CampaignResult
 from auto_attack_system.llm_client import SharedLLMClient

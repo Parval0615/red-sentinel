@@ -1,4 +1,3 @@
-from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
@@ -274,7 +273,6 @@ def _load_email_document(path: str):
     Splits multipart boundaries into separate document pages.
     """
     import email as _email
-    import base64 as _base64
     from langchain_core.documents import Document
 
     with open(path, "r", encoding="utf-8", errors="replace") as f:

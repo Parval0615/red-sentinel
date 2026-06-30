@@ -9,7 +9,6 @@ from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 4. 边缘情况: 空thread_id, thread_id碰撞, 直接SQLite访问
 """
 import os
-import sys
 import json
 import sqlite3
 import tempfile
@@ -57,9 +56,7 @@ def test_chroma_collection_isolation():
 def test_checkpointer_thread_isolation():
     """Test 2: LangGraph checkpointer thread_id provides conversation isolation."""
     print("\n--- Test 2: Checkpointer Thread ID 隔离 ---")
-    from auto_defense_system.agent.graph import _get_graph, get_thread_messages, clear_history
-
-    graph = _get_graph()
+    from auto_defense_system.agent.graph import get_thread_messages, clear_history
 
     # Create two separate threads
     tid_a = "isolation_test_tenant_a"
@@ -69,27 +66,10 @@ def test_checkpointer_thread_isolation():
     clear_history(tid_a)
     clear_history(tid_b)
 
-    # Tenant A: store some data
-    config_a = {"configurable": {"thread_id": tid_a, "user_id": "tenant_a"}}
-    state_a = {
-        "messages": [type('m', (), {'content': 'tenant_a_secret_data', 'type': 'human'})()],
-        "user_role": "user",
-        "security_blocked": False,
-        "audit_entries": [],
-        "guardrail_category": "normal",
-        "guardrail_score": 0,
-        "tool_call_count": 0,
-        "conversation_summary": "",
-    }
-    from langchain_core.messages import HumanMessage
-    state_a["messages"] = [HumanMessage(content="tenant_a_secret_data")]
-    # Actually, the graph needs proper config. Let's use a different approach:
-    # We'll directly check what's stored in checkpoints DB per thread_id
-
     # Invoke graph with tid_a to create checkpoint
     try:
         from auto_defense_system.agent.graph import graph_invoke
-        result_a = graph_invoke(
+        graph_invoke(
             user_input="租户A的机密数据: project_alpha_budget_500k",
             role="user",
             thread_id=tid_a,
@@ -126,7 +106,7 @@ def test_checkpointer_thread_isolation():
 def test_thread_id_collision():
     """Test 3: Same thread_id used by different users — is data shared?"""
     print("\n--- Test 3: Thread ID 碰撞测试 ---")
-    from auto_defense_system.agent.graph import _get_graph, get_thread_messages, clear_history
+    from auto_defense_system.agent.graph import get_thread_messages, clear_history
 
     collision_tid = "isolation_collision_test"
     clear_history(collision_tid)

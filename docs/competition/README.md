@@ -16,7 +16,7 @@ RedSentinel / 灵哨是一个面向 LLM Agent 的**红队攻击面研究、旁�
 | 对抗可收敛 | ASR 44% → 0%，7 轮收敛 | [`evidence-pack/convergence_curve.png`](./evidence-pack/convergence_curve.png) |
 | 防御策略有效 | 去掉 Defense 后 ASR 保持 44% | [`evidence-pack/ablation.json`](./evidence-pack/ablation.json) |
 | 加固不伤正常请求 | 精准加固误伤率 0% | [`../product/product-readiness-audit.md`](../product/product-readiness-audit.md) |
-| 工程可回归 | 215 passed, 1 skipped, 2 warnings | [`reproducibility.md`](./reproducibility.md) |
+| 工程可回归 | 302 collected (300 passed, 1 failed, 1 skipped) | [`reproducibility.md`](./reproducibility.md) |
 | Agent 接入契约 | `AgentManifest` / `AgentProfile` / `OptimizationDirective` 三件套 | [`../product/agent-integration-m0-plan.md`](../product/agent-integration-m0-plan.md) |
 
 ## 目录导览
@@ -32,11 +32,17 @@ RedSentinel / 灵哨是一个面向 LLM Agent 的**红队攻击面研究、旁�
 ## 推荐运行顺序
 
 ```powershell
-python run.py --demo
-python run.py --comp2 --offline
-python run.py --comp3 --offline
-python run.py --comp4 --offline
+python run-demo.py
+python run-comp2.py --offline
+python run-comp3.py --offline
+python run-comp4.py --offline
 python -m pytest -q
+```
+
+一键复现所有实验：
+
+```powershell
+bash reproduce-all.sh
 ```
 
 Agent onboarding M0 可单独验证：

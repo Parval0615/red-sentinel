@@ -21,7 +21,7 @@
     },
     "framework": {
       "type": "string",
-      "enum": ["langgraph", "autogen", "direct_api"]
+      "enum": ["langgraph", "direct_api", "docker"]
     },
     "goal": {
       "type": "object",

@@ -7,7 +7,6 @@ Layer 1 策略（v2 迭代）：
 """
 
 from typing import Optional
-from langchain_openai import ChatOpenAI
 from auto_defense_system.config import LLM_MODEL, LLM_API_BASE, LLM_API_KEY
 from auto_defense_system.security.firewall.input_guard import check_malicious_input
 
@@ -16,16 +15,36 @@ import logging
 import re
 import time
 import unicodedata
-from json_repair import repair_json
 
 logger = logging.getLogger(__name__)
 
 _classifier_llm = None
 
 
+def _repair_json(text: str) -> str | None:
+    try:
+        from json_repair import repair_json
+    except ModuleNotFoundError as exc:
+        if exc.name == "json_repair":
+            return None
+        raise
+    return repair_json(text)
+
+
 def _get_classifier_llm():
     global _classifier_llm
     if _classifier_llm is None:
+        try:
+            from langchain_openai import ChatOpenAI
+        except ModuleNotFoundError as exc:
+            if exc.name == "langchain_openai":
+                raise RuntimeError(
+                    "Layer 2 firewall classifier requires optional dependency "
+                    "'langchain_openai'. Install the defense optional dependencies "
+                    "to enable LLM semantic classification."
+                ) from exc
+            raise
+
         _classifier_llm = ChatOpenAI(
             model=LLM_MODEL,
             temperature=0.0,
@@ -326,18 +345,20 @@ def _robust_parse_json(text: str) -> dict | None:
             pass
 
         # Layer 4: json_repair 修复提取的 JSON
+        repaired = _repair_json(extracted)
+        if repaired is not None:
+            try:
+                return json.loads(repaired)
+            except Exception:
+                pass
+
+    # Layer 5: json_repair 修复原始文本
+    repaired = _repair_json(text)
+    if repaired is not None:
         try:
-            repaired = repair_json(extracted)
             return json.loads(repaired)
         except Exception:
             pass
-
-    # Layer 5: json_repair 修复原始文本
-    try:
-        repaired = repair_json(text)
-        return json.loads(repaired)
-    except Exception:
-        pass
 
     return None
 

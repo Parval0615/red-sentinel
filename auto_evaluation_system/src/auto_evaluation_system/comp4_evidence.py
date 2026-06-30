@@ -180,8 +180,8 @@ def _build_ablation(*, force_offline: bool, max_rounds: int) -> dict[str, Any]:
                 "name": "full_system",
                 "name_cn": "完整系统(攻击进化+防御加固)",
                 "final_asr": round(_asr(full_after), 4),
-                "coverage": full_after.coverage_count,
-                "note": "ASR 收敛到低位,加固覆盖被攻破类别。",
+                "coverage": base_full.coverage_count,
+                "note": "攻击进化使覆盖拉满,再加固后 ASR 收敛到低位。",
             },
             {
                 "name": "no_defense",

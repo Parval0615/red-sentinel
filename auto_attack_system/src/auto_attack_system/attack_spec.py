@@ -25,7 +25,7 @@ AttackRiskType = Literal[
     "tool_tampering",
 ]
 AttackIntensity = Literal["light", "medium", "heavy"]
-AgentFramework = Literal["direct_api", "langgraph", "autogen"]
+AgentFramework = Literal["direct_api", "langgraph"]
 
 
 class AttackSpec(BaseModel):

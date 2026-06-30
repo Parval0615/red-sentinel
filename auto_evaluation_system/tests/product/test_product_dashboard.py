@@ -51,11 +51,12 @@ def test_render_html_dashboard_escapes_report_content() -> None:
 
     html = render_html_dashboard(report)
 
+    assert "RedSentinel" in html
     assert "Agent Security Dashboard" in html
     assert 'id="dashboard-data"' in html
-    assert "function applyFilters" in html
+    assert "function renderScenarios" in html
     assert "runs/product/audit-events.json" in html
-    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+    assert "\\u003cscript\\u003ealert(1)\\u003c/script\\u003e" in html
     assert "<script>alert(1)</script>" not in html
     assert "FAIL" in html
 
@@ -67,6 +68,7 @@ def test_write_report_artifacts_writes_dashboard(tmp_path: Path) -> None:
         benchmark="ecommerce-security-v0.1",
         overall_score=100,
         risk_level="low",
+        summary={"api_key": "sk-raw-secret", "masked_api_key": "sk-r...cret"},
         artifacts=ReportArtifacts(
             report_path=str(tmp_path / "agent-security-report-v0.1.json"),
             markdown_path=str(tmp_path / "agent-security-report-v0.1.md"),
@@ -84,3 +86,5 @@ def test_write_report_artifacts_writes_dashboard(tmp_path: Path) -> None:
     assert (tmp_path / "agent-security-report-v0.1.json").exists()
     assert (tmp_path / "agent-security-report-v0.1.md").exists()
     assert (tmp_path / "agent-security-dashboard-v0.1.html").exists()
+    assert "sk-raw-secret" not in (tmp_path / "agent-security-report-v0.1.json").read_text(encoding="utf-8")
+    assert "sk-raw-secret" not in (tmp_path / "agent-security-dashboard-v0.1.html").read_text(encoding="utf-8")

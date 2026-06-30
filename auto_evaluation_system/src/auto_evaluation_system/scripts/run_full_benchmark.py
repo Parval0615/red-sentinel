@@ -7,7 +7,6 @@ from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 """
 
 import os
-import sys
 import csv
 import time
 from datetime import datetime

@@ -6,12 +6,11 @@ from auto_evaluation_system.bootstrap import setup_paths  # noqa: F401
 保存结果到 data/poison_results/
 """
 import os
-import sys
 import json
 from datetime import datetime
 
 from auto_attack_system.doc_poison import POISON_SCENARIOS
-from auto_evaluation_system.benchmarks.doc_poison_eval import run_poison_evaluation, compare_defense_modes, print_comparison
+from auto_evaluation_system.benchmarks.doc_poison_eval import compare_defense_modes, print_comparison
 
 
 def main():

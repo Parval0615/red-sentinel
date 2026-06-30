@@ -10,7 +10,6 @@ Runs three experiment groups against the same test cases:
 
 Saves raw results and a comparison summary to data/.
 """
-import sys
 import os
 import json
 import re
@@ -18,7 +17,7 @@ import time
 from datetime import datetime
 
 
-from auto_defense_system.rag.retriever import init_rag_retriever, rag_query, ENABLE_RERANK
+from auto_defense_system.rag.retriever import init_rag_retriever, rag_query
 from auto_defense_system.agent.react import agent_invoke
 from auto_evaluation_system.runners.test_cases import TEST_CASES
 
@@ -70,13 +69,11 @@ def evaluate_retriever(retriever, test_cases, label=""):
         precision = relevant_docs / len(source_docs) if source_docs else 0.0
 
         # 2. Generation (using production agent pipeline)
-        gen_start = time.time()
         generated_answer = agent_invoke(
             user_input=query,
             role="admin",
             custom_retriever=retriever
         )
-        gen_time = time.time() - gen_start
         total_elapsed = time.time() - start_time
 
         # Accuracy: fraction of expected keywords in generated answer
