@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any, Literal
+from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
@@ -15,6 +16,12 @@ IntegrationType = Literal["source", "docker", "api"]
 AgentStatus = Literal["created", "profiling", "benchmarking", "ready", "failed"]
 BenchmarkCaseType = Literal["attack", "clean"]
 Decision = Literal["allow", "block"]
+SupervisionDecision = Literal["allow", "deny", "ask"]
+SupervisionStatus = Literal["observed", "blocked", "pending", "approved", "rejected", "expired"]
+SupervisionCallType = Literal["llm_input", "llm_output", "tool_call", "tool_result", "code_execution", "file_access"]
+SupervisionDefaultAction = Literal["allow", "deny"]
+SupervisionResponseAction = Literal["approve", "reject"]
+SupervisionResponseStatus = Literal["approved", "rejected", "expired"]
 ReportStatus = Literal["complete", "incomplete"]
 OnboardingStageName = Literal["agent_record", "profile_analysis", "initial_benchmark", "default_defense_mount"]
 OnboardingStageStatus = Literal["completed", "failed", "skipped"]
@@ -46,6 +53,60 @@ def masked_api_key(value: str | None) -> str | None:
 
 def _has_text(value: str | None) -> bool:
     return bool(value and value.strip())
+
+
+def _supervision_event_id() -> str:
+    return f"evt_{uuid4().hex[:12]}"
+
+
+class SupervisionEvent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event_id: str = Field(default_factory=_supervision_event_id, min_length=1)
+    schema_version: Literal["supervision-event-v0.1"] = "supervision-event-v0.1"
+    timestamp: str = Field(default_factory=utc_now_iso, min_length=1)
+    tenant_id: str = Field(min_length=1)
+    agent_id: str = Field(min_length=1)
+    call_type: SupervisionCallType
+    decision: SupervisionDecision
+    reason: str = Field(min_length=1)
+    risk_score: float = Field(ge=0.0, le=100.0)
+    confidence: float = Field(ge=0.0, le=1.0)
+    payload_summary: dict[str, Any] = Field(default_factory=dict)
+    source: str = Field(min_length=1)
+    status: SupervisionStatus
+
+
+class PendingDecisionRecord(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event_id: str = Field(min_length=1)
+    requested_at: str = Field(min_length=1)
+    expires_at: str = Field(min_length=1)
+    default_action: SupervisionDefaultAction
+    supervisor_action: str | None = None
+    resolved_at: str | None = None
+
+
+class SupervisionResponseRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["supervision-response-request-v0.1"] = "supervision-response-request-v0.1"
+    action: SupervisionResponseAction
+    operator: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+
+
+class SupervisionResponseRecord(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["supervision-response-v0.1"] = "supervision-response-v0.1"
+    event_id: str = Field(min_length=1)
+    action: SupervisionResponseAction
+    operator: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+    resolved_at: str = Field(default_factory=utc_now_iso, min_length=1)
+    status: SupervisionResponseStatus
 
 
 class AuthRegisterRequest(BaseModel):

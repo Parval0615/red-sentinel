@@ -685,6 +685,65 @@ def test_evaluation_logs_list_detail_metrics_and_node_markers() -> None:
     assert "日志详情接口暂不可用，未展示任何伪造详情。" in html
 
 
+def test_supervision_panel_events_summary_refresh_and_ask_controls() -> None:
+    html = _dashboard_index_html()
+    dom = _parse_dashboard_index()
+
+    for element_id in {
+        "supervision-entry-link",
+        "supervision-panel",
+        "supervision-title",
+        "supervision-refresh-button",
+        "supervision-demo-seed-button",
+        "supervision-status",
+        "supervision-last-update",
+        "supervision-summary-allow",
+        "supervision-summary-deny",
+        "supervision-summary-ask",
+        "supervision-summary-high-risk",
+        "supervision-empty-state",
+        "supervision-events-list",
+    }:
+        assert element_id in dom.ids
+
+    for label in {
+        "监督端",
+        "刷新监督事件",
+        "生成演示事件",
+        "放行",
+        "阻断",
+        "询问",
+        "高风险",
+        "allow / deny / ask",
+        "监督事件暂不可用，未展示伪造事件。",
+        "批准",
+        "拒绝",
+    }:
+        assert label in html
+
+    for snippet in {
+        "function initSupervisionPanel()",
+        "function showSupervisionPanel()",
+        "function startSupervisionPolling()",
+        "async function loadSupervisionLatest(options = {})",
+        "async function seedSupervisionDemoEvents()",
+        "function renderSupervisionSnapshot(snapshot = {})",
+        "function renderSupervisionEvents(events)",
+        "function renderSupervisionEventCard(event)",
+        "async function respondToSupervisionAsk(eventId, action)",
+        "fetch('/v1/supervision/latest'",
+        "fetch('/v1/supervision/demo-seed'",
+        "fetch('/v1/supervision/ask/' + encodeURIComponent(eventId) + '/respond'",
+        "headers: authHeaders({ 'Content-Type': 'application/json' })",
+        "data-supervision-action=\"approve\"",
+        "data-supervision-action=\"reject\"",
+        "event.decision === 'ask' && event.status === 'pending'",
+        "window.setInterval",
+        "initSupervisionPanel();",
+    }:
+        assert snippet in html
+
+
 def test_benchmark_selection_versions_details_and_case_markers() -> None:
     html = _dashboard_index_html()
     dom = _parse_dashboard_index()
