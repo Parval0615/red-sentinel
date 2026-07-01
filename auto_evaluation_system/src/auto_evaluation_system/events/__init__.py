@@ -4,6 +4,7 @@ from auto_evaluation_system.events.emitter import InMemoryStepEmitter, MaxStepsE
 from auto_evaluation_system.events.models import (
     LLMInferencePayload,
     MemoryOpPayload,
+    MonitorDecisionPayload,
     StepEvent,
     StepType,
     ToolCallIntent,
@@ -15,6 +16,7 @@ __all__ = [
     "LLMInferencePayload",
     "MaxStepsExceeded",
     "MemoryOpPayload",
+    "MonitorDecisionPayload",
     "StepEvent",
     "StepType",
     "ToolCallIntent",
