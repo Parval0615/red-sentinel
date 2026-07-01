@@ -1,4 +1,3 @@
-from auto_defense_system.monitor_plugin.hooks import OpenManusMonitorHooks
 from auto_defense_system.monitor_plugin.interceptor import (
     CallType,
     DecisionValue,
@@ -21,3 +20,11 @@ __all__ = [
     "SupervisorResolution",
     "execute_approved_code_in_docker",
 ]
+
+
+def __getattr__(name: str):
+    if name == "OpenManusMonitorHooks":
+        from auto_defense_system.monitor_plugin.hooks import OpenManusMonitorHooks
+
+        return OpenManusMonitorHooks
+    raise AttributeError(name)
