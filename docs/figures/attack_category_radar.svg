@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" viewBox="0 0 720 720" role="img">
+<rect width="720" height="720" fill="#F8F5EF"/>
+<text x="48" y="42" font-size="22" font-weight="700" fill="#1F2933">Attack Category ASR Radar</text>
+<text x="48" y="66" font-size="13" fill="#5D6673">Each spoke is one attack category from the experiment JSON.</text>
+<polygon points="360.00,330.40 397.22,348.32 406.41,388.59 380.65,420.89 339.35,420.89 313.59,388.59 322.78,348.32" fill="none" stroke="#D8D1C7" stroke-width="1"/>
+<text x="366.00" y="334.40" font-size="11" fill="#7A7168">20%</text>
+<polygon points="360.00,282.80 434.43,318.64 452.81,399.18 401.31,463.77 318.69,463.77 267.19,399.18 285.57,318.64" fill="none" stroke="#D8D1C7" stroke-width="1"/>
+<text x="366.00" y="286.80" font-size="11" fill="#7A7168">40%</text>
+<polygon points="360.00,235.20 471.65,288.97 499.22,409.78 421.96,506.66 298.04,506.66 220.78,409.78 248.35,288.97" fill="none" stroke="#D8D1C7" stroke-width="1"/>
+<text x="366.00" y="239.20" font-size="11" fill="#7A7168">60%</text>
+<polygon points="360.00,187.60 508.86,259.29 545.63,420.37 442.61,549.54 277.39,549.54 174.37,420.37 211.14,259.29" fill="none" stroke="#D8D1C7" stroke-width="1"/>
+<text x="366.00" y="191.60" font-size="11" fill="#7A7168">80%</text>
+<polygon points="360.00,140.00 546.08,229.61 592.03,430.96 463.26,592.43 256.74,592.43 127.97,430.96 173.92,229.61" fill="none" stroke="#D8D1C7" stroke-width="1"/>
+<text x="366.00" y="144.00" font-size="11" fill="#7A7168">100%</text>
+<line x1="360.00" y1="378.00" x2="360.00" y2="140.00" stroke="#C7BFB4"/>
+<text x="360.00" y="98.00" font-size="12" text-anchor="middle" fill="#1F2933">jailbreak</text>
+<line x1="360.00" y1="378.00" x2="546.08" y2="229.61" stroke="#C7BFB4"/>
+<text x="591.42" y="203.42" font-size="12" text-anchor="start" fill="#1F2933">data leakage</text>
+<line x1="360.00" y1="378.00" x2="592.03" y2="430.96" stroke="#C7BFB4"/>
+<text x="648.58" y="440.31" font-size="12" text-anchor="start" fill="#1F2933">env awareness</text>
+<line x1="360.00" y1="378.00" x2="463.26" y2="592.43" stroke="#C7BFB4"/>
+<text x="488.43" y="630.27" font-size="12" text-anchor="start" fill="#1F2933">prompt injection</text>
+<line x1="360.00" y1="378.00" x2="256.74" y2="592.43" stroke="#C7BFB4"/>
+<text x="231.57" y="630.27" font-size="12" text-anchor="end" fill="#1F2933">tool tampering</text>
+<line x1="360.00" y1="378.00" x2="127.97" y2="430.96" stroke="#C7BFB4"/>
+<text x="71.42" y="440.31" font-size="12" text-anchor="end" fill="#1F2933">memory poisoning</text>
+<line x1="360.00" y1="378.00" x2="173.92" y2="229.61" stroke="#C7BFB4"/>
+<text x="128.58" y="203.42" font-size="12" text-anchor="end" fill="#1F2933">goal drift</text>
+<polygon points="360.00,140.00 546.08,229.61 592.03,430.96 463.26,592.43 256.74,592.43 127.97,430.96 173.92,229.61" fill="#8B3A3A" fill-opacity="0.20" stroke="#8B3A3A" stroke-width="3"/>
+<polygon points="360.00,251.07 360.00,378.00 360.00,378.00 394.42,449.47 360.00,378.00 360.00,378.00 360.00,378.00" fill="#2F6F73" fill-opacity="0.22" stroke="#2F6F73" stroke-width="3"/>
+<circle cx="360.00" cy="378.00" r="3" fill="#1F2933"/>
+<g><rect x="478" y="23" width="16" height="16" rx="3" fill="#8B3A3A"/><text x="502" y="35" font-size="13" fill="#1F2933">No defense ASR</text></g>
+<g><rect x="478" y="47" width="16" height="16" rx="3" fill="#2F6F73"/><text x="502" y="59" font-size="13" fill="#1F2933">With defense ASR</text></g>
+</svg>

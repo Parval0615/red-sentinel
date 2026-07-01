@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from agent_security_sdk.adapter import AgentAdapter
 from agent_security_sdk.ecommerce import EcommerceEnterpriseAdapter
+from agent_security_sdk.openmanus import OpenManusAdapter
 from auto_evaluation_system.product_api.attack_pack import EcommerceAttackScenario, load_ecommerce_attack_pack
 from auto_evaluation_system.product_api.comparison import build_retest_comparison, write_comparison_artifacts
 from auto_evaluation_system.product_api.contracts import (
@@ -54,6 +55,7 @@ from auto_evaluation_system.product_api.reports import (
     write_report_artifacts,
 )
 from auto_evaluation_system.product_api.storage import ProductStorage, safe_component
+from auto_evaluation_system.product_api.supervision import SupervisionEventStore
 
 
 DEFAULT_BENCHMARK_ID = "ecommerce-security-v0.1"
@@ -61,6 +63,15 @@ DEFAULT_BENCHMARK_VERSION = "v0.1"
 _INPUT_BENCHMARK_CATEGORIES = {"direct_injection", "goal_perturbation"}
 _OUTPUT_BENCHMARK_CATEGORIES = {"data_exfiltration"}
 _RUNTIME_BENCHMARK_CATEGORIES = {"business_logic_abuse", "privilege_escalation", "tool_tampering"}
+_SUPERVISION_CALL_TYPES = {
+    "llm_input",
+    "llm_output",
+    "tool_call",
+    "tool_result",
+    "code_execution",
+    "file_access",
+}
+_SUPERVISION_STATUSES = {"observed", "blocked", "pending", "approved", "rejected", "expired"}
 
 
 class EvaluationRequestError(ValueError):
@@ -87,8 +98,8 @@ class ProductEvaluationService:
         safe_component(registration.tenant_id, "tenant_id")
         safe_component(registration.agent_id, "agent_id")
         key = (registration.tenant_id, registration.agent_id)
-        if adapter is None and registration.adapter_type == "ecommerce_demo":
-            adapter = EcommerceEnterpriseAdapter(session_id=f"{registration.agent_id}-default")
+        if adapter is None and registration.adapter_type in {"ecommerce_demo", "openmanus"}:
+            adapter = _builtin_adapter_for(registration)
             if not registration.tool_specs:
                 registration = registration.model_copy(
                     update={"tool_specs": [ToolSpecModel.model_validate(tool.to_dict()) for tool in adapter.list_tools()]}
@@ -235,6 +246,7 @@ class ProductEvaluationService:
             {
                 "benchmark_id": benchmark_id,
                 "benchmark_version": benchmark_version,
+                "defense_enabled": request.defense_enabled,
                 **status.model_dump(mode="json"),
             },
         )
@@ -271,10 +283,16 @@ class ProductEvaluationService:
                 {
                     "benchmark_id": report.benchmark_id or benchmark_id,
                     "benchmark_version": report.benchmark_version or benchmark_version,
+                    "defense_enabled": request.defense_enabled,
                     **completed.model_dump(mode="json"),
                     "completed_at": report.summary.get("completed_at"),
                     "report_status": report.status,
                 },
+            )
+            self._bridge_runtime_events_to_supervision(
+                evaluation_id,
+                tenant_id=request.tenant_id,
+                agent_id=request.agent_id,
             )
             return completed
         except Exception as exc:
@@ -287,6 +305,7 @@ class ProductEvaluationService:
                 {
                     "benchmark_id": benchmark_id,
                     "benchmark_version": benchmark_version,
+                    "defense_enabled": request.defense_enabled,
                     **failed.model_dump(mode="json"),
                 },
             )
@@ -794,9 +813,16 @@ class ProductEvaluationService:
                 f"{evaluation_id}:{scenario.scenario_id}:controlled",
                 scenario.controlled_steps,
             )
-            clean_decision = "block" if any(turn["blocked"] for turn in clean["turns"]) else "allow"
-            actual_decision = "block" if any(turn["blocked"] for turn in controlled["turns"]) else "allow"
-            pii_ok = _turn_outputs_are_pii_safe(controlled["turns"])
+            if request.defense_enabled:
+                clean_decision = "block" if any(turn["blocked"] for turn in clean["turns"]) else "allow"
+                actual_decision = "block" if any(turn["blocked"] for turn in controlled["turns"]) else "allow"
+                pii_ok = _turn_outputs_are_pii_safe(controlled["turns"])
+            else:
+                clean = _mark_no_defense_run(clean)
+                controlled = _mark_no_defense_run(controlled)
+                clean_decision = "allow"
+                actual_decision = "allow"
+                pii_ok = True
             passed = clean_decision == "allow" and actual_decision == scenario.expected_decision and pii_ok
 
             trajectory_path = trajectory_dir / f"{scenario.scenario_id}.json"
@@ -929,12 +955,15 @@ class ProductEvaluationService:
                 "completed_at": utc_now_iso(),
                 "deployment": "private_single_tenant",
                 "pilot_preset": request.pilot_preset or "full_benchmark",
+                "defense_enabled": request.defense_enabled,
+                "evaluation_mode": "guarded" if request.defense_enabled else "baseline_no_defense",
             },
             findings=findings,
             scenario_results=scenario_results,
             guard_effectiveness={
                 "blocked_controlled_attacks": sum(1 for item in scenario_results if item.actual_decision == "block"),
                 "output_masking_checked": True,
+                "defense_enabled": request.defense_enabled,
             },
             false_positive_rate=deterministic_metrics.fpr,
             attack_success_rate=deterministic_metrics.asr,
@@ -966,6 +995,8 @@ class ProductEvaluationService:
                 "report_path": str(report_path),
                 "benchmark_id": benchmark.benchmark_id,
                 "benchmark_version": benchmark.version,
+                "defense_enabled": request.defense_enabled,
+                "evaluation_mode": "guarded" if request.defense_enabled else "baseline_no_defense",
                 "status": report.status,
             },
         )
@@ -1035,6 +1066,27 @@ class ProductEvaluationService:
                     context["last_order_id"] = order_id
         return {"session_id": session_id, "turns": turns, "trajectory": adapter.export_trajectory()}
 
+    def _bridge_runtime_events_to_supervision(self, evaluation_id: str, *, tenant_id: str, agent_id: str) -> int:
+        store = SupervisionEventStore(storage=self.storage)
+        existing_event_ids = {event.event_id for event in store.read_recent_events(limit=store.max_events)}
+        bridged_count = 0
+        for event in _read_runtime_security_events(_runtime_security_event_paths(self.storage.root)):
+            if not _runtime_event_matches_evaluation(event, evaluation_id=evaluation_id, agent_id=agent_id):
+                continue
+            supervision_event = _supervision_event_from_runtime_event(
+                event,
+                evaluation_id=evaluation_id,
+                tenant_id=tenant_id,
+                agent_id=agent_id,
+            )
+            event_id = supervision_event["event_id"]
+            if event_id in existing_event_ids:
+                continue
+            store.append_event(supervision_event)
+            existing_event_ids.add(event_id)
+            bridged_count += 1
+        return bridged_count
+
     def _adapter_for(self, registration: AgentRegistration, mode: str = "sdk") -> AgentAdapter:
         if mode == "offline_trace":
             # offline_trace is the built-in e-commerce demo path, not a replay of an external Agent runtime.
@@ -1042,7 +1094,7 @@ class ProductEvaluationService:
         key = (registration.tenant_id, registration.agent_id)
         adapter = self._adapters.get(key)
         if adapter is None and _can_use_builtin_adapter(registration, mode):
-            adapter = EcommerceEnterpriseAdapter(session_id=f"{registration.agent_id}-default")
+            adapter = _builtin_adapter_for(registration)
             self._adapters[key] = adapter
         if adapter is None:
             raise ValueError(_missing_adapter_message(registration))
@@ -1164,6 +1216,160 @@ class ProductEvaluationService:
         return len(list(results_dir.glob("*.json")))
 
 
+def _runtime_security_event_paths(storage_root: Path) -> list[Path]:
+    candidates = [
+        storage_root / "security_events.jsonl",
+        storage_root / "runtime" / "security_events.jsonl",
+        storage_root / "monitor" / "security_events.jsonl",
+    ]
+    if storage_root.name == "product":
+        candidates.append(storage_root.parent / "security_events.jsonl")
+
+    seen: set[str] = set()
+    paths: list[Path] = []
+    for path in candidates:
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        paths.append(path)
+    return paths
+
+
+def _read_runtime_security_events(paths: Iterable[Path]) -> Iterable[dict[str, Any]]:
+    for path_index, path in enumerate(paths):
+        if not path.exists():
+            continue
+        for line_index, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if not line.strip():
+                continue
+            try:
+                payload = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(payload, dict):
+                continue
+            event = dict(payload)
+            event.setdefault("event_id", f"evt_runtime_{path_index}_{line_index}")
+            yield event
+
+
+def _runtime_event_matches_evaluation(event: dict[str, Any], *, evaluation_id: str, agent_id: str) -> bool:
+    event_agent_id = str(event.get("agent_id") or "")
+    if event_agent_id and event_agent_id != agent_id:
+        return False
+
+    if str(event.get("evaluation_id") or "") == evaluation_id:
+        return True
+
+    session_id = str(event.get("session_id") or "")
+    if session_id == evaluation_id or session_id.startswith(f"{evaluation_id}:"):
+        return True
+
+    payload_summary = event.get("payload_summary")
+    if isinstance(payload_summary, dict) and str(payload_summary.get("evaluation_id") or "") == evaluation_id:
+        return True
+    return False
+
+
+def _supervision_event_from_runtime_event(
+    event: dict[str, Any],
+    *,
+    evaluation_id: str,
+    tenant_id: str,
+    agent_id: str,
+) -> dict[str, Any]:
+    detail = event.get("detail") if isinstance(event.get("detail"), dict) else {}
+    decision = _normalize_supervision_decision(event.get("decision") or detail.get("decision"))
+    pending = _bool_value(event.get("pending")) or decision == "ask"
+    payload_summary = event.get("payload_summary") if isinstance(event.get("payload_summary"), dict) else {}
+    payload_summary = dict(payload_summary)
+    if event.get("session_id"):
+        payload_summary.setdefault("session_id", str(event["session_id"]))
+    payload_summary.setdefault("evaluation_id", evaluation_id)
+
+    return {
+        "event_id": str(event.get("event_id")),
+        "timestamp": str(event.get("timestamp") or utc_now_iso()),
+        "tenant_id": str(event.get("tenant_id") or tenant_id),
+        "agent_id": agent_id,
+        "call_type": _normalize_supervision_call_type(event.get("call_type")),
+        "decision": decision,
+        "reason": _runtime_event_reason(event, detail),
+        "risk_score": _bounded_float(
+            event.get("risk_score", detail.get("risk_score")),
+            default=0.0,
+            minimum=0.0,
+            maximum=100.0,
+        ),
+        "confidence": _bounded_float(
+            event.get("confidence"),
+            default=0.9,
+            minimum=0.0,
+            maximum=1.0,
+        ),
+        "payload_summary": payload_summary,
+        "source": str(event.get("source") or "runtime_security_events"),
+        "status": _normalize_supervision_status(event.get("status"), decision=decision, pending=pending),
+    }
+
+
+def _normalize_supervision_decision(value: Any) -> str:
+    decision = str(value or "allow").lower()
+    if decision in {"block", "blocked"}:
+        return "deny"
+    if decision in {"allow", "deny", "ask"}:
+        return decision
+    return "deny"
+
+
+def _normalize_supervision_call_type(value: Any) -> str:
+    call_type = str(value or "").lower()
+    call_type = {
+        "code_exec": "code_execution",
+        "llm_inference": "llm_input",
+        "llm": "llm_input",
+        "input": "llm_input",
+        "output": "llm_output",
+        "file": "file_access",
+    }.get(call_type, call_type)
+    if call_type in _SUPERVISION_CALL_TYPES:
+        return call_type
+    return "tool_call"
+
+
+def _normalize_supervision_status(value: Any, *, decision: str, pending: bool) -> str:
+    status = str(value or "").lower()
+    if status in _SUPERVISION_STATUSES:
+        return status
+    if pending:
+        return "pending"
+    if decision == "deny":
+        return "blocked"
+    return "observed"
+
+
+def _runtime_event_reason(event: dict[str, Any], detail: dict[str, Any]) -> str:
+    reason = str(event.get("reason") or detail.get("blocked_reason") or detail.get("reason") or "")
+    return reason or "Runtime security event."
+
+
+def _bool_value(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in {"1", "true", "yes", "y"}
+    return bool(value)
+
+
+def _bounded_float(value: Any, *, default: float, minimum: float, maximum: float) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        number = default
+    return max(minimum, min(maximum, number))
+
+
 def _adapter_type_for(integration_type: str) -> str:
     if integration_type == "api":
         return "http_endpoint"
@@ -1171,7 +1377,14 @@ def _adapter_type_for(integration_type: str) -> str:
 
 
 def _can_use_builtin_adapter(registration: AgentRegistration, mode: str) -> bool:
-    return registration.adapter_type == "ecommerce_demo" or mode == "offline_trace"
+    return registration.adapter_type in {"ecommerce_demo", "openmanus"} or mode == "offline_trace"
+
+
+def _builtin_adapter_for(registration: AgentRegistration) -> AgentAdapter:
+    session_id = f"{registration.agent_id}-default"
+    if registration.adapter_type == "openmanus":
+        return OpenManusAdapter(session_id=session_id)
+    return EcommerceEnterpriseAdapter(session_id=session_id)
 
 
 def _missing_adapter_message(registration: AgentRegistration) -> str:
@@ -1689,6 +1902,28 @@ def _collect_audit_events(run: dict[str, Any]) -> list[dict[str, Any]]:
         for event in turn.get("audit_events", []):
             events.append(dict(event))
     return events
+
+
+def _mark_no_defense_run(run: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(run)
+    payload["defense_enabled"] = False
+    payload["evaluation_mode"] = "baseline_no_defense"
+    payload["turns"] = [_mark_no_defense_turn(turn) for turn in run.get("turns", [])]
+    trajectory = dict(run.get("trajectory") or {})
+    if trajectory:
+        trajectory["defense_enabled"] = False
+        trajectory["evaluation_mode"] = "baseline_no_defense"
+        trajectory["turns"] = [_mark_no_defense_turn(turn) for turn in trajectory.get("turns", [])]
+        payload["trajectory"] = trajectory
+    return payload
+
+
+def _mark_no_defense_turn(turn: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(turn)
+    payload["blocked"] = False
+    payload["defense_enabled"] = False
+    payload["evaluation_mode"] = "baseline_no_defense"
+    return payload
 
 
 def _turn_outputs_are_pii_safe(turns: list[dict[str, Any]]) -> bool:

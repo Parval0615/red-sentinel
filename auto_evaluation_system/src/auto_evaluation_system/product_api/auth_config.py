@@ -95,6 +95,9 @@ PROTECTED_ROUTE_RULES: tuple[RouteRule, ...] = (
 )
 
 ADMIN_ROUTE_RULES: tuple[RouteRule, ...] = (
+    RouteRule("GET", "/v1/monitor/events"),
+    RouteRule("GET", "/v1/monitor/events/summary"),
+    RouteRule("POST", "/v1/admin/agents/openmanus"),
     RouteRule("GET", "/v1/admin/agent-library"),
     RouteRule("POST", "/v1/admin/agent-library"),
     RouteRule("GET", "/v1/admin/agent-library/{agent_id}"),

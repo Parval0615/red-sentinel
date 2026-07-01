@@ -44,6 +44,23 @@
 | `business_impact` | Impact Section |
 | `artifacts` | Evidence Section |
 
+### SecurityEvent → Realtime Supervision Mapping
+
+admin 登录态下，`loadSecurityEvents()` 优先携带 `Authorization` 读取同源 `GET /v1/monitor/events`，并支持 `agent_id`、`decision`、`session_id` 和 `limit` 查询参数；静态预览或 API 失败时回退读取 `data/mock_events.json`。
+
+| SecurityEvent Field | Realtime Supervision Usage |
+|---|---|
+| `event_id` | HITL approve/reject action identity |
+| `timestamp` | Event metadata time |
+| `agent_id` | Event metadata and API filter |
+| `session_id` | API filter/context |
+| `call_type` | Event card title |
+| `decision` | Decision badge and allow/deny/ask grouping |
+| `status` | Status badge and pending action gating |
+| `risk_score` | Risk badge and high-risk summary |
+| `reason` | Event reason copy |
+| `payload_summary` | Payload JSON preview |
+
 ### ScenarioResult → Table Mapping
 
 | Field | Column |

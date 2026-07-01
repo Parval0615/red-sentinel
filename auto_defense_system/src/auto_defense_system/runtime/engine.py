@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import json
+import re
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Literal
+from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -47,34 +52,110 @@ class RuntimeGuardDecision(BaseModel):
     audit_payload: dict[str, str]
 
 
+class SecurityEventEmitter:
+    def __init__(self, events_path: str | Path, *, max_events: int = 500) -> None:
+        self.events_path = Path(events_path)
+        self.max_events = max_events
+
+    def emit(
+        self,
+        *,
+        session_id: str,
+        agent_id: str,
+        call_type: str,
+        decision: str,
+        reason: str,
+        risk_score: float,
+        pending: bool = False,
+        payload_summary: dict[str, Any] | None = None,
+        event_id: str | None = None,
+        timestamp: str | None = None,
+    ) -> dict[str, Any]:
+        normalized_decision = _normalize_event_decision(decision)
+        event = {
+            "event_id": event_id or f"evt_{uuid4().hex[:12]}",
+            "session_id": str(session_id),
+            "agent_id": str(agent_id),
+            "call_type": str(call_type),
+            "decision": normalized_decision,
+            "reason": _sanitize_event_text(str(reason)),
+            "risk_score": float(risk_score),
+            "pending": bool(pending or normalized_decision == "ask"),
+            "payload_summary": _sanitize_event_payload(payload_summary or {}),
+            "timestamp": timestamp or _utc_now_iso(),
+        }
+
+        self.events_path.parent.mkdir(parents=True, exist_ok=True)
+        with self.events_path.open("a", encoding="utf-8") as file:
+            file.write(json.dumps(event, ensure_ascii=False, sort_keys=True))
+            file.write("\n")
+        self._trim_events()
+        return event
+
+    def _trim_events(self) -> None:
+        if self.max_events <= 0 or not self.events_path.exists():
+            return
+        lines = [line for line in self.events_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        if len(lines) <= self.max_events:
+            return
+        self.events_path.write_text("\n".join(lines[-self.max_events:]) + "\n", encoding="utf-8")
+
+
 class DefenseRuntime:
-    def __init__(self, plan: DefensePlan) -> None:
+    def __init__(
+        self,
+        plan: DefensePlan,
+        *,
+        event_emitter: SecurityEventEmitter | None = None,
+        session_id: str = "default",
+        agent_id: str | None = None,
+    ) -> None:
         self.plan = plan
         self._mounts = {mount.node_id: mount for mount in plan.mounts}
+        self.event_emitter = event_emitter
+        self.session_id = session_id
+        self.agent_id = agent_id or plan.agent_name
 
     def evaluate(self, node_input: RuntimeNodeInput) -> RuntimeGuardDecision:
         mount = self._mounts.get(node_input.node_id)
         if mount is None:
-            return _decision(
+            decision = _decision(
                 node_id=node_input.node_id,
                 guard_name="unmounted",
                 allowed=True,
                 reason="allowed_unmounted: no guard mount configured for node.",
             )
+        elif mount.guard_name == "input_firewall":
+            decision = self._evaluate_input_firewall(mount, node_input)
+        elif mount.guard_name == "rag_chunk_scanner":
+            decision = self._evaluate_rag_scanner(mount, node_input)
+        elif mount.guard_name == "tool_guard":
+            decision = self._evaluate_tool_guard(mount, node_input)
+        elif mount.guard_name == "memory_guard":
+            decision = self._evaluate_memory_guard(mount, node_input)
+        elif mount.guard_name == "goal_guard":
+            decision = self._evaluate_goal_guard(mount, node_input)
+        elif mount.guard_name == "output_filter":
+            decision = self._evaluate_output_filter(mount, node_input)
+        else:
+            raise ValueError(f"Unsupported guard mount: {mount.guard_name}")
 
-        if mount.guard_name == "input_firewall":
-            return self._evaluate_input_firewall(mount, node_input)
-        if mount.guard_name == "rag_chunk_scanner":
-            return self._evaluate_rag_scanner(mount, node_input)
-        if mount.guard_name == "tool_guard":
-            return self._evaluate_tool_guard(mount, node_input)
-        if mount.guard_name == "memory_guard":
-            return self._evaluate_memory_guard(mount, node_input)
-        if mount.guard_name == "goal_guard":
-            return self._evaluate_goal_guard(mount, node_input)
-        if mount.guard_name == "output_filter":
-            return self._evaluate_output_filter(mount, node_input)
-        raise ValueError(f"Unsupported guard mount: {mount.guard_name}")
+        self._emit_event(node_input, decision)
+        return decision
+
+    def _emit_event(self, node_input: RuntimeNodeInput, decision: RuntimeGuardDecision) -> None:
+        if self.event_emitter is None:
+            return
+        self.event_emitter.emit(
+            session_id=str(node_input.metadata.get("session_id") or self.session_id),
+            agent_id=str(node_input.metadata.get("agent_id") or self.agent_id),
+            call_type=_event_call_type(node_input, decision),
+            decision="allow" if decision.allowed else "deny",
+            reason=decision.reason,
+            risk_score=_risk_score_from_level(decision.risk_level),
+            pending=False,
+            payload_summary=_runtime_payload_summary(node_input, decision),
+        )
 
     def _evaluate_input_firewall(
         self,
@@ -257,8 +338,84 @@ def _fallback_chunk_scan(chunk: Any, index: int) -> dict[str, Any]:
     }
 
 
+_SECRET_KEY_RE = re.compile(r"(secret|token|password)", re.IGNORECASE)
+_SECRET_ASSIGNMENT_RE = re.compile(r"\b(secret|token|password)\b\s*[:=]\s*([^\s,;]+)", re.IGNORECASE)
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _normalize_event_decision(decision: str) -> str:
+    normalized = str(decision).lower()
+    if normalized in {"block", "blocked"}:
+        return "deny"
+    if normalized in {"allow", "deny", "ask"}:
+        return normalized
+    return "deny"
+
+
+def _sanitize_event_payload(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            str(key): "[REDACTED]" if _SECRET_KEY_RE.search(str(key)) else _sanitize_event_payload(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_sanitize_event_payload(item) for item in value]
+    if isinstance(value, tuple):
+        return [_sanitize_event_payload(item) for item in value]
+    if isinstance(value, str):
+        return _sanitize_event_text(value)
+    return value
+
+
+def _sanitize_event_text(value: str) -> str:
+    return _SECRET_ASSIGNMENT_RE.sub(lambda match: f"{match.group(1)}=[REDACTED]", value)
+
+
+def _event_call_type(node_input: RuntimeNodeInput, decision: RuntimeGuardDecision) -> str:
+    metadata_call_type = node_input.metadata.get("call_type")
+    if metadata_call_type:
+        return str(metadata_call_type)
+
+    tool_name = (node_input.tool_name or "").lower()
+    if "file" in tool_name:
+        return "file_access"
+    if "code" in tool_name or "exec" in tool_name:
+        return "code_exec"
+    if decision.guard_name == "input_firewall":
+        return "llm_input"
+    if decision.guard_name == "output_filter":
+        return "llm_output"
+    return "tool_call"
+
+
+def _runtime_payload_summary(node_input: RuntimeNodeInput, decision: RuntimeGuardDecision) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "node_id": decision.node_id,
+        "guard_name": decision.guard_name,
+    }
+    if node_input.tool_name:
+        payload["tool_name"] = node_input.tool_name
+    if node_input.tool_arguments:
+        payload["tool_arguments"] = node_input.tool_arguments
+    return payload
+
+
+def _risk_score_from_level(risk_level: str) -> float:
+    return {
+        "normal": 0.0,
+        "low": 25.0,
+        "medium": 50.0,
+        "high": 80.0,
+        "critical": 100.0,
+    }.get(risk_level, 0.0)
+
+
 __all__ = [
     "DefenseRuntime",
     "RuntimeGuardDecision",
     "RuntimeNodeInput",
+    "SecurityEventEmitter",
 ]

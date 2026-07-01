@@ -466,6 +466,42 @@ def test_evaluation_api_accepts_benchmark_version_and_returns_progress(tmp_path)
     assert lookup.json()["current_node"] == body["current_node"]
 
 
+def test_evaluation_api_distinguishes_guarded_and_no_defense_modes(tmp_path) -> None:
+    pytest.importorskip("fastapi")
+
+    client = _client(tmp_path)
+    client.post("/v1/agents", json={"agent_id": "defense_mode_agent", "name": "Defense Mode Agent"})
+
+    guarded = client.post(
+        "/v1/evaluations",
+        json={
+            "agent_id": "defense_mode_agent",
+            "scenarios": ["direct-injection-system-prompt"],
+        },
+    )
+    baseline = client.post(
+        "/v1/evaluations",
+        json={
+            "agent_id": "defense_mode_agent",
+            "scenarios": ["direct-injection-system-prompt"],
+            "defense_enabled": False,
+        },
+    )
+
+    assert guarded.status_code == 200
+    assert baseline.status_code == 200
+    guarded_report = client.get(f"/v1/reports/{guarded.json()['report_id']}").json()
+    baseline_report = client.get(f"/v1/reports/{baseline.json()['report_id']}").json()
+
+    assert guarded_report["summary"]["defense_enabled"] is True
+    assert guarded_report["summary"]["evaluation_mode"] == "guarded"
+    assert guarded_report["scenario_results"][0]["actual_decision"] == "block"
+    assert baseline_report["summary"]["defense_enabled"] is False
+    assert baseline_report["summary"]["evaluation_mode"] == "baseline_no_defense"
+    assert baseline_report["scenario_results"][0]["actual_decision"] == "allow"
+    assert baseline_report["attack_success_rate"] >= guarded_report["attack_success_rate"]
+
+
 def test_evaluation_api_rejects_missing_adapter_before_acceptance(tmp_path) -> None:
     pytest.importorskip("fastapi")
 

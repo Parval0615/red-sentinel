@@ -45,6 +45,7 @@ DEFAULT_POLICY_RULES = {
                 r"password", r"credential", r"secret",
             ],
             "block_actions": ["delete", "overwrite", "chmod", "chown"],
+            "ask_actions": ["write", "append"],
             "allowed_actions": ["read", "list", "stat"],
             "risk_level": "critical",
             "message": "文件写/删操作被策略引擎拦截。仅允许只读操作(read/list/stat)。",
@@ -55,6 +56,7 @@ DEFAULT_POLICY_RULES = {
                 "internal.", ".local", ".internal",
             ],
             "block_external_post": True,
+            "ask_risk_levels": [],
             "risk_level": "high",
             "message": "向外部域名的POST/PUT请求被策略引擎拦截。仅允许内部API调用。",
         },
@@ -62,6 +64,7 @@ DEFAULT_POLICY_RULES = {
             "max_recipients": 5,
             "block_external_recipients": True,
             "internal_domains": ["@company.com", "@internal.com"],
+            "ask_domains": ["*"],
             "block_content_patterns": [
                 "password", "credential", "token", "secret", "api_key",
                 "密码", "密钥", "令牌", "凭证",
@@ -191,6 +194,16 @@ def _check_file_policy(args: dict, policy: dict) -> tuple:
             },
         )
 
+    if action in policy.get("ask_actions", []):
+        return _ask_result(
+            f"文件操作 '{action}' 需要人工确认。",
+            {
+                "risk_level": "medium",
+                "blocked_reason": f"ask_action: {action}",
+                "rule_name": "file_operation.ask_actions",
+            },
+        )
+
     # Check blocked paths
     for bp in policy.get("block_paths", []):
         if bp.lower() in path.lower():
@@ -292,23 +305,7 @@ def _check_email_policy(args: dict, policy: dict) -> tuple:
             },
         )
 
-    # Check external recipients
-    if policy.get("block_external_recipients", True):
-        internal_domains = policy.get("internal_domains", [])
-        for r in recipients:
-            is_internal = _recipient_matches_internal_domain(r, internal_domains)
-            if not is_internal:
-                return (
-                    False,
-                    f"{policy['message']} 收件人 '{r}' 不在内部域白名单中。",
-                    {
-                        "risk_level": policy["risk_level"],
-                        "blocked_reason": f"external_recipient: {r}",
-                        "rule_name": "send_email.block_external_recipients",
-                    },
-                )
-
-    # Check content patterns
+    # Check content patterns before external recipients so sensitive exfiltration stays deny.
     combined = (subject + " " + body).lower()
     for pattern in policy.get("block_content_patterns", []):
         if re.search(pattern, combined, re.IGNORECASE):
@@ -322,6 +319,36 @@ def _check_email_policy(args: dict, policy: dict) -> tuple:
                 },
             )
 
+    # Check external recipients
+    if policy.get("block_external_recipients", True):
+        internal_domains = policy.get("internal_domains", [])
+        for r in recipients:
+            is_internal = _recipient_matches_internal_domain(r, internal_domains)
+            if not is_internal:
+                _, address = parseaddr(r)
+                domain = address.rsplit("@", 1)[-1].lower() if "@" in address else ""
+                if (
+                    not _domain_contains_internal_lookalike(domain, internal_domains)
+                    and _domain_matches_patterns(domain, policy.get("ask_domains", []))
+                ):
+                    return _ask_result(
+                        f"邮件发送到外部收件人 '{r}' 需要人工确认。",
+                        {
+                            "risk_level": "medium",
+                            "blocked_reason": f"external_recipient: {r}",
+                            "rule_name": "send_email.block_external_recipients",
+                        },
+                    )
+                return (
+                    False,
+                    f"{policy['message']} 收件人 '{r}' 不在内部域白名单中。",
+                    {
+                        "risk_level": policy["risk_level"],
+                        "blocked_reason": f"external_recipient: {r}",
+                        "rule_name": "send_email.block_external_recipients",
+                    },
+                )
+
     return True, "", {"risk_level": "low", "blocked_reason": None, "rule_name": "send_email.passed"}
 
 
@@ -332,6 +359,54 @@ def _recipient_matches_internal_domain(recipient: str, internal_domains: list[st
         return False
     allowed_domains = [str(d).lower().strip().lstrip("@").rstrip(".") for d in internal_domains]
     return any(domain == allowed for allowed in allowed_domains if allowed)
+
+
+def _domain_contains_internal_lookalike(domain: str, internal_domains: list[str]) -> bool:
+    normalized = domain.lower().strip().rstrip(".")
+    allowed_domains = [str(d).lower().strip().lstrip("@").rstrip(".") for d in internal_domains]
+    return any(allowed and allowed in normalized and normalized != allowed for allowed in allowed_domains)
+
+
+def _domain_matches_patterns(domain: str, patterns: list[str]) -> bool:
+    normalized = domain.lower().strip().rstrip(".")
+    if not normalized:
+        return False
+    for pattern in patterns:
+        candidate = str(pattern).lower().strip().lstrip("@").rstrip(".")
+        if not candidate:
+            continue
+        if candidate == "*":
+            return True
+        if candidate.startswith(".") and normalized.endswith(candidate):
+            return True
+        if normalized == candidate:
+            return True
+    return False
+
+
+def _ask_result(reason: str, detail: dict) -> tuple:
+    detail = dict(detail)
+    detail["decision"] = "ask"
+    detail["pending"] = True
+    return False, reason, detail
+
+
+def _finalize_policy_result(result: tuple, policy: dict | None = None) -> tuple:
+    allowed, reason, detail = result
+    detail = dict(detail or {})
+
+    decision = detail.get("decision")
+    if decision not in {"allow", "deny", "ask"}:
+        decision = "allow" if allowed else "deny"
+
+    if allowed and policy and detail.get("risk_level") in policy.get("ask_risk_levels", []):
+        allowed = False
+        decision = "ask"
+        reason = reason or "Policy risk level requires human confirmation."
+
+    detail["decision"] = decision
+    detail["pending"] = bool(detail.get("pending")) if decision == "ask" else False
+    return allowed, reason, detail
 
 
 # Policy checker dispatch table
@@ -359,7 +434,9 @@ def check_policy(tool_name: str, tool_args: dict, state: dict = None) -> tuple:
 
     # Global enable/disable
     if not rules.get("global", {}).get("enabled", True):
-        return True, "", {"risk_level": "low", "blocked_reason": "policy_disabled", "rule_name": "global.disabled"}
+        return _finalize_policy_result(
+            (True, "", {"risk_level": "low", "blocked_reason": "policy_disabled", "rule_name": "global.disabled"})
+        )
 
     # Rate limit checks
     rate_limits = rules.get("rate_limits", {})
@@ -368,14 +445,16 @@ def check_policy(tool_name: str, tool_args: dict, state: dict = None) -> tuple:
         max_total = rate_limits.get("max_total_calls_per_session", 10)
 
         if tool_call_count >= max_total:
-            return (
-                False,
-                rate_limits.get("message", "工具调用频率超限"),
-                {
-                    "risk_level": "high",
-                    "blocked_reason": f"rate_limit: {tool_call_count} >= {max_total} total",
-                    "rule_name": "rate_limits.max_total_calls",
-                },
+            return _finalize_policy_result(
+                (
+                    False,
+                    rate_limits.get("message", "工具调用频率超限"),
+                    {
+                        "risk_level": "high",
+                        "blocked_reason": f"rate_limit: {tool_call_count} >= {max_total} total",
+                        "rule_name": "rate_limits.max_total_calls",
+                    },
+                )
             )
 
     # Tool-specific policy check
@@ -384,26 +463,34 @@ def check_policy(tool_name: str, tool_args: dict, state: dict = None) -> tuple:
 
     if policy is None:
         # Unknown tool — allow by default (don't break existing tools)
-        return (
-            False,
-            f"Tool '{tool_name}' has no policy entry and is blocked by default.",
-            {"risk_level": "high", "blocked_reason": "unknown_tool", "rule_name": "unknown_tool.blocked"},
+        return _finalize_policy_result(
+            (
+                False,
+                f"Tool '{tool_name}' has no policy entry and is blocked by default.",
+                {"risk_level": "high", "blocked_reason": "unknown_tool", "rule_name": "unknown_tool.blocked"},
+            )
         )
 
     # If policy has a note but no blocking rules, it's a pass-through
     if "note" in policy and "block_sql_keywords" not in policy and "block_paths" not in policy and "block_actions" not in policy:
-        return True, "", {"risk_level": "low", "blocked_reason": None, "rule_name": f"{tool_name}.passthrough"}
+        return _finalize_policy_result(
+            (True, "", {"risk_level": "low", "blocked_reason": None, "rule_name": f"{tool_name}.passthrough"}),
+            policy,
+        )
 
     # Dispatch to specific checker
     checker = _POLICY_CHECKERS.get(tool_name)
     if checker:
-        return checker(tool_args, policy)
+        return _finalize_policy_result(checker(tool_args, policy), policy)
 
     # No checker but has policy = unknown dangerous tool, allow with warning
-    return (
-        False,
-        f"Tool '{tool_name}' has policy rules but no checker implementation.",
-        {"risk_level": "high", "blocked_reason": "policy_checker_missing", "rule_name": f"{tool_name}.no_checker"},
+    return _finalize_policy_result(
+        (
+            False,
+            f"Tool '{tool_name}' has policy rules but no checker implementation.",
+            {"risk_level": "high", "blocked_reason": "policy_checker_missing", "rule_name": f"{tool_name}.no_checker"},
+        ),
+        policy,
     )
 
 

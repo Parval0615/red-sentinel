@@ -43,6 +43,9 @@ def test_product_contracts_import_and_validate() -> None:
     assert registration.schema_version == "agent-registration-v0.1"
     assert request.benchmark == "ecommerce-security-v0.1"
     assert request.pilot_preset is None
+    assert request.model_dump(mode="json")["defense_enabled"] is True
+    assert request.defense_enabled is True
+    assert EvaluationRequest(agent_id=registration.agent_id, defense_enabled=False).defense_enabled is False
     assert status.status == "queued"
     assert report.schema_version == "agent-security-report-v0.1"
 

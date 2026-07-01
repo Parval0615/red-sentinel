@@ -20,6 +20,20 @@ def main() -> int:
     repo_root = REPO_ROOT
     _add_source_paths(repo_root)
 
+    if args.product_api:
+        from auto_evaluation_system.product_api.app import create_app
+
+        storage_root = _resolve_product_storage_root(repo_root, args.results_root)
+        app = create_app(storage_root=storage_root, seed_demo=True)
+        _print_product_api_demo_seed(app.state.demo_seed, storage_root=storage_root)
+
+        try:
+            import uvicorn
+        except ImportError as exc:
+            raise RuntimeError("Uvicorn is not installed. Install with .[product].") from exc
+        uvicorn.run(app, host=args.host, port=args.port)
+        return 0
+
     if args.comp4:
         from auto_evaluation_system.comp4_evidence import run_comp4_demo
 
@@ -121,6 +135,22 @@ def _parse_args() -> argparse.Namespace:
         help="Force deterministic offline mode for the COMP2/COMP3/COMP4 runs (no LLM API calls).",
     )
     parser.add_argument(
+        "--product-api",
+        action="store_true",
+        help="Run the Product API demo server with a random seeded demo tenant.",
+    )
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Host for --product-api (default: 127.0.0.1).",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port for --product-api (default: 8000).",
+    )
+    parser.add_argument(
         "--results-root",
         type=Path,
         default=None,
@@ -151,6 +181,23 @@ def _resolve_results_root(repo_root: Path, requested: Path | None) -> Path:
     if requested.is_absolute():
         return requested
     return repo_root / requested
+
+
+def _resolve_product_storage_root(repo_root: Path, requested: Path | None) -> Path:
+    if requested is None:
+        return repo_root / "runs" / "product"
+    if requested.is_absolute():
+        return requested
+    return repo_root / requested
+
+
+def _print_product_api_demo_seed(seed: dict, *, storage_root: Path) -> None:
+    print(f"PRODUCT_API_STORAGE_ROOT={storage_root}")
+    print(f"DEMO_USERNAME={seed['username']}")
+    print(f"DEMO_EMAIL={seed['email']}")
+    print(f"DEMO_PASSWORD={seed['password']}")
+    print(f"DEMO_AGENT_ID={seed['agent_id']}")
+    print("ADMIN_BOOTSTRAP_HINT=Register or log in with an admin account separately; the seeded demo account is a normal user.")
 
 
 def _print_summary(report) -> None:

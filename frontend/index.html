@@ -1703,6 +1703,41 @@
       margin-bottom: var(--space-8);
     }
 
+    .asr-comparison-bars {
+      display: grid;
+      gap: var(--space-3);
+      margin-top: var(--space-4);
+    }
+
+    .asr-comparison-row {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) 64px;
+      align-items: center;
+      gap: var(--space-3);
+      color: var(--color-foreground-muted);
+      font-size: 12px;
+    }
+
+    .asr-comparison-track {
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: var(--color-surface-muted);
+      border: 1px solid var(--color-border-subtle);
+    }
+
+    .asr-comparison-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--color-danger);
+      transition: width var(--transition-base);
+    }
+
+    .asr-comparison-fill.after {
+      background: var(--color-success);
+    }
+
     .benchmark-section[hidden] {
       display: none;
     }
@@ -1856,6 +1891,68 @@
       align-items: flex-start;
       flex-wrap: wrap;
       justify-content: flex-end;
+    }
+
+    .trace-timeline-list {
+      display: grid;
+      gap: var(--space-3);
+    }
+
+    .trace-timeline-item {
+      padding: 16px;
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 252, 247, 0.72);
+    }
+
+    .trace-timeline-chain {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-3);
+      color: var(--color-foreground-muted);
+      font-size: 12px;
+    }
+
+    .trace-timeline-node {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      background: var(--color-surface);
+      color: var(--color-foreground);
+      font-weight: 600;
+    }
+
+    .trace-timeline-fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: var(--space-2);
+    }
+
+    .trace-timeline-field {
+      padding: 10px;
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface-muted);
+    }
+
+    .trace-timeline-label {
+      color: var(--color-foreground-subtle);
+      font-size: 10px;
+      font-weight: 650;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    .trace-timeline-value {
+      color: var(--color-foreground);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      word-break: break-word;
     }
 
     .logs-table-wrap[hidden],
@@ -2932,6 +3029,7 @@
       .supervisor-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .supervisor-event-card { grid-template-columns: 1fr; }
       .supervisor-event-actions { justify-content: flex-start; }
+      .asr-comparison-row { grid-template-columns: 1fr; }
       .section { padding: var(--space-4); }
       .section-header { flex-direction: column; align-items: flex-start; }
       .filters { width: 100%; }
@@ -2961,6 +3059,7 @@
       .stage-item { grid-template-columns: 24px minmax(0, 1fr); }
       .stage-state { grid-column: 2; }
       .supervisor-summary-grid { grid-template-columns: 1fr; }
+      .trace-timeline-fields { grid-template-columns: 1fr; }
       .dashboard-action-buttons .primary-action,
       .dashboard-action-buttons .secondary-action { width: 100%; }
     }
@@ -3620,6 +3719,28 @@
       <div class="supervisor-event-list" id="supervision-events-list" aria-live="polite"></div>
     </section>
 
+    <section class="section" id="attack-trace-timeline" aria-labelledby="attack-trace-title">
+      <div class="section-header">
+        <div>
+          <div class="section-title" id="attack-trace-title">
+            <div class="section-title-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 6h4v4H4z"/>
+                <path d="M16 14h4v4h-4z"/>
+                <path d="M8 8h4a4 4 0 0 1 4 4v2"/>
+              </svg>
+            </div>
+            告警 → 工具调用 → payload id
+          </div>
+          <p class="logs-intro">按真实事件字段追溯 event_id / agent_id / call_type / rule_name / payload_id / case_id / decision。</p>
+        </div>
+      </div>
+      <div class="empty-state" id="attack-trace-empty-state" role="status" aria-live="polite">
+        暂无溯源事件。等待实验摘要或监督事件返回真实 event_id / agent_id / call_type / rule_name / payload_id / case_id / decision。
+      </div>
+      <div class="trace-timeline-list" id="attack-trace-timeline-list" aria-live="polite"></div>
+    </section>
+
     <section class="section benchmark-section" id="benchmark-selection" aria-labelledby="benchmark-selection-title" hidden>
       <div class="section-header">
         <div>
@@ -3778,6 +3899,68 @@
     <div class="empty-state dashboard-empty-state" id="dashboard-empty-state" role="status" aria-live="polite" hidden>
       暂无评测数据。完成一轮评测后展示真实指标。
     </div>
+
+    <section class="section" id="experiment-summary-section" aria-labelledby="experiment-summary-title">
+      <div class="section-header">
+        <div>
+          <div class="section-title" id="experiment-summary-title">
+            <div class="section-title-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19V5"/>
+                <path d="M4 19h16"/>
+                <path d="M8 15l3-3 3 2 4-6"/>
+              </svg>
+            </div>
+            防御前后 ASR 对照
+          </div>
+          <p class="logs-intro">优先读取实验摘要接口；接口不可用时尝试 latest JSON，仍无数据则保持空状态。</p>
+        </div>
+      </div>
+      <div class="benchmark-status" id="experiment-summary-status" aria-live="polite">等待读取实验摘要。</div>
+      <div class="empty-state" id="experiment-summary-empty-state" role="status" aria-live="polite">
+        暂无防御前后 ASR 对照数据。未展示任何伪造指标。
+      </div>
+      <div id="experiment-summary-content" hidden>
+        <div class="benchmark-summary-grid" aria-label="防御前后 ASR 摘要">
+          <div class="benchmark-summary-item">
+            <div class="benchmark-summary-label">ASR Before</div>
+            <div class="benchmark-summary-value" id="experiment-asr-before">--</div>
+          </div>
+          <div class="benchmark-summary-item">
+            <div class="benchmark-summary-label">ASR After</div>
+            <div class="benchmark-summary-value" id="experiment-asr-after">--</div>
+          </div>
+          <div class="benchmark-summary-item">
+            <div class="benchmark-summary-label">FPR</div>
+            <div class="benchmark-summary-value" id="experiment-fpr">--</div>
+          </div>
+          <div class="benchmark-summary-item">
+            <div class="benchmark-summary-label">Blocked</div>
+            <div class="benchmark-summary-value" id="experiment-blocked">--</div>
+          </div>
+          <div class="benchmark-summary-item">
+            <div class="benchmark-summary-label">Asked</div>
+            <div class="benchmark-summary-value" id="experiment-asked">--</div>
+          </div>
+        </div>
+        <div class="asr-comparison-bars" id="experiment-asr-bars" aria-label="ASR before after bar chart">
+          <div class="asr-comparison-row">
+            <span>ASR before</span>
+            <div class="asr-comparison-track" aria-hidden="true">
+              <div class="asr-comparison-fill" id="experiment-asr-before-bar"></div>
+            </div>
+            <span id="experiment-asr-before-bar-value">--</span>
+          </div>
+          <div class="asr-comparison-row">
+            <span>ASR after</span>
+            <div class="asr-comparison-track" aria-hidden="true">
+              <div class="asr-comparison-fill after" id="experiment-asr-after-bar"></div>
+            </div>
+            <span id="experiment-asr-after-bar-value">--</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <div class="chart-section">
       <div class="section-header">
@@ -3994,6 +4177,8 @@
     let isPlaying = false;
     let playInterval = null;
     let dashboardSummaryData = null;
+    let experimentSummaryData = null;
+    let attackTraceTimelineData = [];
     let asrFprChart = null;
     let benchmarksData = [];
     let currentBenchmarkId = '';
@@ -4913,6 +5098,37 @@
       }
     }
 
+    async function loadSecurityEvents(options = {}) {
+      const params = new URLSearchParams();
+      const agentId = options.agent_id || options.agentId || '';
+      const sessionId = options.session_id || options.sessionId || '';
+      if (agentId) params.set('agent_id', agentId);
+      if (options.decision) params.set('decision', options.decision);
+      if (sessionId) params.set('session_id', sessionId);
+      if (options.limit) params.set('limit', String(options.limit));
+      const query = params.toString();
+
+      try {
+        const response = await fetch('/v1/monitor/events' + (query ? '?' + query : ''), {
+          headers: authHeaders()
+        });
+        if (!response.ok) throw new Error('monitor events returned ' + response.status);
+        const events = await response.json();
+        return Array.isArray(events) ? events : [];
+      } catch (error) {
+        console.warn('Failed to load security events:', error);
+        try {
+          const fallbackResponse = await fetch('data/mock_events.json');
+          if (!fallbackResponse.ok) return [];
+          const fallbackEvents = await fallbackResponse.json();
+          return Array.isArray(fallbackEvents) ? fallbackEvents : [];
+        } catch (fallbackError) {
+          console.warn('Failed to load mock security events:', fallbackError);
+          return [];
+        }
+      }
+    }
+
     function renderReport() {
       if (!reportData) return;
       document.getElementById('agent-id').textContent = reportData.agent_id || 'unknown';
@@ -5203,6 +5419,198 @@
       });
     }
 
+    async function loadExperimentSummary() {
+      setExperimentSummaryStatus('正在读取实验摘要。', 'info');
+      try {
+        const response = await fetch('/v1/experiments/summary', {
+          headers: authHeaders()
+        });
+        if (!response.ok) throw new Error('experiment summary returned ' + response.status);
+        experimentSummaryData = await response.json();
+        renderExperimentSummary(experimentSummaryData);
+        setExperimentSummaryStatus('实验摘要已刷新。', 'success');
+      } catch (error) {
+        console.warn('Failed to load experiment summary:', error);
+        await loadExperimentSummaryFallback();
+      }
+    }
+
+    async function loadExperimentSummaryFallback() {
+      try {
+        const response = await fetch('experiments/results/latest/asr_before_after.json');
+        if (!response.ok) throw new Error('latest experiment summary returned ' + response.status);
+        experimentSummaryData = await response.json();
+        renderExperimentSummary(experimentSummaryData);
+        setExperimentSummaryStatus('已读取 latest 实验摘要。', 'success');
+      } catch (fallbackError) {
+        console.warn('Failed to load latest experiment summary:', fallbackError);
+        experimentSummaryData = null;
+        renderExperimentSummary(null);
+        setExperimentSummaryStatus('实验摘要暂不可用。', 'error');
+      }
+    }
+
+    function renderExperimentSummary(summary) {
+      const content = document.getElementById('experiment-summary-content');
+      const empty = document.getElementById('experiment-summary-empty-state');
+      if (!content || !empty) return;
+
+      const metrics = extractExperimentMetrics(summary || {});
+      const traces = extractExperimentTraceEvents(summary || {});
+      if (traces.length) {
+        renderAttackTraceTimeline(traces);
+      }
+
+      if (!hasExperimentSummaryMetrics(metrics)) {
+        content.hidden = true;
+        empty.textContent = '暂无防御前后 ASR 对照数据。未展示任何伪造指标。';
+        empty.hidden = false;
+        resetExperimentBars();
+        return;
+      }
+
+      empty.hidden = true;
+      content.hidden = false;
+      setText('experiment-asr-before', formatExperimentPercent(metrics.asr_before));
+      setText('experiment-asr-after', formatExperimentPercent(metrics.asr_after));
+      setText('experiment-fpr', formatExperimentPercent(metrics.fpr));
+      setText('experiment-blocked', valueOrDash(metrics.blocked));
+      setText('experiment-asked', valueOrDash(metrics.asked));
+      updateExperimentBar('experiment-asr-before-bar', 'experiment-asr-before-bar-value', metrics.asr_before);
+      updateExperimentBar('experiment-asr-after-bar', 'experiment-asr-after-bar-value', metrics.asr_after);
+    }
+
+    function extractExperimentMetrics(summary) {
+      const metrics = summary.metrics || summary.summary || {};
+      return {
+        asr_before: firstDefined(summary.asr_before, summary.before_asr, metrics.asr_before, metrics.before_asr, metrics.baseline_asr),
+        asr_after: firstDefined(summary.asr_after, summary.after_asr, metrics.asr_after, metrics.after_asr, metrics.defended_asr),
+        fpr: firstDefined(summary.fpr, summary.false_positive_rate, metrics.fpr, metrics.false_positive_rate),
+        blocked: firstDefined(summary.blocked, summary.attacks_blocked, metrics.blocked, metrics.attacks_blocked),
+        asked: firstDefined(summary.asked, summary.ask, summary.human_reviewed, metrics.asked, metrics.ask, metrics.human_reviewed)
+      };
+    }
+
+    function extractExperimentTraceEvents(summary) {
+      return normalizeAttackTraceEvents(firstDefined(
+        summary.attack_trace,
+        summary.attack_traces,
+        summary.trace_timeline,
+        summary.events,
+        summary.security_events,
+        []
+      ));
+    }
+
+    function hasExperimentSummaryMetrics(metrics) {
+      return isFiniteNumber(metrics.asr_before)
+        || isFiniteNumber(metrics.asr_after)
+        || isFiniteNumber(metrics.fpr)
+        || metrics.blocked === 0
+        || Boolean(metrics.blocked)
+        || metrics.asked === 0
+        || Boolean(metrics.asked);
+    }
+
+    function firstDefined(...values) {
+      return values.find(value => value !== undefined && value !== null && value !== '');
+    }
+
+    function toDisplayPercent(value) {
+      if (!isFiniteNumber(value)) return null;
+      return Math.abs(value) <= 1 ? value * 100 : value;
+    }
+
+    function formatExperimentPercent(value) {
+      const percent = toDisplayPercent(value);
+      return isFiniteNumber(percent) ? percent.toFixed(1) + '%' : '--';
+    }
+
+    function updateExperimentBar(barId, valueId, value) {
+      const bar = document.getElementById(barId);
+      const displayValue = formatExperimentPercent(value);
+      const percent = toDisplayPercent(value);
+      if (bar) bar.style.width = isFiniteNumber(percent) ? clamp(percent, 0, 100) + '%' : '0%';
+      setText(valueId, displayValue);
+    }
+
+    function resetExperimentBars() {
+      ['experiment-asr-before', 'experiment-asr-after', 'experiment-fpr', 'experiment-blocked', 'experiment-asked'].forEach(id => {
+        setText(id, '--');
+      });
+      updateExperimentBar('experiment-asr-before-bar', 'experiment-asr-before-bar-value', null);
+      updateExperimentBar('experiment-asr-after-bar', 'experiment-asr-after-bar-value', null);
+    }
+
+    function setExperimentSummaryStatus(message, status) {
+      const element = document.getElementById('experiment-summary-status');
+      if (!element) return;
+      element.textContent = message;
+      element.className = status ? 'benchmark-status ' + status : 'benchmark-status';
+    }
+
+    function normalizeAttackTraceEvents(events) {
+      const source = Array.isArray(events) ? events : events ? [events] : [];
+      return source.map(event => ({
+        event_id: firstDefined(event.event_id, event.id),
+        agent_id: firstDefined(event.agent_id, event.agent?.id),
+        call_type: firstDefined(event.call_type, event.type),
+        rule_name: firstDefined(event.rule_name, event.rule?.name, event.rule_id),
+        payload_id: firstDefined(event.payload_id, event.payload?.payload_id, event.payload_summary?.payload_id),
+        case_id: firstDefined(event.case_id, event.case?.case_id, event.payload_summary?.case_id),
+        decision: firstDefined(event.decision, event.action)
+      })).filter(trace => Object.values(trace).some(value => value !== undefined && value !== null && value !== ''));
+    }
+
+    function renderAttackTraceTimeline(events = []) {
+      const list = document.getElementById('attack-trace-timeline-list');
+      const empty = document.getElementById('attack-trace-empty-state');
+      if (!list || !empty) return;
+
+      attackTraceTimelineData = normalizeAttackTraceEvents(events);
+      if (!attackTraceTimelineData.length) {
+        empty.hidden = false;
+        list.innerHTML = '';
+        return;
+      }
+
+      empty.hidden = true;
+      list.innerHTML = attackTraceTimelineData.map(renderAttackTraceTimelineItem).join('');
+    }
+
+    function renderAttackTraceTimelineItem(trace) {
+      const decision = safeCssToken(trace.decision || 'observed', 'observed');
+      return `
+        <article class="trace-timeline-item ${decision}">
+          <div class="trace-timeline-chain" aria-label="告警到工具调用再到 payload id">
+            <span class="trace-timeline-node">告警 ${escapeHtml(valueOrDash(trace.event_id))}</span>
+            <span aria-hidden="true">→</span>
+            <span class="trace-timeline-node">工具调用 ${escapeHtml(valueOrDash(trace.call_type))}</span>
+            <span aria-hidden="true">→</span>
+            <span class="trace-timeline-node">payload id ${escapeHtml(valueOrDash(trace.payload_id))}</span>
+          </div>
+          <div class="trace-timeline-fields">
+            ${renderAttackTraceField('event_id', trace.event_id)}
+            ${renderAttackTraceField('agent_id', trace.agent_id)}
+            ${renderAttackTraceField('call_type', trace.call_type)}
+            ${renderAttackTraceField('rule_name', trace.rule_name)}
+            ${renderAttackTraceField('payload_id', trace.payload_id)}
+            ${renderAttackTraceField('case_id', trace.case_id)}
+            ${renderAttackTraceField('decision', trace.decision)}
+          </div>
+        </article>
+      `;
+    }
+
+    function renderAttackTraceField(label, value) {
+      return `
+        <div class="trace-timeline-field">
+          <div class="trace-timeline-label">${escapeHtml(label)}</div>
+          <div class="trace-timeline-value">${escapeHtml(valueOrDash(value))}</div>
+        </div>
+      `;
+    }
+
     function initDashboardActions() {
       const evaluationEntry = document.getElementById('go-evaluation-entry');
       if (!evaluationEntry) return;
@@ -5325,7 +5733,9 @@
       setText('supervision-summary-ask', decisions.ask ?? 0);
       setText('supervision-summary-high-risk', summary.high_risk_count ?? 0);
       setText('supervision-last-update', 'Last update: ' + (snapshot.updated_at || '--'));
-      renderSupervisionEvents(Array.isArray(snapshot.events) ? snapshot.events : []);
+      const events = Array.isArray(snapshot.events) ? snapshot.events : [];
+      renderSupervisionEvents(events);
+      if (events.length) renderAttackTraceTimeline(events);
     }
 
     function renderSupervisionEvents(events) {
@@ -6665,6 +7075,7 @@
       await restoreAuthSession();
       await loadReport();
       await loadDashboardSummary();
+      await loadExperimentSummary();
     }
 
     initAuth();

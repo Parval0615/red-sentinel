@@ -238,7 +238,7 @@ class AgentRegistration(BaseModel):
     domain: str = Field(default="general", min_length=1)
     integration_type: IntegrationType = "source"
     framework: str = Field(default="sdk", min_length=1)
-    adapter_type: Literal["ecommerce_demo", "external_sdk", "http_endpoint"] = "ecommerce_demo"
+    adapter_type: Literal["ecommerce_demo", "external_sdk", "http_endpoint", "openmanus"] = "ecommerce_demo"
     endpoint_url: str | None = None
     secret_ref: str | None = None
     has_api_key: bool = False
@@ -494,6 +494,7 @@ class EvaluationRequest(BaseModel):
     mode: EvaluationMode = "sdk"
     pilot_preset: str | None = None
     attack_intensity: Literal["light", "medium", "heavy"] = "medium"
+    defense_enabled: bool = True
     scenarios: list[str] = Field(default_factory=list)
     policy: dict[str, Any] = Field(default_factory=lambda: {
         "no_real_payment": True,

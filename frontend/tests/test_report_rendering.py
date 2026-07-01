@@ -744,6 +744,88 @@ def test_supervision_panel_events_summary_refresh_and_ask_controls() -> None:
         assert snippet in html
 
 
+def test_experiment_summary_and_attack_trace_timeline_rendering_hooks() -> None:
+    html = _dashboard_index_html()
+    dom = _parse_dashboard_index()
+
+    for element_id in {
+        "experiment-summary-section",
+        "experiment-summary-title",
+        "experiment-summary-status",
+        "experiment-summary-empty-state",
+        "experiment-summary-content",
+        "experiment-asr-before",
+        "experiment-asr-after",
+        "experiment-fpr",
+        "experiment-blocked",
+        "experiment-asked",
+        "experiment-asr-bars",
+        "attack-trace-timeline",
+        "attack-trace-title",
+        "attack-trace-empty-state",
+        "attack-trace-timeline-list",
+    }:
+        assert element_id in dom.ids
+
+    for label in {
+        "防御前后 ASR 对照",
+        "ASR Before",
+        "ASR After",
+        "FPR",
+        "Blocked",
+        "Asked",
+        "告警 → 工具调用 → payload id",
+        "暂无防御前后 ASR 对照数据。未展示任何伪造指标。",
+        "未展示任何伪造指标",
+        "暂无溯源事件",
+    }:
+        assert label in html
+
+    for snippet in {
+        "async function loadExperimentSummary()",
+        "async function loadExperimentSummaryFallback()",
+        "function renderExperimentSummary(summary)",
+        "function renderAttackTraceTimeline(events = [])",
+        "function normalizeAttackTraceEvents(events)",
+        "fetch('/v1/experiments/summary'",
+        "fetch('experiments/results/latest/asr_before_after.json')",
+        "await loadExperimentSummary();",
+        "renderAttackTraceTimeline(traces)",
+        "if (events.length) renderAttackTraceTimeline(events);",
+    }:
+        assert snippet in html
+
+    for field in {
+        "event_id",
+        "agent_id",
+        "call_type",
+        "rule_name",
+        "payload_id",
+        "case_id",
+        "decision",
+    }:
+        assert field in html
+
+
+def test_security_events_loader_uses_monitor_api_and_mock_events_fallback() -> None:
+    html = _dashboard_index_html()
+    mock_events_path = Path(__file__).resolve().parents[1] / "data" / "mock_events.json"
+    mock_events = json.loads(mock_events_path.read_text(encoding="utf-8"))
+
+    assert [event["decision"] for event in mock_events] == ["allow", "deny", "ask"]
+    for snippet in {
+        "async function loadSecurityEvents(options = {})",
+        "new URLSearchParams()",
+        "params.set('agent_id', agentId)",
+        "params.set('decision', options.decision)",
+        "params.set('session_id', sessionId)",
+        "params.set('limit', String(options.limit))",
+        "fetch('/v1/monitor/events' + (query ? '?' + query : '')",
+        "fetch('data/mock_events.json')",
+    }:
+        assert snippet in html
+
+
 def test_benchmark_selection_versions_details_and_case_markers() -> None:
     html = _dashboard_index_html()
     dom = _parse_dashboard_index()
