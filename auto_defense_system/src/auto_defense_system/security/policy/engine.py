@@ -17,7 +17,24 @@ import json
 import os
 import re
 from email.utils import parseaddr
+from pathlib import Path
+from dataclasses import dataclass, field
+from typing import Literal
 from urllib.parse import urlparse
+
+PolicyDecisionValue = Literal["allow", "deny", "ask"]
+
+
+@dataclass(frozen=True)
+class PolicyDecision:
+    decision: PolicyDecisionValue
+    reason: str
+    risk_level: str
+    detail: dict = field(default_factory=dict)
+
+    @property
+    def allowed(self) -> bool:
+        return self.decision == "allow"
 
 # ============================================================
 # 默认策略规则（可通过 JSON 文件覆盖）
@@ -174,10 +191,11 @@ def _block_sql_disallowed_operation(policy: dict, operation: str) -> tuple:
     )
 
 
-def _check_file_policy(args: dict, policy: dict) -> tuple:
+def _check_file_policy(args: dict, policy: dict, *, workspace_root: str | None = None) -> tuple:
     """Check file_operation against policy rules."""
     path = args.get("path", "")
     action = args.get("action", "").lower()
+    boundary = _file_boundary(path, workspace_root)
 
     # Check blocked actions
     if action in policy.get("block_actions", []):
@@ -188,6 +206,9 @@ def _check_file_policy(args: dict, policy: dict) -> tuple:
                 "risk_level": policy["risk_level"],
                 "blocked_reason": f"blocked_action: {action}",
                 "rule_name": "file_operation.block_actions",
+                "decision": "deny",
+                "file_action": action,
+                "boundary": boundary,
             },
         )
 
@@ -201,6 +222,9 @@ def _check_file_policy(args: dict, policy: dict) -> tuple:
                     "risk_level": policy["risk_level"],
                     "blocked_reason": f"blocked_path: {bp}",
                     "rule_name": "file_operation.block_paths",
+                    "decision": "deny",
+                    "file_action": action,
+                    "boundary": boundary,
                 },
             )
 
@@ -214,10 +238,62 @@ def _check_file_policy(args: dict, policy: dict) -> tuple:
                     "risk_level": policy["risk_level"],
                     "blocked_reason": f"blocked_pattern: {pattern}",
                     "rule_name": "file_operation.block_path_patterns",
+                    "decision": "deny",
+                    "file_action": action,
+                    "boundary": boundary,
                 },
             )
 
-    return True, "", {"risk_level": "low", "blocked_reason": None, "rule_name": "file_operation.passed"}
+    if action in {"write", "append"}:
+        if boundary["outside_workspace"]:
+            return (
+                False,
+                f"{policy['message']} 写入路径 '{path}' 越出工作区，禁止执行。",
+                {
+                    "risk_level": "critical",
+                    "blocked_reason": "outside_workspace_write",
+                    "rule_name": "file_operation.workspace_boundary",
+                    "decision": "deny",
+                    "file_action": action,
+                    "boundary": boundary,
+                },
+            )
+        return (
+            False,
+            f"文件 {action} 操作需要监督端确认。",
+            {
+                "risk_level": "medium",
+                "blocked_reason": "supervisor_confirmation_required",
+                "rule_name": "file_operation.ask_write",
+                "decision": "ask",
+                "file_action": action,
+                "boundary": boundary,
+            },
+        )
+
+    allowed_actions = set(policy.get("allowed_actions", []))
+    if allowed_actions and action not in allowed_actions:
+        return (
+            False,
+            f"{policy['message']} 操作 '{action}' 不在允许列表中。",
+            {
+                "risk_level": policy["risk_level"],
+                "blocked_reason": f"unsupported_action: {action}",
+                "rule_name": "file_operation.allowed_actions",
+                "decision": "deny",
+                "file_action": action,
+                "boundary": boundary,
+            },
+        )
+
+    return True, "", {
+        "risk_level": "low",
+        "blocked_reason": None,
+        "rule_name": "file_operation.passed",
+        "decision": "allow",
+        "file_action": action,
+        "boundary": boundary,
+    }
 
 
 def _check_api_policy(args: dict, policy: dict) -> tuple:
@@ -343,7 +419,22 @@ _POLICY_CHECKERS = {
 }
 
 
-def check_policy(tool_name: str, tool_args: dict, state: dict = None) -> tuple:
+def evaluate_policy(tool_name: str, tool_args: dict, state: dict = None, *, workspace_root: str | None = None) -> PolicyDecision:
+    allowed, message, detail = check_policy(tool_name, tool_args, state, workspace_root=workspace_root)
+    raw_decision = detail.get("decision")
+    if raw_decision in {"allow", "deny", "ask"}:
+        decision = raw_decision
+    else:
+        decision = "allow" if allowed else "deny"
+    return PolicyDecision(
+        decision=decision,
+        reason=message or detail.get("blocked_reason") or "allowed",
+        risk_level=detail.get("risk_level", "normal"),
+        detail=detail,
+    )
+
+
+def check_policy(tool_name: str, tool_args: dict, state: dict = None, *, workspace_root: str | None = None) -> tuple:
     """Check if a tool call complies with security policy.
 
     Args:
@@ -359,7 +450,7 @@ def check_policy(tool_name: str, tool_args: dict, state: dict = None) -> tuple:
 
     # Global enable/disable
     if not rules.get("global", {}).get("enabled", True):
-        return True, "", {"risk_level": "low", "blocked_reason": "policy_disabled", "rule_name": "global.disabled"}
+        return True, "", {"risk_level": "low", "blocked_reason": "policy_disabled", "rule_name": "global.disabled", "decision": "allow"}
 
     # Rate limit checks
     rate_limits = rules.get("rate_limits", {})
@@ -375,6 +466,7 @@ def check_policy(tool_name: str, tool_args: dict, state: dict = None) -> tuple:
                     "risk_level": "high",
                     "blocked_reason": f"rate_limit: {tool_call_count} >= {max_total} total",
                     "rule_name": "rate_limits.max_total_calls",
+                    "decision": "deny",
                 },
             )
 
@@ -387,24 +479,41 @@ def check_policy(tool_name: str, tool_args: dict, state: dict = None) -> tuple:
         return (
             False,
             f"Tool '{tool_name}' has no policy entry and is blocked by default.",
-            {"risk_level": "high", "blocked_reason": "unknown_tool", "rule_name": "unknown_tool.blocked"},
+            {"risk_level": "high", "blocked_reason": "unknown_tool", "rule_name": "unknown_tool.blocked", "decision": "deny"},
         )
 
     # If policy has a note but no blocking rules, it's a pass-through
     if "note" in policy and "block_sql_keywords" not in policy and "block_paths" not in policy and "block_actions" not in policy:
-        return True, "", {"risk_level": "low", "blocked_reason": None, "rule_name": f"{tool_name}.passthrough"}
+        return True, "", {"risk_level": "low", "blocked_reason": None, "rule_name": f"{tool_name}.passthrough", "decision": "allow"}
 
     # Dispatch to specific checker
     checker = _POLICY_CHECKERS.get(tool_name)
     if checker:
+        if tool_name == "file_operation":
+            return checker(tool_args, policy, workspace_root=workspace_root)
         return checker(tool_args, policy)
 
     # No checker but has policy = unknown dangerous tool, allow with warning
     return (
         False,
         f"Tool '{tool_name}' has policy rules but no checker implementation.",
-        {"risk_level": "high", "blocked_reason": "policy_checker_missing", "rule_name": f"{tool_name}.no_checker"},
+        {"risk_level": "high", "blocked_reason": "policy_checker_missing", "rule_name": f"{tool_name}.no_checker", "decision": "deny"},
     )
+
+
+def _file_boundary(path: str, workspace_root: str | None) -> dict:
+    if not workspace_root:
+        return {"workspace_root": None, "resolved_path": str(path), "outside_workspace": False}
+    try:
+        root = Path(workspace_root).resolve()
+        resolved = Path(path).expanduser()
+        if not resolved.is_absolute():
+            resolved = root / resolved
+        resolved = resolved.resolve()
+        outside = root != resolved and root not in resolved.parents
+        return {"workspace_root": str(root), "resolved_path": str(resolved), "outside_workspace": outside}
+    except Exception as exc:
+        return {"workspace_root": workspace_root, "resolved_path": str(path), "outside_workspace": True, "error": str(exc)}
 
 
 # ============================================================

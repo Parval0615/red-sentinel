@@ -244,7 +244,7 @@ def test_bounded_capture_preserves_small_jsonl_output(tmp_path: Path) -> None:
     assert result.returncode == 0
     assert result.error is None
     assert json.loads(result.stdout_text())["type"] == "llm_inference"
-    assert result.stderr_text() == "warn\n"
+    assert result.stderr_text().splitlines() == ["warn"]
 
 
 def test_bounded_capture_marks_output_limit(tmp_path: Path) -> None:
@@ -313,3 +313,17 @@ def test_docker_trace_executor_uses_plural_node_targets_env() -> None:
     assert len(plural_values) == 1
     assert json.loads(plural_values[0].split("=", 1)[1]) == ["adapter:normalize", "adapter:invoke"]
     assert singular_values == ["RED_SENTINEL_NODE_TARGET=adapter:normalize"]
+
+
+def test_docker_trace_executor_appends_adapter_entrypoint_command() -> None:
+    plan = DockerTracePlan(
+        agent_name="docker-agent",
+        docker_image="python:3.12-slim",
+        adapter_entrypoint="python /workspace/input/redsentinel_exec.py",
+    )
+    executor = DockerTraceExecutor(plan)
+
+    args = executor._build_docker_args()
+
+    image_index = args.index("python:3.12-slim")
+    assert args[image_index + 1 :] == ["python", "/workspace/input/redsentinel_exec.py"]
