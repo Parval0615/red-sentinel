@@ -192,7 +192,7 @@ class MonitorInterceptor:
         }
         if extra:
             audit_payload.update(extra)
-        return MonitorDecision(
+        monitor_decision = MonitorDecision(
             call_type=call_type,
             decision=decision,
             allowed=decision == "allow",
@@ -203,6 +203,8 @@ class MonitorInterceptor:
             ask_id=ask_id,
             approval_state="pending" if decision == "ask" else "not_required",
         )
+        monitor_decision.audit_payload["oracle"] = _oracle_annotation(monitor_decision)
+        return monitor_decision
 
 
 def _payload_text(payload: dict[str, Any]) -> str:
@@ -219,3 +221,19 @@ def _safe_payload(payload: dict[str, Any]) -> dict[str, Any]:
 def _ask_id(call_type: str, payload: dict[str, Any]) -> str:
     raw = json.dumps({"call_type": call_type, "payload": _safe_payload(payload)}, ensure_ascii=False, sort_keys=True)
     return "ask-" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+
+
+def _oracle_annotation(decision: MonitorDecision) -> dict[str, Any]:
+    try:
+        from auto_evaluation_system.detection.oracle import annotate_monitor_decision
+
+        return annotate_monitor_decision(decision)
+    except Exception as exc:
+        return {
+            "schema_version": "anomaly-oracle-verdict-v0.1",
+            "status": "review",
+            "confidence": 0.0,
+            "findings": [],
+            "rationale": f"Oracle annotation failed: {exc}",
+            "metadata": {"source": "monitor", "error": type(exc).__name__},
+        }
