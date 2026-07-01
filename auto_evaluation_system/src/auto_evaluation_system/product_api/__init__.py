@@ -1,5 +1,6 @@
 from auto_evaluation_system.product_api.contracts import (
     AgentMaterial,
+    AgentLibraryEntry,
     AgentOnboardingRequest,
     AgentOnboardingResponse,
     AgentOnboardingStage,
@@ -37,11 +38,13 @@ from auto_evaluation_system.product_api.contracts import (
     NextRoundResponse,
 )
 from auto_evaluation_system.product_api.presets import PilotPreset, PilotPresetManifest, load_pilot_presets
+from auto_evaluation_system.product_api.agent_library import AgentLibraryService
 from auto_evaluation_system.product_api.auth_service import AuthServiceError, ProductAuthService
 from auto_evaluation_system.product_api.service import ProductEvaluationService
 
 __all__ = [
     "AgentRegistration",
+    "AgentLibraryEntry",
     "AgentMaterial",
     "AgentOnboardingRequest",
     "AgentOnboardingResponse",
@@ -61,6 +64,7 @@ __all__ = [
     "AuthUserRecord",
     "AuthUserSummary",
     "AuthServiceError",
+    "AgentLibraryService",
     "BenchmarkCase",
     "BenchmarkSummary",
     "BenchmarkVersion",

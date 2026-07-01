@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from auto_evaluation_system.product_api.contracts import AuthUserRecord
+from auto_evaluation_system.product_api.contracts import AgentLibraryEntry, AuthUserRecord
 
 
 _SAFE_COMPONENT = re.compile(r"^[A-Za-z0-9_.-]+$")
@@ -68,6 +68,12 @@ class ProductStorage:
                 / "versions"
             ).glob("*.json")
         )
+
+    def agent_library_path(self, agent_id: str) -> Path:
+        return self.root / "agent_library" / f"{safe_component(agent_id, 'agent_id')}.json"
+
+    def agent_library_paths(self) -> list[Path]:
+        return sorted((self.root / "agent_library").glob("*.json"))
 
     def session_path(self, tenant_id: str, session_id: str) -> Path:
         return self.tenant_dir(tenant_id) / "sessions" / f"{safe_component(session_id, 'session_id')}.json"
@@ -246,6 +252,20 @@ class ProductStorage:
 
     def read_benchmark_version(self, benchmark_id: str, version: str) -> dict[str, Any]:
         return self.read_json(self.benchmark_version_path(benchmark_id, version))
+
+    def write_agent_library_entry(self, agent_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        entry = AgentLibraryEntry.model_validate({**payload, "agent_id": agent_id}).model_dump(mode="json")
+        self.write_json(self.agent_library_path(agent_id), entry)
+        return entry
+
+    def read_agent_library_entry(self, agent_id: str) -> dict[str, Any]:
+        return AgentLibraryEntry.model_validate(self.read_json(self.agent_library_path(agent_id))).model_dump(mode="json")
+
+    def list_agent_library_entries(self) -> list[dict[str, Any]]:
+        return [
+            AgentLibraryEntry.model_validate(self.read_json(path)).model_dump(mode="json")
+            for path in self.agent_library_paths()
+        ]
 
     def write_evaluation(
         self,

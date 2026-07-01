@@ -82,6 +82,7 @@ class ProductAuthService:
                 "updated_at": now,
                 "last_login_at": now,
                 "status": "active",
+                "role": "user",
             },
         )
         return AuthRegisterResponse(
@@ -156,6 +157,7 @@ class ProductAuthService:
             "sub": user["user_id"],
             "user_id": user["user_id"],
             "username": user["username"],
+            "role": user["role"],
             "iat": now,
             "exp": now + expires_in_seconds,
             "purpose": JWT_PURPOSE,
@@ -172,6 +174,7 @@ class ProductAuthService:
 
         user_id = payload.get("user_id") or payload.get("sub")
         username = payload.get("username")
+        role = payload.get("role") or "user"
         iat = payload.get("iat")
         exp = payload.get("exp")
         if (
@@ -179,6 +182,7 @@ class ProductAuthService:
             or not user_id
             or not isinstance(username, str)
             or not username
+            or role not in {"user", "admin"}
             or not _is_int_claim(iat)
             or not _is_int_claim(exp)
             or payload.get("purpose") != JWT_PURPOSE
@@ -187,6 +191,7 @@ class ProductAuthService:
         return {
             "user_id": user_id,
             "username": username,
+            "role": role,
             "iat": iat,
             "exp": exp,
             "purpose": JWT_PURPOSE,
@@ -251,6 +256,7 @@ def _user_summary(user: dict[str, Any]) -> AuthUserSummary:
         username=user["username"],
         email=user["email"],
         status=user["status"],
+        role=user["role"],
     )
 
 

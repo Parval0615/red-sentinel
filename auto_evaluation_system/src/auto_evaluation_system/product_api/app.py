@@ -3,9 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from auto_evaluation_system.product_api.agent_library import AgentLibraryService
 from auto_evaluation_system.product_api.auth_config import is_protected_route
 from auto_evaluation_system.product_api.auth_service import AuthServiceError, ProductAuthService
 from auto_evaluation_system.product_api.contracts import (
+    AgentLibraryEntry,
     AgentOnboardingRequest,
     AgentRegistration,
     AuthErrorResponse,
@@ -35,6 +37,7 @@ def create_app(storage_root: str | Path = "runs/product"):
 
     service = ProductEvaluationService(storage_root=storage_root)
     auth_service = ProductAuthService(storage=service.storage)
+    agent_library = AgentLibraryService(storage=service.storage)
     app = FastAPI(title="Agent Security Product API", version="0.1.0")
     frontend_index_path = _frontend_index_path()
 
@@ -119,6 +122,16 @@ def create_app(storage_root: str | Path = "runs/product"):
             return auth_service.require_user_from_authorization(authorization)
         except AuthServiceError as exc:
             raise auth_error_response(exc) from exc
+
+    def require_admin(
+        user: dict[str, Any] = Depends(require_authenticated_user),
+    ) -> dict[str, Any]:
+        if user.get("role") != "admin":
+            raise HTTPException(
+                status_code=403,
+                detail={"error_code": "admin_required", "message": "Admin role is required."},
+            )
+        return user
 
     def tenant_id_for_user(user: dict[str, Any]) -> str:
         return str(user["username"])
@@ -358,6 +371,27 @@ def create_app(storage_root: str | Path = "runs/product"):
             raise HTTPException(
                 status_code=404,
                 detail={"error_code": "benchmark_version_not_found", "message": str(exc)},
+            ) from exc
+
+    @app.get("/v1/admin/agent-library")
+    def list_agent_library(user: dict[str, Any] = Depends(require_admin)):
+        return [item.model_dump(mode="json") for item in agent_library.list_entries()]
+
+    @app.post("/v1/admin/agent-library")
+    def upsert_agent_library_entry(
+        entry: AgentLibraryEntry,
+        user: dict[str, Any] = Depends(require_admin),
+    ):
+        return agent_library.upsert_entry(entry, created_by=str(user["username"])).model_dump(mode="json")
+
+    @app.get("/v1/admin/agent-library/{agent_id}")
+    def get_agent_library_entry(agent_id: str, user: dict[str, Any] = Depends(require_admin)):
+        try:
+            return agent_library.get_entry(agent_id).model_dump(mode="json")
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=404,
+                detail={"error_code": "agent_library_entry_not_found", "message": str(exc)},
             ) from exc
 
     @app.post("/v1/comparisons")
