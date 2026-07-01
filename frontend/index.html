@@ -1775,6 +1775,89 @@
       margin-top: var(--space-2);
     }
 
+    .supervisor-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: var(--space-3);
+      margin-bottom: var(--space-5);
+    }
+
+    .supervisor-event-list {
+      display: grid;
+      gap: var(--space-3);
+    }
+
+    .supervisor-event-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-4);
+      padding: 16px;
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 252, 247, 0.72);
+    }
+
+    .supervisor-event-card.deny,
+    .supervisor-event-card.blocked,
+    .supervisor-event-card.rejected {
+      border-color: rgba(154, 92, 80, 0.28);
+      background: var(--color-danger-soft);
+    }
+
+    .supervisor-event-card.ask,
+    .supervisor-event-card.pending {
+      border-color: rgba(171, 120, 67, 0.28);
+      background: var(--color-warning-soft);
+    }
+
+    .supervisor-event-title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .supervisor-event-meta,
+    .supervisor-event-reason,
+    .supervisor-event-payload {
+      margin-top: var(--space-2);
+      color: var(--color-foreground-muted);
+      font-size: 12px;
+      line-height: var(--line-height-relaxed);
+      word-break: break-word;
+    }
+
+    .supervisor-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      background: var(--color-surface-muted);
+      color: var(--color-foreground-muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .supervisor-badge.deny,
+    .supervisor-badge.blocked,
+    .supervisor-badge.rejected { background: var(--color-danger-soft); color: var(--color-danger); }
+    .supervisor-badge.ask,
+    .supervisor-badge.pending { background: var(--color-warning-soft); color: var(--color-warning); }
+    .supervisor-badge.allow,
+    .supervisor-badge.approved { background: var(--color-success-soft); color: var(--color-success); }
+
+    .supervisor-event-actions {
+      display: flex;
+      gap: var(--space-2);
+      align-items: flex-start;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
     .logs-table-wrap[hidden],
     .log-detail-card[hidden] {
       display: none;
@@ -2846,6 +2929,9 @@
       .dashboard-actions { grid-template-columns: 1fr; align-items: flex-start; }
       .dashboard-action-buttons { width: 100%; justify-content: flex-start; }
       .benchmark-toolbar { grid-template-columns: 1fr; }
+      .supervisor-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .supervisor-event-card { grid-template-columns: 1fr; }
+      .supervisor-event-actions { justify-content: flex-start; }
       .section { padding: var(--space-4); }
       .section-header { flex-direction: column; align-items: flex-start; }
       .filters { width: 100%; }
@@ -2874,6 +2960,7 @@
       .replay-btn { padding: 8px 14px; font-size: 11px; }
       .stage-item { grid-template-columns: 24px minmax(0, 1fr); }
       .stage-state { grid-column: 2; }
+      .supervisor-summary-grid { grid-template-columns: 1fr; }
       .dashboard-action-buttons .primary-action,
       .dashboard-action-buttons .secondary-action { width: 100%; }
     }
@@ -3486,8 +3573,52 @@
       <div class="dashboard-action-buttons">
         <button class="primary-action" type="button" id="go-evaluation-entry">去评测</button>
         <a class="secondary-action" id="logs-entry-link" href="#evaluation-logs">查日志</a>
+        <a class="secondary-action" id="supervision-entry-link" href="#supervision-panel">监督端</a>
       </div>
     </nav>
+
+    <section class="section" id="supervision-panel" aria-labelledby="supervision-title" hidden>
+      <div class="section-header">
+        <div>
+          <div class="section-title" id="supervision-title">
+            <div class="section-title-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3-8-3v7c0 6 8 10 8 10z"/>
+                <path d="M9 12l2 2 4-4"/>
+              </svg>
+            </div>
+            监督端
+          </div>
+          <p class="logs-intro">实时查看放行、阻断和询问事件；ask 状态可由人工批准或拒绝。</p>
+        </div>
+        <div class="dashboard-action-buttons">
+          <button class="secondary-action" type="button" id="supervision-refresh-button">刷新监督事件</button>
+          <button class="primary-action" type="button" id="supervision-demo-seed-button">生成演示事件</button>
+        </div>
+      </div>
+      <div class="benchmark-status" id="supervision-status" aria-live="polite">等待读取监督事件。</div>
+      <div class="dashboard-action-copy" id="supervision-last-update">Last update: --</div>
+      <div class="supervisor-summary-grid" aria-label="监督统计">
+        <div class="benchmark-summary-item">
+          <div class="benchmark-summary-label">放行</div>
+          <div class="benchmark-summary-value" id="supervision-summary-allow">0</div>
+        </div>
+        <div class="benchmark-summary-item">
+          <div class="benchmark-summary-label">阻断</div>
+          <div class="benchmark-summary-value" id="supervision-summary-deny">0</div>
+        </div>
+        <div class="benchmark-summary-item">
+          <div class="benchmark-summary-label">询问</div>
+          <div class="benchmark-summary-value" id="supervision-summary-ask">0</div>
+        </div>
+        <div class="benchmark-summary-item">
+          <div class="benchmark-summary-label">高风险</div>
+          <div class="benchmark-summary-value" id="supervision-summary-high-risk">0</div>
+        </div>
+      </div>
+      <div class="empty-state" id="supervision-empty-state">暂无监督事件。点击“生成演示事件”查看 allow / deny / ask 示例。</div>
+      <div class="supervisor-event-list" id="supervision-events-list" aria-live="polite"></div>
+    </section>
 
     <section class="section benchmark-section" id="benchmark-selection" aria-labelledby="benchmark-selection-title" hidden>
       <div class="section-header">
@@ -3877,6 +4008,8 @@
     let activeLogEvaluationId = '';
     let currentAgentIntegration = '';
     let currentAgentHasApiKey = false;
+    let supervisionPollTimer = null;
+    let supervisionLoaded = false;
     const DEMO_EVALUATION_MODE = 'offline_trace';
     const AUTH_TOKEN_STORAGE_KEY = 'redsentinel.auth.token';
     let authToken = '';
@@ -5098,6 +5231,176 @@
       if (window.location.hash === '#evaluation-logs') {
         showEvaluationLogs();
       }
+    }
+
+    function initSupervisionPanel() {
+      const entry = document.getElementById('supervision-entry-link');
+      const refreshButton = document.getElementById('supervision-refresh-button');
+      const demoButton = document.getElementById('supervision-demo-seed-button');
+      if (entry) {
+        entry.addEventListener('click', (event) => {
+          event.preventDefault();
+          showSupervisionPanel();
+        });
+      }
+      if (refreshButton) {
+        refreshButton.addEventListener('click', () => loadSupervisionLatest({ force: true }));
+      }
+      if (demoButton) {
+        demoButton.addEventListener('click', seedSupervisionDemoEvents);
+      }
+      if (window.location.hash === '#supervision-panel') {
+        showSupervisionPanel();
+      }
+    }
+
+    function showSupervisionPanel() {
+      if (!requireAuthenticatedWorkspace('请先登录后查看监督端。')) return;
+      const section = document.getElementById('supervision-panel');
+      if (!section) return;
+      section.hidden = false;
+      if (window.location.hash !== '#supervision-panel') {
+        history.pushState(null, '', '#supervision-panel');
+      }
+      loadSupervisionLatest({ force: true });
+      startSupervisionPolling();
+      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+      section.scrollIntoView({ behavior: behavior, block: 'start' });
+    }
+
+    function startSupervisionPolling() {
+      if (supervisionPollTimer) return;
+      supervisionPollTimer = window.setInterval(() => {
+        const section = document.getElementById('supervision-panel');
+        if (!section || section.hidden) return;
+        loadSupervisionLatest({ silent: true });
+      }, 5000);
+    }
+
+    async function loadSupervisionLatest(options = {}) {
+      if (!hasAuthToken()) {
+        renderSupervisionSnapshot({ events: [], summary: {} });
+        setSupervisionStatus('请先登录后查看监督事件。', 'error');
+        return;
+      }
+      if (supervisionLoaded && !options.force && !options.silent) return;
+      if (!options.silent) setSupervisionStatus('正在读取监督事件。', 'info');
+      try {
+        const response = await fetch('/v1/supervision/latest', { headers: authHeaders() });
+        if (!response.ok) throw new Error('supervision latest returned ' + response.status);
+        const snapshot = await response.json();
+        renderSupervisionSnapshot(snapshot);
+        supervisionLoaded = true;
+        setSupervisionStatus('监督事件已刷新。', 'success');
+      } catch (error) {
+        console.warn('Failed to load supervision latest:', error);
+        setSupervisionStatus('监督事件暂不可用，未展示伪造事件。', 'error');
+      }
+    }
+
+    async function seedSupervisionDemoEvents() {
+      if (!requireAuthenticatedWorkspace('请先登录后生成监督演示事件。')) return;
+      setSupervisionStatus('正在生成演示事件。', 'info');
+      try {
+        const response = await fetch('/v1/supervision/demo-seed', {
+          method: 'POST',
+          headers: authHeaders()
+        });
+        if (!response.ok) throw new Error('supervision demo seed returned ' + response.status);
+        const snapshot = await response.json();
+        renderSupervisionSnapshot(snapshot);
+        supervisionLoaded = true;
+        setSupervisionStatus('已生成 allow / deny / ask 演示事件。', 'success');
+      } catch (error) {
+        console.warn('Failed to seed supervision demo events:', error);
+        setSupervisionStatus('生成演示事件失败。', 'error');
+      }
+    }
+
+    function renderSupervisionSnapshot(snapshot = {}) {
+      const summary = snapshot.summary || {};
+      const decisions = summary.decision_counts || {};
+      setText('supervision-summary-allow', decisions.allow ?? 0);
+      setText('supervision-summary-deny', decisions.deny ?? 0);
+      setText('supervision-summary-ask', decisions.ask ?? 0);
+      setText('supervision-summary-high-risk', summary.high_risk_count ?? 0);
+      setText('supervision-last-update', 'Last update: ' + (snapshot.updated_at || '--'));
+      renderSupervisionEvents(Array.isArray(snapshot.events) ? snapshot.events : []);
+    }
+
+    function renderSupervisionEvents(events) {
+      const list = document.getElementById('supervision-events-list');
+      const empty = document.getElementById('supervision-empty-state');
+      if (!list || !empty) return;
+      if (!events.length) {
+        empty.hidden = false;
+        list.innerHTML = '';
+        return;
+      }
+      empty.hidden = true;
+      const ordered = [...events].reverse();
+      list.innerHTML = ordered.map(event => renderSupervisionEventCard(event)).join('');
+      list.querySelectorAll('[data-supervision-action]').forEach(button => {
+        button.addEventListener('click', () => respondToSupervisionAsk(button.dataset.eventId, button.dataset.supervisionAction));
+      });
+    }
+
+    function renderSupervisionEventCard(event) {
+      const decision = safeCssToken(event.decision || 'allow', 'allow');
+      const status = safeCssToken(event.status || 'observed', 'observed');
+      const riskScore = isFiniteNumber(event.risk_score) ? Number(event.risk_score).toFixed(1) : '--';
+      const payload = event.payload_summary ? JSON.stringify(event.payload_summary) : '{}';
+      const canRespond = event.decision === 'ask' && event.status === 'pending';
+      return `
+        <article class="supervisor-event-card ${decision} ${status}">
+          <div>
+            <div class="supervisor-event-title">
+              <span>${escapeHtml(event.call_type || '--')}</span>
+              <span class="supervisor-badge ${decision}">${escapeHtml(event.decision || '--')}</span>
+              <span class="supervisor-badge ${status}">${escapeHtml(event.status || '--')}</span>
+              <span class="supervisor-badge">risk ${escapeHtml(riskScore)}</span>
+            </div>
+            <div class="supervisor-event-meta">${escapeHtml(event.timestamp || '--')} · ${escapeHtml(event.agent_id || '--')}</div>
+            <div class="supervisor-event-reason">${escapeHtml(event.reason || '--')}</div>
+            <div class="supervisor-event-payload">${escapeHtml(payload)}</div>
+          </div>
+          <div class="supervisor-event-actions">
+            ${canRespond ? `
+              <button class="secondary-action" type="button" data-event-id="${escapeHtml(event.event_id)}" data-supervision-action="approve">批准</button>
+              <button class="secondary-action" type="button" data-event-id="${escapeHtml(event.event_id)}" data-supervision-action="reject">拒绝</button>
+            ` : ''}
+          </div>
+        </article>
+      `;
+    }
+
+    async function respondToSupervisionAsk(eventId, action) {
+      if (!eventId || !action) return;
+      setSupervisionStatus(action === 'approve' ? '正在批准询问事件。' : '正在拒绝询问事件。', 'info');
+      try {
+        const response = await fetch('/v1/supervision/ask/' + encodeURIComponent(eventId) + '/respond', {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            action: action,
+            operator: currentAuthUser?.username || 'supervisor',
+            reason: action === 'approve' ? 'Approved from supervisor panel.' : 'Rejected from supervisor panel.'
+          })
+        });
+        if (!response.ok) throw new Error('supervision response returned ' + response.status);
+        await loadSupervisionLatest({ force: true });
+        setSupervisionStatus(action === 'approve' ? '询问事件已批准。' : '询问事件已拒绝。', 'success');
+      } catch (error) {
+        console.warn('Failed to respond to supervision ask:', error);
+        setSupervisionStatus('人工确认写回失败。', 'error');
+      }
+    }
+
+    function setSupervisionStatus(message, status) {
+      const element = document.getElementById('supervision-status');
+      if (!element) return;
+      element.textContent = message;
+      element.className = status ? 'benchmark-status ' + status : 'benchmark-status';
     }
 
     function showEvaluationLogs() {
@@ -6368,6 +6671,7 @@
     initAgentOnboarding();
     initDashboardActions();
     initEvaluationLogs();
+    initSupervisionPanel();
     initBenchmarkSelection();
     initEvaluationLaunchControl();
     initNextRoundControl();

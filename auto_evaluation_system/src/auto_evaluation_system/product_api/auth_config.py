@@ -86,6 +86,10 @@ PROTECTED_ROUTE_RULES: tuple[RouteRule, ...] = (
     RouteRule("GET", "/v1/logs"),
     RouteRule("GET", "/v1/logs/{evaluation_id}"),
     RouteRule("GET", "/v1/dashboard/summary"),
+    RouteRule("GET", "/v1/supervision/latest"),
+    RouteRule("GET", "/v1/supervision/events"),
+    RouteRule("POST", "/v1/supervision/demo-seed"),
+    RouteRule("POST", "/v1/supervision/ask/{event_id}/respond"),
     RouteRule("POST", "/v1/comparisons"),
     RouteRule("POST", "/v1/trajectories"),
 )
@@ -169,4 +173,6 @@ def _template_pattern(path_template: str) -> str:
     escaped = re.escape(_clean_path(path_template))
     return escaped.replace(r"\{", "{").replace(r"\}", "}").replace("{benchmark_id}", r"[^/]+").replace(
         "{version}", r"[^/]+"
-    ).replace("{agent_id}", r"[^/]+").replace("{evaluation_id}", r"[^/]+").replace("{report_id}", r"[^/]+")
+    ).replace("{agent_id}", r"[^/]+").replace("{evaluation_id}", r"[^/]+").replace("{report_id}", r"[^/]+").replace(
+        "{event_id}", r"[^/]+"
+    )

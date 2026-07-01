@@ -15,8 +15,14 @@ from auto_evaluation_system.product_api.contracts import (
     AuthLoginRequest,
     AuthRegisterRequest,
     EvaluationRequest,
+    SupervisionResponseRequest,
 )
 from auto_evaluation_system.product_api.service import EvaluationRequestError, ProductEvaluationService
+from auto_evaluation_system.product_api.supervision import (
+    SupervisionDecisionError,
+    SupervisionEventStore,
+    seed_supervision_demo_events,
+)
 
 
 def _frontend_index_path() -> Path | None:
@@ -38,6 +44,7 @@ def create_app(storage_root: str | Path = "runs/product"):
     service = ProductEvaluationService(storage_root=storage_root)
     auth_service = ProductAuthService(storage=service.storage)
     agent_library = AgentLibraryService(storage=service.storage)
+    supervision_store = SupervisionEventStore(storage=service.storage)
     app = FastAPI(title="Agent Security Product API", version="0.1.0")
     frontend_index_path = _frontend_index_path()
 
@@ -347,6 +354,46 @@ def create_app(storage_root: str | Path = "runs/product"):
             raise HTTPException(
                 status_code=404,
                 detail={"error_code": "dashboard_agent_not_found", "message": str(exc)},
+            ) from exc
+
+    @app.get("/v1/supervision/latest")
+    def get_supervision_latest(user: dict[str, Any] = Depends(require_authenticated_user)):
+        tenant_id_for_user(user)
+        return supervision_store.write_latest_snapshot()
+
+    @app.get("/v1/supervision/events")
+    def list_supervision_events(limit: int = 50, user: dict[str, Any] = Depends(require_authenticated_user)):
+        tenant_id_for_user(user)
+        bounded_limit = max(1, min(limit, 200))
+        return [event.model_dump(mode="json") for event in supervision_store.read_recent_events(limit=bounded_limit)]
+
+    @app.post("/v1/supervision/demo-seed")
+    def seed_supervision_demo(user: dict[str, Any] = Depends(require_authenticated_user)):
+        tenant_id = tenant_id_for_user(user)
+        return seed_supervision_demo_events(
+            service.storage.root,
+            tenant_id=tenant_id,
+            agent_id="demo_supervised_agent",
+        )
+
+    @app.post("/v1/supervision/ask/{event_id}/respond")
+    def respond_to_supervision_ask(
+        event_id: str,
+        request: SupervisionResponseRequest,
+        user: dict[str, Any] = Depends(require_authenticated_user),
+    ):
+        try:
+            response = supervision_store.respond_to_pending(
+                event_id,
+                action=request.action,
+                operator=request.operator or str(user["username"]),
+                reason=request.reason,
+            )
+            return response.model_dump(mode="json")
+        except SupervisionDecisionError as exc:
+            raise HTTPException(
+                status_code=exc.status_code,
+                detail={"error_code": exc.error_code, "message": str(exc)},
             ) from exc
 
     @app.get("/v1/benchmarks")
