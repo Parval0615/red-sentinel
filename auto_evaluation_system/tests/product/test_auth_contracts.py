@@ -10,6 +10,7 @@ from auto_evaluation_system.product_api.auth_config import (
     REMEMBER_ME_EXPIRE_MINUTES_ENV,
     RUNTIME_ENV_ENV,
     is_protected_route,
+    is_admin_route,
     is_public_route,
     read_jwt_auth_settings,
 )
@@ -163,8 +164,24 @@ def test_public_route_rules(method: str, path: str) -> None:
         ("GET", "/v1/dashboard/summary?agent_id=agent_001"),
         ("POST", "/v1/comparisons"),
         ("POST", "/v1/trajectories"),
+        ("GET", "/v1/admin/agent-library"),
+        ("POST", "/v1/admin/agent-library"),
+        ("GET", "/v1/admin/agent-library/openmanus_official"),
     ],
 )
 def test_protected_route_rules(method: str, path: str) -> None:
     assert is_protected_route(method, path) is True
     assert is_public_route(method, path) is False
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("GET", "/v1/admin/agent-library"),
+        ("POST", "/v1/admin/agent-library"),
+        ("GET", "/v1/admin/agent-library/openmanus_official"),
+    ],
+)
+def test_admin_route_rules(method: str, path: str) -> None:
+    assert is_admin_route(method, path) is True
+    assert is_protected_route(method, path) is True

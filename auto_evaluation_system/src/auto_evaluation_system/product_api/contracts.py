@@ -19,6 +19,7 @@ ReportStatus = Literal["complete", "incomplete"]
 OnboardingStageName = Literal["agent_record", "profile_analysis", "initial_benchmark", "default_defense_mount"]
 OnboardingStageStatus = Literal["completed", "failed", "skipped"]
 AuthUserStatus = Literal["active", "disabled"]
+AuthUserRole = Literal["user", "admin"]
 AuthErrorCode = Literal[
     "invalid_auth_request",
     "invalid_credentials",
@@ -73,6 +74,7 @@ class AuthUserSummary(BaseModel):
     username: str = Field(min_length=1)
     email: str = Field(min_length=3)
     status: AuthUserStatus = "active"
+    role: AuthUserRole = "user"
 
 
 class AuthUserRecord(BaseModel):
@@ -88,6 +90,22 @@ class AuthUserRecord(BaseModel):
     updated_at: str = Field(default_factory=utc_now_iso)
     last_login_at: str | None = None
     status: AuthUserStatus = "active"
+    role: AuthUserRole = "user"
+
+
+class AgentLibraryEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["agent-library-entry-v0.1"] = "agent-library-entry-v0.1"
+    agent_id: str = Field(min_length=1, pattern=r"^[A-Za-z0-9_.-]+$")
+    name: str = Field(min_length=1)
+    framework: str = Field(min_length=1)
+    description: str = Field(default="", min_length=0)
+    default_benchmark_id: str = Field(default="ecommerce-security-v0.1", min_length=1)
+    tags: list[str] = Field(default_factory=list)
+    source: Literal["official", "custom"] = "custom"
+    created_by: str | None = None
+    created_at: str = Field(default_factory=utc_now_iso)
 
 
 class AuthTokenResponse(BaseModel):

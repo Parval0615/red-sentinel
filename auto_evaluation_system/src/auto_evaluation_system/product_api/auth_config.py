@@ -90,6 +90,12 @@ PROTECTED_ROUTE_RULES: tuple[RouteRule, ...] = (
     RouteRule("POST", "/v1/trajectories"),
 )
 
+ADMIN_ROUTE_RULES: tuple[RouteRule, ...] = (
+    RouteRule("GET", "/v1/admin/agent-library"),
+    RouteRule("POST", "/v1/admin/agent-library"),
+    RouteRule("GET", "/v1/admin/agent-library/{agent_id}"),
+)
+
 
 def read_jwt_auth_settings(environ: Mapping[str, str] | None = None) -> JwtAuthSettings:
     env = os.environ if environ is None else environ
@@ -127,7 +133,11 @@ def is_public_route(method: str, path: str) -> bool:
 
 
 def is_protected_route(method: str, path: str) -> bool:
-    return any(rule.matches(method, path) for rule in PROTECTED_ROUTE_RULES)
+    return is_admin_route(method, path) or any(rule.matches(method, path) for rule in PROTECTED_ROUTE_RULES)
+
+
+def is_admin_route(method: str, path: str) -> bool:
+    return any(rule.matches(method, path) for rule in ADMIN_ROUTE_RULES)
 
 
 def _env_text(env: Mapping[str, str], name: str, *, default: str) -> str:
