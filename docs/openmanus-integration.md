@@ -158,6 +158,18 @@ Audit objects:
 - `audit_object`
 - `artifact_refs`
 
+`auto_defense_system.monitor_plugin.SupervisorApprovalService` provides the backend supervisor loop:
+
+- reads pending `ask` decisions from `MonitorInterceptor`
+- resolves approval or rejection through `resolve_ask(...)`
+- writes the resolution through the interceptor audit path when an audit writer is configured
+- for approved `code_execution` decisions, writes the submitted code into an isolated input directory
+- builds a `DockerTracePlan` with `network_policy="disabled"`
+- calls `auto_evaluation_system.sandbox.docker.executor.execute_docker_trace(...)`
+- returns a `monitor_decision` event with Docker artifact references
+
+This is UI-agnostic. A web console, CLI, or API can call the service with `ask_id`, `approved`, and a reason.
+
 ## Boundary
 
-The code execution guard creates a Docker sandbox artifact plan and audit payload. It does not execute arbitrary code in-process. Actual Docker execution remains owned by `auto_evaluation_system.sandbox`.
+The code execution guard still does not execute arbitrary code in-process. Approved code is handed to the existing `auto_evaluation_system.sandbox.docker` executor. Local Docker CLI was present during verification, but the Docker Desktop daemon was not reachable on this machine, so real container execution was not claimed as locally verified. The committed tests verify the supervisor-to-Docker boundary with a fake Docker executor and verify that the Docker executor uses `adapter_entrypoint` as the container command.

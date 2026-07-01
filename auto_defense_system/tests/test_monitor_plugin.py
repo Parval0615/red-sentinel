@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
-from auto_defense_system.monitor_plugin import MonitorInterceptor, OpenManusMonitorHooks
+from auto_defense_system.monitor_plugin import MonitorInterceptor, OpenManusMonitorHooks, SupervisorApprovalService
 from auto_defense_system.openmanus_agent import build_default_adapter
 from auto_defense_system.security import audit
 
@@ -85,6 +86,58 @@ def test_monitor_plugin_can_write_hash_chain_audit(tmp_path: Path) -> None:
         assert integrity["total_entries"] == 1
     finally:
         audit.LOG_FILE = old_log_file
+
+
+def test_supervisor_approval_executes_code_in_docker_sandbox(tmp_path: Path) -> None:
+    calls = []
+
+    def fake_docker_executor(plan, *, output_dir=None):
+        calls.append((plan, output_dir))
+        return SimpleNamespace(
+            model_dump=lambda mode="json": {
+                "trajectory_path": str(Path(output_dir or tmp_path) / "trajectory.jsonl"),
+                "stdout_path": str(Path(output_dir or tmp_path) / "stdout.log"),
+                "stderr_path": str(Path(output_dir or tmp_path) / "stderr.log"),
+                "audit_path": str(Path(output_dir or tmp_path) / "audit.log"),
+                "exit_code": 0,
+                "error": None,
+            }
+        )
+
+    interceptor = MonitorInterceptor(workspace_root=str(tmp_path))
+    pending = interceptor.intercept("code_execution", {"code": "print('hello')", "language": "python"})
+    supervisor = SupervisorApprovalService(interceptor, output_dir=tmp_path, docker_executor=fake_docker_executor)
+
+    resolution = supervisor.resolve(pending.ask_id or "", approved=True, reason="approved for sandbox")
+
+    assert resolution.approved is True
+    assert resolution.decision.approval_state == "approved"
+    assert len(calls) == 1
+    plan, output_dir = calls[0]
+    assert plan.docker_image == "python:3.12-slim"
+    assert plan.network_policy == "disabled"
+    assert plan.adapter_entrypoint.endswith("redsentinel_exec.py")
+    assert output_dir == tmp_path / (pending.ask_id or "") / "artifacts"
+    assert resolution.monitor_event.monitor_decision.audit_object == "code"
+    assert resolution.monitor_event.monitor_decision.artifact_refs
+
+
+def test_supervisor_rejection_does_not_execute_docker(tmp_path: Path) -> None:
+    calls = []
+    interceptor = MonitorInterceptor(workspace_root=str(tmp_path))
+    pending = interceptor.intercept("code_execution", {"code": "print('hello')", "language": "python"})
+    supervisor = SupervisorApprovalService(
+        interceptor,
+        output_dir=tmp_path,
+        docker_executor=lambda plan, *, output_dir=None: calls.append((plan, output_dir)),
+    )
+
+    resolution = supervisor.resolve(pending.ask_id or "", approved=False, reason="not allowed")
+
+    assert resolution.approved is False
+    assert resolution.decision.decision == "deny"
+    assert resolution.docker_artifacts is None
+    assert calls == []
 
 
 def test_monitor_hooks_wrap_openmanus_adapter() -> None:

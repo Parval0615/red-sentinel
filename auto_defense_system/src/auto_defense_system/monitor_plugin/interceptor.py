@@ -38,6 +38,7 @@ class MonitorInterceptor:
         self.audit_writer = audit_writer
         self.decisions: list[MonitorDecision] = []
         self.pending_asks: dict[str, MonitorDecision] = {}
+        self.pending_payloads: dict[str, dict[str, Any]] = {}
 
     def intercept(self, call_type: CallType, payload: dict[str, Any]) -> MonitorDecision:
         if call_type == "tool_call":
@@ -58,11 +59,13 @@ class MonitorInterceptor:
         self.decisions.append(decision)
         if decision.decision == "ask" and decision.ask_id:
             self.pending_asks[decision.ask_id] = decision
+            self.pending_payloads[decision.ask_id] = dict(payload)
         self._write_audit(decision)
         return decision
 
     def resolve_ask(self, ask_id: str, *, approved: bool, reason: str | None = None) -> MonitorDecision:
         pending = self.pending_asks.pop(ask_id)
+        self.pending_payloads.pop(ask_id, None)
         resolved = pending.model_copy(
             update={
                 "decision": "allow" if approved else "deny",
