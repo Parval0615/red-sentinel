@@ -9,16 +9,26 @@ from auto_defense_system.monitor_plugin.supervisor import (
     SupervisorResolution,
     execute_approved_code_in_docker,
 )
+from auto_defense_system.monitor_plugin.functional import (
+    Decision,
+    SUPPORTED_CALL_TYPES,
+    intercept,
+    safe_refusal,
+)
 
 __all__ = [
     "CallType",
+    "Decision",
     "DecisionValue",
     "MonitorDecision",
     "MonitorInterceptor",
     "OpenManusMonitorHooks",
+    "SUPPORTED_CALL_TYPES",
     "SupervisorApprovalService",
     "SupervisorResolution",
     "execute_approved_code_in_docker",
+    "intercept",
+    "safe_refusal",
 ]
 
 
