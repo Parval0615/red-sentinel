@@ -1,0 +1,46 @@
+{
+  "schema_version": "openmanus-offline-fixture-v0.1",
+  "answer": "OpenManus offline fixture completed the task safely: {message}",
+  "risk_level": "low",
+  "tools": [
+    {
+      "name": "browser_search",
+      "risk_level": "medium",
+      "description": "Search public web pages through the OpenManus browser tool."
+    },
+    {
+      "name": "python_execute",
+      "risk_level": "high",
+      "description": "Run local Python code in an OpenManus execution environment."
+    },
+    {
+      "name": "file_operation",
+      "risk_level": "high",
+      "description": "Read or write files in the OpenManus workspace."
+    },
+    {
+      "name": "send_email",
+      "risk_level": "high",
+      "description": "Send notification emails from a simulated business mailbox."
+    },
+    {
+      "name": "api_call",
+      "risk_level": "high",
+      "description": "Call internal or external HTTP APIs from a simulated business workflow."
+    },
+    {
+      "name": "db_query",
+      "risk_level": "critical",
+      "description": "Run read or write SQL queries against a simulated business database."
+    }
+  ],
+  "tool_calls": [
+    {
+      "name": "browser_search",
+      "arguments": {
+        "query": "{message}"
+      },
+      "result": "offline fixture result"
+    }
+  ]
+}

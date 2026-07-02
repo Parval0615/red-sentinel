@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from auto_evaluation_system.product_api.agent_library import AgentLibraryService
+from auto_evaluation_system.product_api.agent_library import AgentLibraryService, OFFICIAL_OPENMANUS_AGENT
 from auto_evaluation_system.product_api.auth_config import is_protected_route
 from auto_evaluation_system.product_api.auth_service import AuthServiceError, ProductAuthService
 from auto_evaluation_system.product_api.contracts import (
@@ -17,6 +17,8 @@ from auto_evaluation_system.product_api.contracts import (
     EvaluationRequest,
     SupervisionResponseRequest,
 )
+from auto_evaluation_system.product_api.monitor_events import SecurityEventReader
+from auto_evaluation_system.product_api.seed import bootstrap_demo_tenant
 from auto_evaluation_system.product_api.service import EvaluationRequestError, ProductEvaluationService
 from auto_evaluation_system.product_api.supervision import (
     SupervisionDecisionError,
@@ -33,7 +35,7 @@ def _frontend_index_path() -> Path | None:
     return next((path for path in candidates if path.exists()), None)
 
 
-def create_app(storage_root: str | Path = "runs/product"):
+def create_app(storage_root: str | Path = "runs/product", seed_demo: bool = False):
     try:
         from fastapi import Body, Depends, FastAPI, Header, HTTPException, Request
         from fastapi.exceptions import RequestValidationError
@@ -45,7 +47,13 @@ def create_app(storage_root: str | Path = "runs/product"):
     auth_service = ProductAuthService(storage=service.storage)
     agent_library = AgentLibraryService(storage=service.storage)
     supervision_store = SupervisionEventStore(storage=service.storage)
+    monitor_events = SecurityEventReader(storage=service.storage)
+    if seed_demo:
+        app_demo_seed = bootstrap_demo_tenant(auth_service, service)
+    else:
+        app_demo_seed = None
     app = FastAPI(title="Agent Security Product API", version="0.1.0")
+    app.state.demo_seed = app_demo_seed
     frontend_index_path = _frontend_index_path()
 
     if frontend_index_path is not None:
@@ -395,6 +403,64 @@ def create_app(storage_root: str | Path = "runs/product"):
                 status_code=exc.status_code,
                 detail={"error_code": exc.error_code, "message": str(exc)},
             ) from exc
+
+    @app.get("/v1/monitor/events")
+    def list_monitor_events(
+        agent_id: str | None = None,
+        decision: str | None = None,
+        session_id: str | None = None,
+        limit: int = 50,
+        user: dict[str, Any] = Depends(require_admin),
+    ):
+        return monitor_events.read_security_events(
+            limit=limit,
+            agent_id=agent_id,
+            decision=decision,
+            session_id=session_id,
+        )
+
+    @app.get("/v1/monitor/events/summary")
+    def summarize_monitor_events(
+        agent_id: str | None = None,
+        decision: str | None = None,
+        session_id: str | None = None,
+        limit: int = 50,
+        user: dict[str, Any] = Depends(require_admin),
+    ):
+        return monitor_events.summarize_security_events(
+            limit=limit,
+            agent_id=agent_id,
+            decision=decision,
+            session_id=session_id,
+        )
+
+    @app.post("/v1/admin/agents/openmanus")
+    def register_openmanus_agent(user: dict[str, Any] = Depends(require_admin)):
+        library_entry = agent_library.upsert_entry(
+            OFFICIAL_OPENMANUS_AGENT,
+            created_by=str(user["username"]),
+        )
+        agent = service.register_agent(
+            AgentRegistration(
+                tenant_id=tenant_id_for_user(user),
+                username=str(user["username"]),
+                agent_id=library_entry.agent_id,
+                name=library_entry.name,
+                domain="general",
+                integration_type="source",
+                framework=library_entry.framework,
+                adapter_type="openmanus",
+                status="ready",
+                remarks="Official OpenManus adapter registered by platform admin.",
+                data_boundary={"deployment": "admin_registered", "integration_type": "source"},
+            )
+        )
+        return {
+            "schema_version": "openmanus-admin-registration-v0.1",
+            "status": "registered",
+            "library_entry": library_entry.model_dump(mode="json"),
+            "agent": agent.model_dump(mode="json"),
+        }
 
     @app.get("/v1/benchmarks")
     def list_benchmarks():
