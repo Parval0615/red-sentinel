@@ -32,10 +32,11 @@ def detect_pdf_sensitive_info() -> str:
     from pathlib import Path
 
     from auto_defense_system.config import DEFAULT_TEST_PDF
-    from auto_defense_system.rag.retriever import init_rag_retriever
 
     if not Path(DEFAULT_TEST_PDF).exists():
         return "[SEARCH_FAIL] No default PDF is available. Upload a PDF before running this check."
+
+    from auto_defense_system.rag.retriever import init_rag_retriever
 
     default_retriever = init_rag_retriever()
     all_docs = default_retriever.get("docs", [])

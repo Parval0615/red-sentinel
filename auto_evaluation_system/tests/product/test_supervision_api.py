@@ -88,6 +88,41 @@ def test_supervision_demo_seed_events_and_ask_response_flow(tmp_path) -> None:
     assert duplicate_response.json()["detail"]["error_code"] == "supervision_event_resolved"
 
 
+def test_supervision_api_isolates_events_by_tenant(tmp_path) -> None:
+    tenant_a = _client(tmp_path, username="tenant_a")
+    tenant_b = _client(tmp_path, username="tenant_b")
+
+    seed_b = tenant_b.post("/v1/supervision/demo-seed")
+    assert seed_b.status_code == 200
+    tenant_b_pending_event_id = seed_b.json()["pending_decisions"][0]["event_id"]
+
+    latest_a_before_seed = tenant_a.get("/v1/supervision/latest")
+    events_a_before_seed = tenant_a.get("/v1/supervision/events")
+
+    assert latest_a_before_seed.status_code == 200
+    assert latest_a_before_seed.json()["events"] == []
+    assert events_a_before_seed.status_code == 200
+    assert events_a_before_seed.json() == []
+
+    cross_tenant_response = tenant_a.post(
+        f"/v1/supervision/ask/{tenant_b_pending_event_id}/respond",
+        json={"action": "approve", "operator": "tenant_a", "reason": "Should not see tenant B event."},
+    )
+    assert cross_tenant_response.status_code == 404
+    assert cross_tenant_response.json()["detail"]["error_code"] == "supervision_event_not_found"
+
+    seed_a = tenant_a.post("/v1/supervision/demo-seed")
+    assert seed_a.status_code == 200
+
+    latest_a = tenant_a.get("/v1/supervision/latest").json()
+    latest_b = tenant_b.get("/v1/supervision/latest").json()
+
+    assert {event["tenant_id"] for event in latest_a["events"]} == {"tenant_a"}
+    assert {event["tenant_id"] for event in latest_b["events"]} == {"tenant_b"}
+    assert {record["tenant_id"] for record in latest_a["pending_decisions"]} == {"tenant_a"}
+    assert {record["tenant_id"] for record in latest_b["pending_decisions"]} == {"tenant_b"}
+
+
 def test_supervision_ask_response_handles_unknown_event(tmp_path) -> None:
     client = _client(tmp_path)
 

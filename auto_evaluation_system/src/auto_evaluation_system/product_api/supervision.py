@@ -64,15 +64,22 @@ class SupervisionEventStore:
         self.write_latest_snapshot()
         return stored_event
 
-    def read_recent_events(self, limit: int | None = None) -> list[SupervisionEvent]:
+    def read_recent_events(self, limit: int | None = None, *, tenant_id: str | None = None) -> list[SupervisionEvent]:
         if not self.events_path.exists():
             return []
         lines = [line for line in self.events_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-        selected = lines[-(limit or self.recent_event_limit):]
-        return [SupervisionEvent.model_validate(json.loads(line)) for line in selected]
+        events = [SupervisionEvent.model_validate(json.loads(line)) for line in lines]
+        if tenant_id is not None:
+            events = [event for event in events if event.tenant_id == tenant_id]
+        return events[-(limit or self.recent_event_limit):]
 
-    def compute_summary(self, events: list[SupervisionEvent] | None = None) -> dict[str, Any]:
-        event_list = events if events is not None else self.read_recent_events(limit=self.max_events)
+    def compute_summary(
+        self,
+        events: list[SupervisionEvent] | None = None,
+        *,
+        tenant_id: str | None = None,
+    ) -> dict[str, Any]:
+        event_list = events if events is not None else self.read_recent_events(limit=self.max_events, tenant_id=tenant_id)
         decisions = Counter(event.decision for event in event_list)
         statuses = Counter(event.status for event in event_list)
         call_types = Counter(event.call_type for event in event_list)
@@ -95,26 +102,32 @@ class SupervisionEventStore:
             "latest_timestamp": latest_event.timestamp if latest_event else None,
         }
 
-    def write_latest_snapshot(self) -> dict[str, Any]:
-        events = self.read_recent_events()
+    def write_latest_snapshot(self, *, tenant_id: str | None = None) -> dict[str, Any]:
+        events = self.read_recent_events(tenant_id=tenant_id)
         snapshot = {
             "schema_version": "supervision-latest-v0.1",
             "updated_at": utc_now_iso(),
             "events": [event.model_dump(mode="json") for event in events],
-            "summary": self.compute_summary(events),
-            "pending_decisions": [record.model_dump(mode="json") for record in self.read_pending_decisions()],
+            "summary": self.compute_summary(events, tenant_id=tenant_id),
+            "pending_decisions": [
+                record.model_dump(mode="json") for record in self.read_pending_decisions(tenant_id=tenant_id)
+            ],
         }
-        self.storage.write_json(self.latest_path, snapshot)
+        if tenant_id is None:
+            self.storage.write_json(self.latest_path, snapshot)
         return snapshot
 
-    def read_pending_decisions(self) -> list[PendingDecisionRecord]:
+    def read_pending_decisions(self, *, tenant_id: str | None = None) -> list[PendingDecisionRecord]:
         if not self.pending_decisions_path.exists():
             return []
         payload = self.storage.read_json(self.pending_decisions_path)
-        return [
+        records = [
             PendingDecisionRecord.model_validate(item)
             for item in payload.get("decisions", [])
         ]
+        if tenant_id is None:
+            return records
+        return [record for record in records if self._pending_record_matches_tenant(record, tenant_id)]
 
     def respond_to_pending(
         self,
@@ -123,9 +136,17 @@ class SupervisionEventStore:
         action: SupervisionResponseAction,
         operator: str,
         reason: str,
+        tenant_id: str | None = None,
     ) -> SupervisionResponseRecord:
         records = self.read_pending_decisions()
-        record_index = next((index for index, record in enumerate(records) if record.event_id == event_id), None)
+        record_index = next(
+            (
+                index
+                for index, record in enumerate(records)
+                if record.event_id == event_id and self._pending_record_matches_tenant(record, tenant_id)
+            ),
+            None,
+        )
         if record_index is None:
             raise SupervisionDecisionError(
                 f"Pending supervision event {event_id} was not found.",
@@ -146,8 +167,8 @@ class SupervisionEventStore:
             expired_record = record.model_copy(update={"supervisor_action": record.default_action, "resolved_at": now})
             records[record_index] = expired_record
             self._write_pending_decisions(records)
-            self._update_event_status(event_id, "expired")
-            self.write_latest_snapshot()
+            self._update_event_status(event_id, "expired", tenant_id=tenant_id)
+            self.write_latest_snapshot(tenant_id=tenant_id)
             raise SupervisionDecisionError(
                 f"Pending supervision event {event_id} has expired.",
                 error_code="supervision_event_expired",
@@ -167,8 +188,8 @@ class SupervisionEventStore:
             update={"supervisor_action": action, "resolved_at": response.resolved_at}
         )
         self._write_pending_decisions(records)
-        self._update_event_status(event_id, status)
-        self.write_latest_snapshot()
+        self._update_event_status(event_id, status, tenant_id=tenant_id)
+        self.write_latest_snapshot(tenant_id=tenant_id)
         return response
 
     def _normalize_event(self, event: SupervisionEvent | dict[str, Any]) -> SupervisionEvent:
@@ -187,11 +208,15 @@ class SupervisionEventStore:
 
     def _initialize_pending_decision(self, event: SupervisionEvent) -> None:
         records = self.read_pending_decisions()
-        if any(record.event_id == event.event_id for record in records):
+        if any(
+            record.event_id == event.event_id and self._pending_record_matches_tenant(record, event.tenant_id)
+            for record in records
+        ):
             return
         requested_at = event.timestamp
         record = PendingDecisionRecord(
             event_id=event.event_id,
+            tenant_id=event.tenant_id,
             requested_at=requested_at,
             expires_at=_add_seconds(requested_at, self.pending_ttl_seconds),
             default_action=self.default_action,
@@ -207,7 +232,7 @@ class SupervisionEventStore:
         }
         self.storage.write_json(self.pending_decisions_path, payload)
 
-    def _update_event_status(self, event_id: str, status: str) -> None:
+    def _update_event_status(self, event_id: str, status: str, *, tenant_id: str | None = None) -> None:
         if not self.events_path.exists():
             return
         updated_lines: list[str] = []
@@ -215,10 +240,21 @@ class SupervisionEventStore:
             if not line.strip():
                 continue
             payload = json.loads(line)
-            if payload.get("event_id") == event_id:
+            if payload.get("event_id") == event_id and (tenant_id is None or payload.get("tenant_id") == tenant_id):
                 payload["status"] = status
             updated_lines.append(json.dumps(payload, ensure_ascii=False, sort_keys=True))
         self.events_path.write_text("\n".join(updated_lines) + ("\n" if updated_lines else ""), encoding="utf-8")
+
+    def _pending_record_matches_tenant(self, record: PendingDecisionRecord, tenant_id: str | None) -> bool:
+        if tenant_id is None:
+            return True
+        if record.tenant_id is not None:
+            return record.tenant_id == tenant_id
+        return any(
+            event.tenant_id == tenant_id
+            for event in self.read_recent_events(limit=self.max_events)
+            if event.event_id == record.event_id
+        )
 
 
 def seed_supervision_demo_events(
@@ -231,7 +267,7 @@ def seed_supervision_demo_events(
     store = SupervisionEventStore(storage_root=storage_root, max_events=max_events)
     for payload in _demo_events(tenant_id=tenant_id, agent_id=agent_id):
         store.append_event(payload)
-    return store.write_latest_snapshot()
+    return store.write_latest_snapshot(tenant_id=tenant_id)
 
 
 def _demo_events(*, tenant_id: str, agent_id: str) -> list[dict[str, Any]]:

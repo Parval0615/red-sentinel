@@ -366,14 +366,15 @@ def create_app(storage_root: str | Path = "runs/product", seed_demo: bool = Fals
 
     @app.get("/v1/supervision/latest")
     def get_supervision_latest(user: dict[str, Any] = Depends(require_authenticated_user)):
-        tenant_id_for_user(user)
-        return supervision_store.write_latest_snapshot()
+        return supervision_store.write_latest_snapshot(tenant_id=tenant_id_for_user(user))
 
     @app.get("/v1/supervision/events")
     def list_supervision_events(limit: int = 50, user: dict[str, Any] = Depends(require_authenticated_user)):
-        tenant_id_for_user(user)
         bounded_limit = max(1, min(limit, 200))
-        return [event.model_dump(mode="json") for event in supervision_store.read_recent_events(limit=bounded_limit)]
+        return [
+            event.model_dump(mode="json")
+            for event in supervision_store.read_recent_events(limit=bounded_limit, tenant_id=tenant_id_for_user(user))
+        ]
 
     @app.post("/v1/supervision/demo-seed")
     def seed_supervision_demo(user: dict[str, Any] = Depends(require_authenticated_user)):
@@ -396,6 +397,7 @@ def create_app(storage_root: str | Path = "runs/product", seed_demo: bool = Fals
                 action=request.action,
                 operator=request.operator or str(user["username"]),
                 reason=request.reason,
+                tenant_id=tenant_id_for_user(user),
             )
             return response.model_dump(mode="json")
         except SupervisionDecisionError as exc:

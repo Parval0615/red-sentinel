@@ -1,7 +1,11 @@
+# Legacy dependency list. For reproducible installs from the repository root, use:
+#   python -m pip install -r auto_defense_system/requirements-legacy.txt -c constraints.txt
+
 langchain
 langchain-community
 langchain-core
 langchain-openai
+langchain-text-splitters
 rank_bm25
 chromadb
 sentence-transformers

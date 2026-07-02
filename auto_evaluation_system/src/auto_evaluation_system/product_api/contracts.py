@@ -81,6 +81,7 @@ class PendingDecisionRecord(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     event_id: str = Field(min_length=1)
+    tenant_id: str | None = Field(default=None, min_length=1)
     requested_at: str = Field(min_length=1)
     expires_at: str = Field(min_length=1)
     default_action: SupervisionDefaultAction
