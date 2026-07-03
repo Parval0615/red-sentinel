@@ -1,0 +1,14 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "eccd53a5330de065337b2dc24ef7c05d8d0535cf",
+  "prompts": {},
+  "humans": {
+    "h_238e1ee15ac3a8": {
+      "author": "Parval0615 <1440746764@qq.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
