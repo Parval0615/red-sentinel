@@ -11,16 +11,12 @@ from uuid import uuid4
 from agent_security_sdk.adapter import AgentAdapter
 from agent_security_sdk.ecommerce import EcommerceEnterpriseAdapter
 from agent_security_sdk.openmanus import OpenManusAdapter
-<<<<<<< HEAD
 from agent_security_sdk.openmanus_real import OpenManusDockerRunner, OpenManusDockerRunnerConfig, OpenManusRealAdapter
 from auto_evaluation_system.product_api.attack_pack import (
     EcommerceAttackScenario,
     load_ecommerce_attack_pack,
     load_openmanus_attack_pack,
 )
-=======
-from auto_evaluation_system.product_api.attack_pack import EcommerceAttackScenario, load_ecommerce_attack_pack
->>>>>>> origin/main
 from auto_evaluation_system.product_api.comparison import build_retest_comparison, write_comparison_artifacts
 from auto_evaluation_system.product_api.contracts import (
     AgentMaterial,
@@ -78,7 +74,6 @@ _GENERIC_EXECUTOR_TOOL_NAMES = {"python_execute", "file_operation", "browser_sea
 _INPUT_BENCHMARK_CATEGORIES = {"direct_injection", "goal_perturbation"}
 _OUTPUT_BENCHMARK_CATEGORIES = {"data_exfiltration"}
 _RUNTIME_BENCHMARK_CATEGORIES = {"business_logic_abuse", "privilege_escalation", "tool_tampering"}
-<<<<<<< HEAD
 _OPENMANUS_INPUT_BENCHMARK_CATEGORIES = {"prompt_injection", "jailbreak"}
 _OPENMANUS_OUTPUT_BENCHMARK_CATEGORIES = {"goal_drift"}
 _OPENMANUS_RUNTIME_BENCHMARK_CATEGORIES = {
@@ -86,8 +81,6 @@ _OPENMANUS_RUNTIME_BENCHMARK_CATEGORIES = {
     "goal_drift",
     "tool_tampering",
 }
-=======
->>>>>>> origin/main
 _SUPERVISION_CALL_TYPES = {
     "llm_input",
     "llm_output",
@@ -1082,7 +1075,6 @@ class ProductEvaluationService:
                 "pilot_preset": request.pilot_preset or "full_benchmark",
                 "defense_enabled": request.defense_enabled,
                 "evaluation_mode": "guarded" if request.defense_enabled else "baseline_no_defense",
-<<<<<<< HEAD
                 "runtime_mode": "openmanus_real" if is_openmanus_real else request.mode,
                 "real_runtime": bool(is_openmanus_real),
                 "simulated": False if is_openmanus_real else request.mode in {"sdk", "offline_trace"},
@@ -1099,8 +1091,6 @@ class ProductEvaluationService:
                 "real_tool_execution_count": real_tool_execution_count if is_openmanus_real else None,
                 "blocked_tool_execution_count": blocked_tool_execution_count if is_openmanus_real else None,
                 "baseline_refusal_count": baseline_refusal_count if is_openmanus_real else None,
-=======
->>>>>>> origin/main
             },
             findings=findings,
             scenario_results=scenario_results,
@@ -1576,7 +1566,6 @@ def _bounded_float(value: Any, *, default: float, minimum: float, maximum: float
     return max(minimum, min(maximum, number))
 
 
-<<<<<<< HEAD
 def _rate(numerator: int, denominator: int) -> float:
     if denominator <= 0:
         return 0.0
@@ -1611,8 +1600,6 @@ def _blocked_tool_execution_count(run: dict[str, Any]) -> int:
     return count
 
 
-=======
->>>>>>> origin/main
 def _adapter_type_for(integration_type: str) -> str:
     if integration_type == "api":
         return "http_endpoint"
@@ -1628,7 +1615,6 @@ def _builtin_adapter_for(registration: AgentRegistration) -> AgentAdapter:
     if registration.adapter_type == "openmanus":
         return OpenManusAdapter(session_id=session_id)
     return EcommerceEnterpriseAdapter(session_id=session_id)
-<<<<<<< HEAD
 
 
 def _openmanus_real_adapter_for(registration: AgentRegistration, *, output_root: Path) -> AgentAdapter:
@@ -1650,8 +1636,6 @@ def _openmanus_real_adapter_for(registration: AgentRegistration, *, output_root:
 
 def _missing_openmanus_real_env() -> list[str]:
     return [name for name in ("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL") if not os.environ.get(name)]
-=======
->>>>>>> origin/main
 
 
 def _missing_adapter_message(registration: AgentRegistration) -> str:

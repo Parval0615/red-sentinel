@@ -89,11 +89,7 @@ DEFAULT_POLICY_RULES = {
             "max_recipients": 5,
             "block_external_recipients": True,
             "internal_domains": ["@company.com", "@internal.com"],
-<<<<<<< HEAD
             "ask_domains": ["*"],
-=======
-            "ask_domains": [".net", ".org", ".com"],
->>>>>>> origin/main
             "block_content_patterns": [
                 "password", "credential", "token", "secret", "api_key",
                 "密码", "密钥", "令牌", "凭证",
@@ -448,41 +444,7 @@ def _check_email_policy(args: dict, policy: dict) -> tuple:
             },
         )
 
-<<<<<<< HEAD
     # Check content patterns before external recipients so sensitive exfiltration stays deny.
-=======
-    # Check external recipients
-    if policy.get("block_external_recipients", True):
-        internal_domains = policy.get("internal_domains", [])
-        for r in recipients:
-            is_internal = _recipient_matches_internal_domain(r, internal_domains)
-            if not is_internal:
-                _, address = parseaddr(r)
-                domain = address.rsplit("@", 1)[-1].lower() if "@" in address else ""
-                if (
-                    not _domain_contains_internal_lookalike(domain, internal_domains)
-                    and _domain_matches_patterns(domain, policy.get("ask_domains", []))
-                ):
-                    return _ask_result(
-                        f"邮件发送到外部收件人 '{r}' 需要人工确认。",
-                        {
-                            "risk_level": "medium",
-                            "blocked_reason": f"external_recipient: {r}",
-                            "rule_name": "send_email.block_external_recipients",
-                        },
-                    )
-                return (
-                    False,
-                    f"{policy['message']} 收件人 '{r}' 不在内部域白名单中。",
-                    {
-                        "risk_level": policy["risk_level"],
-                        "blocked_reason": f"external_recipient: {r}",
-                        "rule_name": "send_email.block_external_recipients",
-                    },
-                )
-
-    # Check content patterns
->>>>>>> origin/main
     combined = (subject + " " + body).lower()
     for pattern in policy.get("block_content_patterns", []):
         if re.search(pattern, combined, re.IGNORECASE):
@@ -674,11 +636,6 @@ def check_policy(tool_name: str, tool_args: dict, state: dict = None, *, workspa
     # Dispatch to specific checker
     checker = _POLICY_CHECKERS.get(tool_name)
     if checker:
-<<<<<<< HEAD
-=======
-        if tool_name == "file_operation":
-            return _finalize_policy_result(checker(tool_args, policy, workspace_root=workspace_root), policy)
->>>>>>> origin/main
         return _finalize_policy_result(checker(tool_args, policy), policy)
 
     # No checker but has policy = unknown dangerous tool, allow with warning
@@ -687,12 +644,8 @@ def check_policy(tool_name: str, tool_args: dict, state: dict = None, *, workspa
             False,
             f"Tool '{tool_name}' has policy rules but no checker implementation.",
             {"risk_level": "high", "blocked_reason": "policy_checker_missing", "rule_name": f"{tool_name}.no_checker"},
-<<<<<<< HEAD
         ),
         policy,
-=======
-        )
->>>>>>> origin/main
     )
 
 

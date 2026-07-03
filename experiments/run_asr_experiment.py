@@ -80,12 +80,9 @@ def run_experiment(scenario_names: list[str], *, output_dir: Path = DEFAULT_OUTP
 
 def _evaluate_scenario(definition: ScenarioDefinition) -> dict[str, Any]:
     attack_cases, case_source_path = _load_cases(definition)
-<<<<<<< HEAD
     baseline_results = [_run_case_without_monitor(case) for case in attack_cases]
     baseline_distribution = _baseline_outcome_distribution(baseline_results)
     baseline_successes = sum(1 for result in baseline_results if result["success"])
-=======
->>>>>>> origin/main
     attack_results = [_run_case_through_monitor(case) for case in attack_cases]
     attack_distribution = _decision_distribution(attack_results)
     attack_successes = sum(1 for result in attack_results if result["success"])
@@ -105,18 +102,12 @@ def _evaluate_scenario(definition: ScenarioDefinition) -> dict[str, Any]:
         "source_cases_total": len(attack_cases),
         "cases_total": len(attack_cases),
         "benign_cases_total": len(benign_cases),
-<<<<<<< HEAD
         "asr_no_defense": _rate(baseline_successes, len(attack_cases)),
         "asr_with_defense": _rate(attack_successes, len(attack_cases)),
         "fpr": _rate(false_positives, len(benign_cases)),
         "baseline_successes": baseline_successes,
         "baseline_results": baseline_results,
         "baseline_outcome_distribution": baseline_distribution,
-=======
-        "asr_no_defense": 1.0,
-        "asr_with_defense": _rate(attack_successes, len(attack_cases)),
-        "fpr": _rate(false_positives, len(benign_cases)),
->>>>>>> origin/main
         "blocked": attack_blocked,
         "asked": attack_asked,
         "false_positives": false_positives,
@@ -164,7 +155,6 @@ def _run_case_through_monitor(case: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-<<<<<<< HEAD
 def _run_case_without_monitor(case: dict[str, Any]) -> dict[str, Any]:
     try:
         call_type, payload = _derive_call(case)
@@ -274,8 +264,6 @@ def _baseline_text_evidence(case: dict[str, Any], content: str) -> list[str]:
     return evidence
 
 
-=======
->>>>>>> origin/main
 def _load_cases(definition: ScenarioDefinition) -> tuple[list[dict[str, Any]], str]:
     path = CASES_ROOT / definition.name / "cases.jsonl"
     if not path.exists():
@@ -310,11 +298,7 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
 def _summary(results: list[dict[str, Any]]) -> dict[str, Any]:
     evaluated = [item for item in results if item["status"] == "evaluated"]
     total_cases = sum(int(item["cases_total"]) for item in evaluated)
-<<<<<<< HEAD
     no_defense_successes = sum(int(item["baseline_successes"]) for item in evaluated)
-=======
-    no_defense_successes = sum(item["asr_no_defense"] * item["cases_total"] for item in evaluated)
->>>>>>> origin/main
     guarded_successes = sum(item["asr_with_defense"] * item["cases_total"] for item in evaluated)
     benign_cases_total = sum(int(item["benign_cases_total"]) for item in evaluated)
     false_positives = sum(int(item["false_positives"]) for item in evaluated)
@@ -327,10 +311,7 @@ def _summary(results: list[dict[str, Any]]) -> dict[str, Any]:
         "cases_total": total_cases,
         "asr_no_defense": _rate(no_defense_successes, total_cases),
         "asr_with_defense": _rate(guarded_successes, total_cases),
-<<<<<<< HEAD
         "baseline_successes": no_defense_successes,
-=======
->>>>>>> origin/main
         "benign_cases_total": benign_cases_total,
         "fpr": _rate(false_positives, benign_cases_total),
         "blocked": blocked,
@@ -339,12 +320,9 @@ def _summary(results: list[dict[str, Any]]) -> dict[str, Any]:
         "decision_distribution": _merge_distributions(
             item["decision_distribution"] for item in evaluated
         ),
-<<<<<<< HEAD
         "baseline_outcome_distribution": _merge_distributions(
             item["baseline_outcome_distribution"] for item in evaluated
         ),
-=======
->>>>>>> origin/main
         "benign_decision_distribution": _merge_distributions(
             item["benign_decision_distribution"] for item in evaluated
         ),
@@ -365,7 +343,6 @@ def _decision_distribution(results: list[dict[str, Any]]) -> dict[str, int]:
     return distribution
 
 
-<<<<<<< HEAD
 def _baseline_outcome_distribution(results: list[dict[str, Any]]) -> dict[str, int]:
     distribution = {"success": 0, "failed": 0}
     for result in results:
@@ -376,10 +353,6 @@ def _baseline_outcome_distribution(results: list[dict[str, Any]]) -> dict[str, i
 
 def _merge_distributions(distributions: Any) -> dict[str, int]:
     merged: dict[str, int] = {}
-=======
-def _merge_distributions(distributions: Any) -> dict[str, int]:
-    merged = _empty_distribution()
->>>>>>> origin/main
     for distribution in distributions:
         for decision, count in distribution.items():
             merged[str(decision)] = merged.get(str(decision), 0) + int(count)

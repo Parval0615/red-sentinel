@@ -3,10 +3,7 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Callable
-<<<<<<< HEAD
 from dataclasses import dataclass
-=======
->>>>>>> origin/main
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -17,7 +14,6 @@ from agent_security_sdk.telemetry import TraceRecorder
 
 
 OpenManusRunner = Callable[[str, str, dict[str, Any]], dict[str, Any]]
-<<<<<<< HEAD
 MonitorIntercept = Callable[[str, dict[str, Any]], Any]
 
 
@@ -27,8 +23,6 @@ class InferredToolCall:
     tool_name: str
     arguments: dict[str, Any]
     payload: dict[str, Any]
-=======
->>>>>>> origin/main
 
 
 class OpenManusAdapter(AgentAdapter):
@@ -37,15 +31,11 @@ class OpenManusAdapter(AgentAdapter):
         session_id: str = "openmanus-offline",
         *,
         runner: OpenManusRunner | None = None,
-<<<<<<< HEAD
         monitor_intercept: MonitorIntercept | None = None,
-=======
->>>>>>> origin/main
         fixture_path: str | Path | None = None,
     ) -> None:
         self.recorder = TraceRecorder(session_id=session_id)
         self._runner = runner
-<<<<<<< HEAD
         self._monitor_intercept = monitor_intercept
         self._fixture = _load_fixture(fixture_path)
 
@@ -58,36 +48,15 @@ class OpenManusAdapter(AgentAdapter):
         answer = _answer_for_decision(payload, inferred, decision, redacted_message)
         tool_calls = [] if blocked else [_simulated_tool_call(inferred, decision)]
         audit_events = [_audit_event(inferred, decision, user_id=user_id, session_id=self.recorder.session_id)]
-=======
-        self._fixture = _load_fixture(fixture_path)
-
-    def send_message(self, user_id: str, message: str, context: dict[str, Any]) -> AgentTurnResult:
-        payload = self._run(user_id, message, context)
-        redacted_message = _redact(message)
-        answer = _redact(str(payload.get("answer") or self._fixture.get("answer") or "OpenManus task completed."))
-        answer = answer.replace("{message}", redacted_message)
-        tool_calls = [
-            _normalise_tool_call(item, index)
-            for index, item in enumerate(payload.get("tool_calls") or self._fixture.get("tool_calls") or [])
-        ]
-        audit_events = _audit_events(tool_calls, user_id=user_id, session_id=self.recorder.session_id)
->>>>>>> origin/main
         audit_events.extend(_normalise_audit_event(item) for item in payload.get("audit_events") or [])
         result = AgentTurnResult(
             user_id=user_id,
             message=redacted_message,
             answer=answer,
-<<<<<<< HEAD
             blocked=blocked,
             risk_level=_risk_level_from_score(decision["risk_score"]),
             tool_calls=tool_calls,
             business_events=[] if blocked else list(payload.get("business_events") or []),
-=======
-            blocked=bool(payload.get("blocked", False)),
-            risk_level=str(payload.get("risk_level") or self._fixture.get("risk_level") or "low"),
-            tool_calls=tool_calls,
-            business_events=list(payload.get("business_events") or []),
->>>>>>> origin/main
             audit_events=audit_events,
         )
         self.recorder.record_turn(result)
@@ -117,7 +86,6 @@ class OpenManusAdapter(AgentAdapter):
             raise TypeError("OpenManus runner must return a dict payload.")
         return payload
 
-<<<<<<< HEAD
     def _intercept(self, call_type: str, payload: dict[str, Any]) -> Any:
         intercept = self._monitor_intercept or _default_monitor_intercept()
         return intercept(call_type, payload)
@@ -128,8 +96,6 @@ def _default_monitor_intercept() -> MonitorIntercept:
 
     return intercept
 
-=======
->>>>>>> origin/main
 
 def _load_fixture(fixture_path: str | Path | None) -> dict[str, Any]:
     path = Path(fixture_path) if fixture_path is not None else _default_fixture_path()
@@ -158,7 +124,6 @@ def _normalise_tool_spec(item: Any) -> ToolSpec:
     )
 
 
-<<<<<<< HEAD
 def _infer_tool_call(message: str) -> InferredToolCall:
     text = str(message or "").strip()
     lower = text.lower()
@@ -339,37 +304,16 @@ def _audit_event(
     return event
 
 
-=======
-def _normalise_tool_call(item: Any, index: int) -> dict[str, Any]:
-    if not isinstance(item, dict):
-        item = {"name": str(item)}
-    name = str(item.get("name") or "openmanus_tool")
-    arguments = item.get("arguments", item.get("args", {}))
-    result = item.get("result", item.get("result_summary", ""))
-    return {
-        "tool_call_id": str(item.get("tool_call_id") or f"openmanus_tool_{index}"),
-        "name": name,
-        "args_summary": _summary(arguments),
-        "result_summary": _summary(result),
-        "timestamp": str(item.get("timestamp") or _utc_now_iso()),
-    }
-
-
->>>>>>> origin/main
 def _normalise_audit_event(item: Any) -> dict[str, Any]:
     if not isinstance(item, dict):
         return {"event_type": "openmanus_audit", "summary": _summary(item), "timestamp": _utc_now_iso()}
     payload = {str(key): _redact(value) if isinstance(value, str) else value for key, value in item.items()}
-<<<<<<< HEAD
     for key in ("decision", "risk_score", "reason", "rules"):
         payload.pop(key, None)
-=======
->>>>>>> origin/main
     payload.setdefault("timestamp", _utc_now_iso())
     return payload
 
 
-<<<<<<< HEAD
 _EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 _URL_RE = re.compile(r"https?://[^\s'\"<>，。；、)）]+", re.IGNORECASE)
 _HTTP_METHOD_RE = re.compile(r"\b(GET|POST|PUT|PATCH|DELETE)\b", re.IGNORECASE)
@@ -536,37 +480,6 @@ def _risk_level_from_score(score: float) -> str:
     if score >= 40:
         return "medium"
     return "low"
-=======
-def _audit_events(tool_calls: list[dict[str, Any]], *, user_id: str, session_id: str) -> list[dict[str, Any]]:
-    events: list[dict[str, Any]] = []
-    for call in tool_calls:
-        common = {
-            "user_id": user_id,
-            "session_id": session_id,
-            "tool_name": call["name"],
-            "source": "openmanus_adapter",
-            "decision": "allow",
-        }
-        events.append(
-            {
-                **common,
-                "event_type": "tool_call",
-                "call_type": "tool_call",
-                "args_summary": call["args_summary"],
-                "timestamp": call["timestamp"],
-            }
-        )
-        events.append(
-            {
-                **common,
-                "event_type": "tool_result",
-                "call_type": "tool_result",
-                "result_summary": call["result_summary"],
-                "timestamp": _utc_now_iso(),
-            }
-        )
-    return events
->>>>>>> origin/main
 
 
 def _summary(value: Any, *, limit: int = 240) -> str:

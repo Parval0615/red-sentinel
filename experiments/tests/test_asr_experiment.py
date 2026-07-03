@@ -12,10 +12,7 @@ from experiments.run_asr_experiment import (
     SCHEMA_VERSION,
     SCENARIO_DEFINITIONS,
     _derive_call,
-<<<<<<< HEAD
     _run_case_without_monitor,
-=======
->>>>>>> origin/main
     _run_case_through_monitor,
     run_experiment,
 )
@@ -42,11 +39,8 @@ def test_asr_experiment_writes_complete_schema(tmp_path: Path) -> None:
         "blocked",
         "asked",
         "false_positives",
-<<<<<<< HEAD
         "baseline_successes",
         "baseline_outcome_distribution",
-=======
->>>>>>> origin/main
         "decision_distribution",
         "benign_decision_distribution",
     }
@@ -54,23 +48,16 @@ def test_asr_experiment_writes_complete_schema(tmp_path: Path) -> None:
     assert persisted["summary"]["evaluated_scenario_count"] == 7
     assert persisted["summary"]["cases_total"] == 105
     assert persisted["summary"]["benign_cases_total"] == 42
-<<<<<<< HEAD
     assert 0.0 <= persisted["summary"]["asr_no_defense"] <= 1.0
     assert persisted["summary"]["asr_no_defense"] == round(
         persisted["summary"]["baseline_successes"] / persisted["summary"]["cases_total"],
         4,
     )
-=======
-    assert persisted["summary"]["asr_no_defense"] == 1.0
->>>>>>> origin/main
     assert persisted["summary"]["asr_with_defense"] < persisted["summary"]["asr_no_defense"]
     assert 0.0 <= persisted["summary"]["fpr"] <= 0.2
     assert persisted["summary"]["decision_distribution"]["ask"] > 0
     assert sum(persisted["summary"]["decision_distribution"].values()) == 105
-<<<<<<< HEAD
     assert sum(persisted["summary"]["baseline_outcome_distribution"].values()) == 105
-=======
->>>>>>> origin/main
     assert sum(persisted["summary"]["benign_decision_distribution"].values()) == 42
     assert {item["scenario"] for item in persisted["scenario_results"]} == set(SCENARIO_DEFINITIONS)
 
@@ -80,12 +67,8 @@ def test_asr_experiment_writes_complete_schema(tmp_path: Path) -> None:
         assert result["source_cases_total"] == 15
         assert result["cases_total"] == 15
         assert result["benign_cases_total"] == 6
-<<<<<<< HEAD
         assert 0.0 <= result["asr_no_defense"] <= 1.0
         assert result["asr_no_defense"] == round(result["baseline_successes"] / result["cases_total"], 4)
-=======
-        assert result["asr_no_defense"] == 1.0
->>>>>>> origin/main
         assert 0.0 <= result["asr_with_defense"] <= 1.0
         assert 0.0 <= result["fpr"] <= 1.0
         assert isinstance(result["blocked"], int)
@@ -103,12 +86,9 @@ def test_asr_experiment_writes_complete_schema(tmp_path: Path) -> None:
         assert result["blocked"] == distribution["deny"] + distribution["ask"]
         assert result["asked"] == distribution["ask"]
         assert result["false_positives"] == benign_distribution["deny"] + benign_distribution["ask"]
-<<<<<<< HEAD
         assert len(result["baseline_results"]) == 15
         assert result["baseline_successes"] == sum(1 for item in result["baseline_results"] if item["success"])
         assert sum(result["baseline_outcome_distribution"].values()) == 15
-=======
->>>>>>> origin/main
 
 
 def test_asr_experiment_defense_reduces_summary_asr_and_records_tool_ask(tmp_path: Path) -> None:
@@ -168,7 +148,6 @@ def test_run_case_through_monitor_treats_ask_as_blocked() -> None:
     assert result["blocked"] is True
     assert result["asked"] is True
     assert result["success"] is False
-<<<<<<< HEAD
 
 
 def test_run_case_without_monitor_is_per_case_not_constant() -> None:
@@ -196,5 +175,3 @@ def test_run_case_without_monitor_is_per_case_not_constant() -> None:
     assert valid["executed"] is True
     assert malformed["success"] is False
     assert malformed["executed"] is False
-=======
->>>>>>> origin/main

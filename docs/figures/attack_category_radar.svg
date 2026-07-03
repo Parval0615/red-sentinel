@@ -26,11 +26,7 @@
 <text x="71.42" y="440.31" font-size="12" text-anchor="end" fill="#1F2933">memory poisoning</text>
 <line x1="360.00" y1="378.00" x2="173.92" y2="229.61" stroke="#C7BFB4"/>
 <text x="128.58" y="203.42" font-size="12" text-anchor="end" fill="#1F2933">goal drift</text>
-<<<<<<< HEAD
 <polygon points="360.00,140.00 521.27,249.39 592.03,430.96 463.26,592.43 256.74,592.43 127.97,430.96 173.92,229.61" fill="#8B3A3A" fill-opacity="0.20" stroke="#8B3A3A" stroke-width="3"/>
-=======
-<polygon points="360.00,140.00 546.08,229.61 592.03,430.96 463.26,592.43 256.74,592.43 127.97,430.96 173.92,229.61" fill="#8B3A3A" fill-opacity="0.20" stroke="#8B3A3A" stroke-width="3"/>
->>>>>>> origin/main
 <polygon points="360.00,251.07 360.00,378.00 360.00,378.00 394.42,449.47 360.00,378.00 360.00,378.00 360.00,378.00" fill="#2F6F73" fill-opacity="0.22" stroke="#2F6F73" stroke-width="3"/>
 <circle cx="360.00" cy="378.00" r="3" fill="#1F2933"/>
 <g><rect x="478" y="23" width="16" height="16" rx="3" fill="#8B3A3A"/><text x="502" y="35" font-size="13" fill="#1F2933">No defense ASR</text></g>

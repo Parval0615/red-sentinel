@@ -3,13 +3,7 @@
   "upstream": "https://github.com/FoundationAgents/OpenManus.git",
   "pinned_ref": "refs/heads/main",
   "pinned_commit": "52a13f2a57d8c7f6737eefb02ccf569594d44273",
-<<<<<<< HEAD
   "checked_at": "2026-07-03",
   "license": "MIT",
   "vendoring": "source-vendored-under-third_party/OpenManus/upstream; offline fixture is test-only"
-=======
-  "checked_at": "2026-07-01",
-  "license": "MIT",
-  "vendoring": "source-not-vendored; use reproducible checkout plus offline fixture"
->>>>>>> origin/main
 }
