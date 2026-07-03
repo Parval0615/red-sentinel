@@ -39,6 +39,19 @@ logs/
 # Local nested clone used during manual merge
 Agent-Runtime-Security-Lab/
 
+# Submission package exclusions
+competition-strategy.md
+ROADMAP.md
+
+# Vendored OpenManus runtime state
+third_party/OpenManus/upstream/.venv/
+third_party/OpenManus/upstream/workspace/
+third_party/OpenManus/upstream/config/config.toml
+third_party/OpenManus/upstream/config/mcp.json
+third_party/OpenManus/upstream/.pytest_cache/
+third_party/OpenManus/upstream/.ruff_cache/
+third_party/OpenManus/upstream/.cache/
+
 # IDE / OS
 .idea/
 .vscode/

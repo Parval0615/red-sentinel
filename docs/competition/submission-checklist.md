@@ -3,7 +3,6 @@
 ## 必须包含
 
 - 根目录 `README.md`
-- `ROADMAP.md`
 - `docs/competition/README.md`
 - `docs/competition/final-report.md`
 - `docs/competition/defense-script-8min.md`
@@ -34,6 +33,7 @@
 ## 不要提交或打包
 
 - `Agent-Runtime-Security-Lab/`：本地嵌套 clone，只用于合并对照。
+- `ROADMAP.md`：过程型工程路线图，不进入最终提交包。
 - `.venv/`、`venv/`
 - `.pytest_cache/`、`.ruff_cache/`
 - `__pycache__/`
@@ -52,6 +52,7 @@ python run.py --demo
 python run.py --comp2 --offline
 python run.py --comp3 --offline
 python run.py --comp4 --offline
+python run-openmanus-real.py --build-image --require-real
 $env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli validate agent_integration_system/examples/simple_agent/redsentinel.yaml
 $env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli profile agent_integration_system/examples/simple_agent/redsentinel.yaml --output runs/m0-agent-profile.json
 python -m pytest -q
@@ -61,11 +62,14 @@ python -m compileall -q agent_integration_system auto_attack_system auto_defense
 
 ## 关键数字一致性
 
-- ASR：44% → 0%
+- Adaptive Defense ASR：44% → 0%
+- Taxonomy Monitor ASR：98.1% → 12.4%
 - 收敛轮数：7
 - Attack reflection 消融：2/7 vs 7/7
-- Defense 消融：ASR 保持 44%
+- Defense 消融：Adaptive Defense ASR 保持 44%
 - 精准加固误伤率：0%
+- OpenManus 真实运行：`OPENMANUS_REAL_RUNTIME=true`，`SIMULATED=false`
+- OpenManus benchmark：`openmanus-security-v0.1`
 - P0/M0 契约：`agent-manifest-v1` / `agent-profile-v1` / `optimization-directive-v1`
 - M0 聚焦测试：14 passed
 - 全量测试：302 collected (300 passed, 1 failed, 1 skipped)（安装 `.[all]` 后）

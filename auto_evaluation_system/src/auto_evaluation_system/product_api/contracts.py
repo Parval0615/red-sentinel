@@ -8,12 +8,13 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 
 RiskLevel = Literal["low", "medium", "high", "critical"]
-EvaluationMode = Literal["sdk", "hosted_api", "offline_trace"]
+EvaluationMode = Literal["sdk", "hosted_api", "offline_trace", "openmanus_real"]
 EvaluationState = Literal["queued", "running", "completed", "failed"]
 FindingComparisonStatus = Literal["resolved", "new", "persisted"]
 ScenarioComparisonStatus = Literal["improved", "regressed", "unchanged_pass", "unchanged_fail"]
 IntegrationType = Literal["source", "docker", "api"]
 AgentStatus = Literal["created", "profiling", "benchmarking", "ready", "failed"]
+AgentType = Literal["ecommerce_rag", "generic_executor"]
 BenchmarkCaseType = Literal["attack", "clean"]
 Decision = Literal["allow", "block"]
 SupervisionDecision = Literal["allow", "deny", "ask"]
@@ -337,6 +338,7 @@ class AgentProfile(BaseModel):
     profile_id: str = Field(min_length=1)
     tenant_id: str = Field(default="private_tenant", min_length=1)
     agent_id: str = Field(min_length=1)
+    agent_type: AgentType = "ecommerce_rag"
     created_at: str = Field(default_factory=utc_now_iso)
     nodes: list[AgentProfileNode] = Field(default_factory=list)
     tools: list[ToolSpecModel] = Field(default_factory=list)

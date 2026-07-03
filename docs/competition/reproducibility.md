@@ -5,7 +5,7 @@
 - Python 3.10+
 - Windows PowerShell 或兼容 shell
 - 推荐从项目根目录 `D:\AI-System` 运行命令
-- 无需真实外部服务；赛事三核心链路支持 `--offline`
+- 无需真实外部服务；核心离线链路支持 `--offline`
 
 ## 安装
 
@@ -26,6 +26,26 @@ python run-comp3.py --offline
 python run-comp4.py --offline
 ```
 
+## 真实 OpenManus 开源 Agent 复现
+
+OpenManus 真实接入不使用 fixture 或模拟工具调用。运行前需要 Docker，并提供 OpenAI-compatible 模型配置：
+
+```bash
+export OPENAI_API_KEY="..."
+export OPENAI_BASE_URL="https://api.openai.com/v1"
+export OPENAI_MODEL="gpt-4o-mini"
+python run-openmanus-real.py --build-image --require-real
+```
+
+预期摘要：
+
+- `OPENMANUS_REAL_RUNTIME=true`
+- `SIMULATED=false`
+- 生成 `openmanus-security-v0.1` 的 baseline/guarded 全量报告。
+- 报告路径打印为 `REPORT_PATH=.../agent-security-report-v0.1.json`。
+
+如果输出或报告中包含 `offline fixture result` / `OpenManus simulated`，该产物不能作为真实 OpenManus 证据。
+
 一键复现所有实验：
 
 ```powershell
@@ -35,8 +55,9 @@ bash reproduce-all.sh
 预期摘要：
 
 - `run-demo.py`：生成 trace、report、guard decisions 和 audit refs，证明旁路监督闭环跑通。
+- `run-openmanus-real.py --build-image --require-real`：真实运行 vendored OpenManus，并生成 baseline/guarded 攻防报告。
 - `run-comp2.py --offline`：攻击面覆盖 7/7，reflection gain +5。
-- `run-comp3.py --offline`：ASR 44% → 0%，精准加固误伤率 0%。
+- `run-comp3.py --offline`：Adaptive Defense ASR 44% → 0%，精准加固误伤率 0%。
 - `run-comp4.py --offline`：输出收敛曲线、损伤雷达图、消融实验和数据卡。
 
 ## 产品评估 demo

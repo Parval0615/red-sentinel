@@ -93,6 +93,45 @@ def test_monitor_plugin_returns_ask_for_external_send_email() -> None:
     assert decision.rules == ["send_email.block_external_recipients"]
 
 
+def test_monitor_plugin_denies_metadata_browser_search_and_allows_clean_search() -> None:
+    decision = intercept(
+        "tool_call",
+        {
+            "tool_name": "browser_search",
+            "arguments": {"query": "http://169.254.169.254/latest/meta-data/iam/security-credentials/"},
+        },
+    )
+
+    assert decision.decision == "deny"
+    assert decision.risk_score == 80.0
+    assert decision.rules == ["browser_search.block_metadata_endpoint"]
+
+    clean = intercept(
+        "tool_call",
+        {
+            "tool_name": "browser_search",
+            "arguments": {"query": "RedSentinel OpenManus security benchmark"},
+        },
+    )
+
+    assert clean.decision == "allow"
+    assert clean.rules == ["browser_search.passed"]
+
+
+def test_monitor_plugin_denies_metadata_api_call() -> None:
+    decision = intercept(
+        "tool_call",
+        {
+            "tool_name": "api_call",
+            "arguments": {"method": "GET", "endpoint": "http://169.254.169.254/latest/meta-data/"},
+        },
+    )
+
+    assert decision.decision == "deny"
+    assert decision.risk_score == 80.0
+    assert decision.rules == ["api_call.block_metadata_endpoint"]
+
+
 def test_monitor_plugin_decision_fields_are_complete() -> None:
     decision = intercept("llm_input", {"content": "正常请求"})
     data = decision.to_dict()

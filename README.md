@@ -1,12 +1,12 @@
 # RedSentinel · 灵哨
 
-研究生人工智能创新大赛参赛项目，赛题方向：**面向大模型及应用的安全性研究**。
+RedSentinel 是一个面向大模型 Agent 应用的红队攻防评测与旁路行为监督系统。
 
 RedSentinel 将现有 LLM / RAG 安全内核包装成一个**企业 Agent 攻防评测与安全增强平台**：从红队视角构造提示注入、知识库投毒、工具篡改、记忆污染、目标漂移、越权检索和敏感信息泄露等攻击面，并用可嵌入/旁路的监督机制记录每一次模型响应、工具调用、guard decision 和审计引用。
 
 当前产品路线已从固定电商靶场扩展到可接入外部 Agent 的 M0 onboarding 基线：企业提供 `redsentinel.yaml` 后，系统可校验 `AgentManifest`，生成标准化 `AgentProfile`，并为后续攻击、防御、评测三线共享 `OptimizationDirective` 契约。
 
-> 竞赛提交入口：[`docs/competition/README.md`](./docs/competition/README.md)。这里包含正式报告、8 分钟讲稿、固定证据包、复现说明和提交检查清单。
+> 项目资料入口：[`docs/competition/README.md`](./docs/competition/README.md)。这里包含项目报告、演示讲稿、固定证据包、复现说明和提交检查清单。
 
 ## 核心闭环
 
@@ -22,9 +22,9 @@ RedSentinel 将现有 LLM / RAG 安全内核包装成一个**企业 Agent 攻防
 -> Defense Agent 按节点 / 工具 / scheme 选择加固动作并回归验证
 ```
 
-## 赛题对应
+## 能力对应
 
-| 赛题要求 | RedSentinel 体现 |
+| 项目能力 | RedSentinel 体现 |
 |---|---|
 | 红队视角研究攻击面 | 覆盖 7 类 LLM/Agent 安全威胁，沉淀攻击战役、越狱载荷和反思日志 |
 | 攻击脚本与对抗样本 | `auto_attack_system` 提供 payload、injector、doc poison 和 attack campaign |
@@ -42,7 +42,7 @@ RedSentinel 将现有 LLM / RAG 安全内核包装成一个**企业 Agent 攻防
 | `auto_evaluation_system` | 风险检测、闭环 runner、telemetry、共享 contracts/schema、证据包生成和本地 dashboard 数据源 |
 | `agent_integration_system` | M0 Agent onboarding：`redsentinel.yaml` loader/validator、AgentProfile 生成 CLI、示例 agent |
 | `sdk/python` | 本地观测、适配和旁路接入工程资产 |
-| `docs/competition` | 赛事三提交材料、固定证据包、复现说明和讲稿 |
+| `docs/competition` | 项目报告、固定证据包、复现说明和讲稿 |
 | `docs/product` | 本地私有单租户试点包说明 |
 
 ## 当前可验证状态
@@ -51,7 +51,7 @@ RedSentinel 将现有 LLM / RAG 安全内核包装成一个**企业 Agent 攻防
 - P0 共享契约已冻结：`agent-manifest-v1`、`agent-profile-v1`、`optimization-directive-v1` JSON Schema + Pydantic 模型 + 契约测试。
 - M0–M6 全部完成：物料解析、代码静态分析、画像驱动攻击、攻击自进化、Docker沙箱深度接入、评测报告中枢、攻防反馈路由、节点级防御挂载、防火墙自优化、多租户隔离。
 - A线前端可视化已完成：单文件零依赖 HTML 仪表盘，包含概览指标、ASR曲线、攻击用例表、节点归因、轨迹回放、结论对比。
-- 固定证据显示：初始 ASR 44%，7 轮加固后降至 0%；攻击反思使覆盖从 2/7 提升到 7/7；精准加固误伤率 0%。
+- 固定证据按指标口径区分：Adaptive Defense ASR 为 44% → 0%（7 轮加固收敛）；Taxonomy Monitor ASR 为 98.1% → 12.4%（105 条 authored cases 的无防御逐 case baseline 到 guarded monitor）；攻击反思使覆盖从 2/7 提升到 7/7；精准加固误伤率 0%。
 - 项目边界是本地合成靶场与本地私有试点包，不连接真实淘宝、真实支付、真实企业数据或真实外部攻击目标。
 
 ## 快速开始
@@ -131,7 +131,7 @@ $PY -m uvicorn auto_evaluation_system.product_api.app:create_app --factory --hos
 /Users/bytedance/.pyenv/versions/3.10.14/bin/python -m ruff check . --select F401,F841,F821,F811
 ```
 
-## 竞赛主命令
+## 核心复现命令
 
 ```powershell
 python run-demo.py
@@ -139,6 +139,17 @@ python run-comp2.py --offline
 python run-comp3.py --offline
 python run-comp4.py --offline
 ```
+
+真实 OpenManus 开源 Agent 评测需要 Docker 和 OpenAI-compatible 凭据：
+
+```bash
+export OPENAI_API_KEY="..."
+export OPENAI_BASE_URL="https://api.openai.com/v1"
+export OPENAI_MODEL="gpt-4o-mini"
+python run-openmanus-real.py --build-image --require-real
+```
+
+`run-openmanus-real.py` 会在 Docker 沙箱中运行 vendored OpenManus，生成 baseline/guarded 全量报告。包含 `offline fixture result` 或 `OpenManus simulated` 的旧产物不能作为真实 OpenManus 证据。
 
 一键复现所有实验：
 

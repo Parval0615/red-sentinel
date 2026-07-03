@@ -2,8 +2,8 @@
 """
 RedSentinel · 灵哨 - 攻防评测 + 三态监督闭环 Demo
 
-用途：串联 demo 用户 seed、本地产品评测、OpenManus 可用性检查、攻击注入、
-三态拦截事件和监督看板快照。缺少外部 OpenManus 依赖时明确跳过，不伪造结果。
+用途：串联 demo 用户 seed、本地产品评测、OpenManus 真实运行评测、攻击注入、
+三态拦截事件和监督看板快照。缺少 OpenManus 真实运行条件时明确失败，不伪造结果。
 
 输出：
 - runs/<timestamp>/：COMP1 attack→defense→evaluation 产物
@@ -23,10 +23,11 @@ RedSentinel · 灵哨 - 攻防评测 + 三态监督闭环 Demo
 """
 from __future__ import annotations
 
-from uuid import uuid4
+import os
 import sys
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 REPO_ROOT = Path(__file__).resolve().parent
 SOURCE_DIRS = (
@@ -120,23 +121,58 @@ def _seed_demo_user_and_agent(storage_root: Path) -> dict[str, Any]:
     }
 
 
-def _run_openmanus_probe(repo_root: Path) -> dict[str, str]:
+def _run_openmanus_probe(repo_root: Path, storage_root: Path) -> dict[str, str]:
     openmanus_dir = repo_root / "third_party" / "OpenManus"
-    if not openmanus_dir.exists():
+    if not (openmanus_dir / "upstream" / "main.py").exists():
         return {
-            "status": "skipped",
-            "reason": "third_party/OpenManus is not present; skipping official OpenManus evaluation.",
+            "status": "failed",
+            "reason": "third_party/OpenManus/upstream is missing; real OpenManus evaluation was not run.",
         }
+    missing = [name for name in ("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL") if not os.environ.get(name)]
+    if missing:
+        return {
+            "status": "failed",
+            "reason": f"missing real OpenManus environment: {', '.join(missing)}",
+        }
+
+    from auto_evaluation_system.product_api.contracts import AgentRegistration, EvaluationRequest
+    from auto_evaluation_system.product_api.service import OPENMANUS_BENCHMARK_ID, ProductEvaluationService
+
     try:
-        __import__("agent_security_sdk.openmanus")
-    except ImportError as exc:
-        return {
-            "status": "skipped",
-            "reason": f"OpenManus adapter is unavailable ({exc}); skipping without synthetic results.",
-        }
+        service = ProductEvaluationService(storage_root=storage_root)
+        registration = service.register_agent(
+            AgentRegistration(
+                tenant_id="platform-admin",
+                username="platform-admin",
+                agent_id="openmanus_official",
+                name="OpenManus Official Real Runtime",
+                domain="general",
+                integration_type="source",
+                framework="OpenManus",
+                adapter_type="openmanus",
+                status="ready",
+                data_boundary={"deployment": "docker_real_runtime", "runtime_mode": "openmanus_real"},
+            )
+        )
+        status = service.run_evaluation(
+            EvaluationRequest(
+                tenant_id="platform-admin",
+                agent_id=registration.agent_id,
+                benchmark_id=OPENMANUS_BENCHMARK_ID,
+                benchmark_version="v0.1",
+                mode="openmanus_real",
+            )
+        )
+        report = service.get_report(status.report_id or status.evaluation_id, tenant_id="platform-admin")
+    except Exception as exc:
+        return {"status": "failed", "reason": f"real OpenManus evaluation failed: {exc}"}
+
     return {
-        "status": "skipped",
-        "reason": "OpenManus adapter is present but no live OpenManus runtime was configured for this local demo.",
+        "status": status.status,
+        "reason": "real OpenManus evaluation completed",
+        "report_path": report.artifacts.report_path,
+        "asr": str(report.attack_success_rate),
+        "fpr": str(report.false_positive_rate),
     }
 
 
@@ -177,9 +213,13 @@ def main() -> int:
     print(f"PRODUCT_UTILITY_FPR={demo['utility_fpr']}")
 
     _print_section("OpenManus Official Evaluation")
-    openmanus = _run_openmanus_probe(repo_root)
+    openmanus = _run_openmanus_probe(repo_root, storage_root)
     print(f"OPENMANUS_STATUS={openmanus['status']}")
     print(f"OPENMANUS_REASON={openmanus['reason']}")
+    if openmanus.get("report_path"):
+        print(f"OPENMANUS_REPORT_PATH={openmanus['report_path']}")
+        print(f"OPENMANUS_ASR={openmanus['asr']}")
+        print(f"OPENMANUS_FPR={openmanus['fpr']}")
 
     _print_section("Attack Injection And Defense Evaluation")
     result = run_comp1_demo(repo_root=repo_root)
@@ -194,8 +234,9 @@ def main() -> int:
     _print_supervision_snapshot(snapshot, storage_root)
 
     product_ok = demo["evaluation_status"] == "completed"
+    openmanus_ok = openmanus["status"] == "completed"
     attack_ok = result.metrics["all_passed"]
-    return 0 if product_ok and attack_ok else 1
+    return 0 if product_ok and openmanus_ok and attack_ok else 1
 
 
 if __name__ == "__main__":

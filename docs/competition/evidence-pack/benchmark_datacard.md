@@ -20,8 +20,8 @@
 
 | 指标 | 数值 |
 |---|---|
-| 初始 ASR | 44% |
-| 收敛后 ASR | 0% |
+| Adaptive Defense 初始 ASR | 44% |
+| Adaptive Defense 收敛后 ASR | 0% |
 | 收敛轮数 | 7 |
 | 攻击面覆盖 | 7/7 |
 | ASR 达标(≤10%) | 是 |

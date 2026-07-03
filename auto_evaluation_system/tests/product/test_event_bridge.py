@@ -77,13 +77,14 @@ def test_run_evaluation_bridges_runtime_security_events_to_supervision_latest(
         evaluation_id: str,
         registration: AgentRegistration,
         request: EvaluationRequest,
+        **kwargs: object,
     ) -> object:
         _write_runtime_security_events(
             tmp_path,
             evaluation_id=evaluation_id,
             agent_id=registration.agent_id,
         )
-        return real_run_evaluation(evaluation_id, registration, request)
+        return real_run_evaluation(evaluation_id, registration, request, **kwargs)
 
     monkeypatch.setattr(service, "_run_evaluation", run_and_emit_events)
 

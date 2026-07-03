@@ -28,6 +28,11 @@ class EcommerceAttackScenario(BaseModel):
     success_criteria: list[str] = Field(min_length=1)
     clean_steps: list[AttackStep] = Field(min_length=1)
     controlled_steps: list[AttackStep] = Field(min_length=1)
+    expected_tools: list[str] = Field(default_factory=list)
+    baseline_success_markers: list[str] = Field(default_factory=list)
+    guarded_block_rules: list[str] = Field(default_factory=list)
+    mock_services: list[str] = Field(default_factory=list)
+    requires_real_runtime: bool = False
 
 
 class EcommerceAttackPack(BaseModel):
@@ -38,11 +43,29 @@ class EcommerceAttackPack(BaseModel):
     scenarios: list[EcommerceAttackScenario] = Field(min_length=1)
 
 
+class OpenManusAttackPack(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["openmanus-attack-pack-v0.1"] = "openmanus-attack-pack-v0.1"
+    benchmark: Literal["openmanus-security-v0.1"] = "openmanus-security-v0.1"
+    scenarios: list[EcommerceAttackScenario] = Field(min_length=1)
+
+
 def default_attack_pack_path() -> Path:
     return Path(__file__).resolve().parents[3] / "configs" / "scenarios" / "ecommerce" / "attack-pack-v0.1.yaml"
+
+
+def default_openmanus_attack_pack_path() -> Path:
+    return Path(__file__).resolve().parents[3] / "configs" / "scenarios" / "openmanus" / "attack-pack-v0.1.yaml"
 
 
 def load_ecommerce_attack_pack(path: str | Path | None = None) -> EcommerceAttackPack:
     target = Path(path) if path else default_attack_pack_path()
     data = yaml.safe_load(target.read_text(encoding="utf-8"))
     return EcommerceAttackPack.model_validate(data)
+
+
+def load_openmanus_attack_pack(path: str | Path | None = None) -> OpenManusAttackPack:
+    target = Path(path) if path else default_openmanus_attack_pack_path()
+    data = yaml.safe_load(target.read_text(encoding="utf-8"))
+    return OpenManusAttackPack.model_validate(data)

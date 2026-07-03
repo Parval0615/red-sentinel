@@ -918,6 +918,10 @@ def test_benchmark_evaluation_start_progress_and_next_round_binding() -> None:
     assert "评测完成，真实报告摘要已刷新。" in html
     assert "评测完成，但报告详情暂不可用。" in html
     assert "评测完成，正在加载报告详情。" in html
+    assert "runtime_mode:" in html
+    assert "real_runtime:" in html
+    assert "simulated:" in html
+    assert "real_tool_executions:" in html
     assert "currentEvaluationId = finalStatus.evaluation_id" in html
     assert "await loadDashboardSummary(payload.agent_id, payload.tenant_id)" in html
     assert "syncNextRoundControl()" in html

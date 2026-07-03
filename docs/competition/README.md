@@ -1,20 +1,20 @@
-# RedSentinel 竞赛提交入口
+# RedSentinel 项目资料入口
 
 ## 项目一句话
 
-RedSentinel / 灵哨是一个面向 LLM Agent 的**红队攻击面研究、旁路行为监督与 Agent 安全增强系统**：它用 Attack Agent 枚举和升级攻击样本，用 guard、telemetry 和审计链监督模型响应与工具调用，再用 Evaluation / Defense Agent 量化风险并验证防御策略。Roadmap 中的 P0/M0 已补齐外部 Agent onboarding 契约，为后续画像驱动攻击和节点级加固提供统一输入。
+RedSentinel / 灵哨是一个面向 LLM Agent 的**红队攻击面研究、旁路行为监督与 Agent 安全增强系统**：它用 Attack Agent 枚举和升级攻击样本，用 guard、telemetry 和审计链监督模型响应与工具调用，再用 Evaluation / Defense Agent 量化风险并验证防御策略。当前工程已补齐外部 Agent onboarding 契约，为画像驱动攻击和节点级加固提供统一输入。
 
 ## 为什么值得看
 
-多数安全项目只展示静态规则或单次攻击样本。RedSentinel 展示的是一条可复现的攻防监督链路：红队攻击战役能覆盖 7 类威胁，旁路监督能记录 guard decision 与 audit refs，防御策略能把 ASR 从 44% 降到 0%，且正常请求误伤率保持 0%。
+多数安全项目只展示静态规则或单次攻击样本。RedSentinel 展示的是一条可复现的攻防监督链路：红队攻击战役能覆盖 7 类威胁，旁路监督能记录 guard decision 与 audit refs，Adaptive Defense ASR 能从 44% 降到 0%，且正常请求误伤率保持 0%。
 
 ## 核心结果
 
 | 结论 | 当前结果 | 证据 |
 |---|---:|---|
 | 红队攻击面覆盖 | Attack reflection 后覆盖 7/7 | [`evidence-pack/ablation_table.md`](./evidence-pack/ablation_table.md) |
-| 对抗可收敛 | ASR 44% → 0%，7 轮收敛 | [`evidence-pack/convergence_curve.png`](./evidence-pack/convergence_curve.png) |
-| 防御策略有效 | 去掉 Defense 后 ASR 保持 44% | [`evidence-pack/ablation.json`](./evidence-pack/ablation.json) |
+| 对抗可收敛 | Adaptive Defense ASR 44% → 0%，7 轮收敛 | [`evidence-pack/convergence_curve.png`](./evidence-pack/convergence_curve.png) |
+| 防御策略有效 | 去掉 Defense 后 Adaptive Defense ASR 保持 44% | [`evidence-pack/ablation.json`](./evidence-pack/ablation.json) |
 | 加固不伤正常请求 | 精准加固误伤率 0% | [`../product/product-readiness-audit.md`](../product/product-readiness-audit.md) |
 | 工程可回归 | 302 collected (300 passed, 1 failed, 1 skipped) | [`reproducibility.md`](./reproducibility.md) |
 | Agent 接入契约 | `AgentManifest` / `AgentProfile` / `OptimizationDirective` 三件套 | [`../product/agent-integration-m0-plan.md`](../product/agent-integration-m0-plan.md) |
@@ -23,7 +23,7 @@ RedSentinel / 灵哨是一个面向 LLM Agent 的**红队攻击面研究、旁�
 
 | 文件 | 用途 |
 |---|---|
-| [`final-report.md`](./final-report.md) | 赛事三正式项目报告 |
+| [`final-report.md`](./final-report.md) | 正式项目报告 |
 | [`defense-script-8min.md`](./defense-script-8min.md) | 8 分钟中文讲解稿 |
 | [`reproducibility.md`](./reproducibility.md) | 环境、安装、离线复现和验证命令 |
 | [`submission-checklist.md`](./submission-checklist.md) | 提交前检查清单 |
@@ -33,11 +33,14 @@ RedSentinel / 灵哨是一个面向 LLM Agent 的**红队攻击面研究、旁�
 
 ```powershell
 python run-demo.py
+python run-openmanus-real.py --build-image --require-real
 python run-comp2.py --offline
 python run-comp3.py --offline
 python run-comp4.py --offline
 python -m pytest -q
 ```
+
+`run-openmanus-real.py` 需要 Docker 和 OpenAI-compatible 环境变量。它是正式 OpenManus 开源 Agent 真实运行证据入口；fixture 或 simulated 产物不计入真实接入证据。
 
 一键复现所有实验：
 

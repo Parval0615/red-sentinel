@@ -8,6 +8,7 @@ from uuid import uuid4
 from auto_defense_system.security.firewall.input_guard import check_malicious_input
 from auto_defense_system.security.output.filter import check_output_compliance
 from auto_defense_system.security.policy.engine import check_policy
+from auto_defense_system.security.trajectory_anomaly import score_payload_trajectory
 
 
 DecisionValue = Literal["allow", "deny", "ask"]
@@ -65,11 +66,14 @@ def intercept(call_type: CallType | str, payload: dict[str, Any] | str | None = 
     if normalized_call_type == "llm_input":
         return _intercept_llm_input(normalized_payload)
     if normalized_call_type in {"llm_output", "tool_result", "code_execution"}:
-        return _intercept_text_boundary(normalized_call_type, normalized_payload)
+        decision = _intercept_text_boundary(normalized_call_type, normalized_payload)
+        return _apply_trajectory_anomaly(normalized_call_type, normalized_payload, decision)
     if normalized_call_type == "tool_call":
-        return _intercept_tool_call(normalized_payload)
+        decision = _intercept_tool_call(normalized_payload)
+        return _apply_trajectory_anomaly(normalized_call_type, normalized_payload, decision)
     if normalized_call_type == "file_access":
-        return _intercept_file_access(normalized_payload)
+        decision = _intercept_file_access(normalized_payload)
+        return _apply_trajectory_anomaly(normalized_call_type, normalized_payload, decision)
 
     return _decision("allow", "Monitor call allowed.", 0.0, 0.9, [f"{normalized_call_type}.allowed"])
 
@@ -154,6 +158,26 @@ def _policy_decision(allowed: bool, reason: str, detail: dict[str, Any] | None, 
         _risk_score_from_level(str(detail.get("risk_level", "low"))),
         0.7 if decision == "ask" else 0.95,
         [_rule for _rule in [detail.get("rule_name")] if _rule],
+    )
+
+
+def _apply_trajectory_anomaly(call_type: str, payload: dict[str, Any], current: Decision) -> Decision:
+    if current.decision == "deny":
+        return current
+
+    anomaly = score_payload_trajectory(call_type, payload)
+    if anomaly is None:
+        return current
+
+    if current.decision == "ask" and anomaly.decision != "deny":
+        return current
+
+    return _decision(
+        anomaly.decision,
+        anomaly.reason,
+        anomaly.risk_score,
+        0.75,
+        [*current.rules, *[rule for rule in anomaly.rules if rule not in current.rules]],
     )
 
 

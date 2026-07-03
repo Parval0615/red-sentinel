@@ -55,10 +55,18 @@ DEFAULT_POLICY_RULES = {
                 "api.internal.com", "localhost", "127.0.0.1",
                 "internal.", ".local", ".internal",
             ],
+            "block_metadata_hosts": ["169.254.169.254"],
+            "block_metadata_paths": ["/latest/meta-data", "/metadata/instance"],
             "block_external_post": True,
             "ask_risk_levels": [],
             "risk_level": "high",
             "message": "向外部域名的POST/PUT请求被策略引擎拦截。仅允许内部API调用。",
+        },
+        "browser_search": {
+            "block_metadata_hosts": ["169.254.169.254"],
+            "block_metadata_paths": ["/latest/meta-data", "/metadata/instance"],
+            "risk_level": "high",
+            "message": "浏览搜索访问 metadata endpoint 被策略引擎拦截。",
         },
         "send_email": {
             "max_recipients": 5,
@@ -242,6 +250,18 @@ def _check_api_policy(args: dict, policy: dict) -> tuple:
     host = _extract_endpoint_host(endpoint)
     is_internal = _host_matches_allowed_domains(host, policy.get("allowed_domains", []))
 
+    metadata_reason = _metadata_endpoint_match(endpoint, policy)
+    if metadata_reason:
+        return (
+            False,
+            f"API调用目标 '{endpoint[:60]}' 命中 metadata endpoint 风险: {metadata_reason}。",
+            {
+                "risk_level": policy["risk_level"],
+                "blocked_reason": metadata_reason,
+                "rule_name": "api_call.block_metadata_endpoint",
+            },
+        )
+
     if not is_internal and method in ("POST", "PUT") and policy.get("block_external_post", True):
         return (
             False,
@@ -254,6 +274,48 @@ def _check_api_policy(args: dict, policy: dict) -> tuple:
         )
 
     return True, "", {"risk_level": "low" if is_internal else "medium", "blocked_reason": None, "rule_name": "api_call.passed"}
+
+
+def _check_browser_search_policy(args: dict, policy: dict) -> tuple:
+    """Check browser_search requests against metadata endpoint SSRF rules."""
+    query = args.get("query") or args.get("url") or args.get("q") or ""
+    metadata_reason = _metadata_endpoint_match(query, policy)
+    if metadata_reason:
+        return (
+            False,
+            f"{policy['message']} 查询 '{str(query)[:60]}' 命中风险: {metadata_reason}。",
+            {
+                "risk_level": policy["risk_level"],
+                "blocked_reason": metadata_reason,
+                "rule_name": "browser_search.block_metadata_endpoint",
+            },
+        )
+
+    return True, "", {"risk_level": "low", "blocked_reason": None, "rule_name": "browser_search.passed"}
+
+
+def _metadata_endpoint_match(endpoint: str, policy: dict) -> str:
+    hosts = {str(host).lower().strip().rstrip(".") for host in policy.get("block_metadata_hosts", []) if host}
+    paths = [str(path).lower().strip() for path in policy.get("block_metadata_paths", []) if path]
+    for candidate in _endpoint_candidates(endpoint):
+        parsed = urlparse(candidate if "://" in candidate else f"//{candidate}")
+        host = (parsed.hostname or "").lower().rstrip(".")
+        path = (parsed.path or "").lower()
+        lowered = candidate.lower()
+        if host and host in hosts:
+            return f"metadata_host: {host}"
+        for blocked_path in paths:
+            if blocked_path and (blocked_path in path or blocked_path.strip("/") in lowered):
+                return f"metadata_path: {blocked_path}"
+    return ""
+
+
+def _endpoint_candidates(endpoint: str) -> list[str]:
+    raw = str(endpoint or "").strip()
+    if not raw:
+        return []
+    urls = re.findall(r"https?://[^\s'\"<>，。；、)）]+", raw, flags=re.IGNORECASE)
+    return [raw, *urls]
 
 
 def _extract_endpoint_host(endpoint: str) -> str:
@@ -414,6 +476,7 @@ _POLICY_CHECKERS = {
     "db_query": _check_sql_policy,
     "file_operation": _check_file_policy,
     "api_call": _check_api_policy,
+    "browser_search": _check_browser_search_policy,
     "send_email": _check_email_policy,
 }
 

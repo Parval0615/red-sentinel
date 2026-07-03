@@ -6,7 +6,7 @@
   <title>RedSentinel · 灵哨 - Agent 安全评测平台</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -43,9 +43,19 @@
       --home-muted: #EAE3D8;
       --home-border: #D8CDBD;
       --home-focus-ring: rgba(31, 42, 36, 0.18);
+      --sentinel-bg: #F7F4EE;
+      --sentinel-panel: rgba(255, 252, 247, 0.78);
+      --sentinel-panel-strong: rgba(255, 252, 247, 0.94);
+      --sentinel-line: rgba(31, 42, 36, 0.13);
+      --sentinel-text: #1B1A17;
+      --sentinel-muted: rgba(27, 26, 23, 0.62);
+      --sentinel-red: #9A5C50;
+      --sentinel-red-hover: #7F483F;
+      --sentinel-cyan: #6D7C67;
 
-      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+      --font-sans: 'Space Grotesk', 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', 'Monaco', monospace;
 
       --shadow-card: 0 1px 2px rgba(35, 29, 20, 0.04), 0 12px 34px rgba(35, 29, 20, 0.035);
       --shadow-elevated: 0 22px 70px rgba(35, 29, 20, 0.10);
@@ -1703,41 +1713,6 @@
       margin-bottom: var(--space-8);
     }
 
-    .asr-comparison-bars {
-      display: grid;
-      gap: var(--space-3);
-      margin-top: var(--space-4);
-    }
-
-    .asr-comparison-row {
-      display: grid;
-      grid-template-columns: 110px minmax(0, 1fr) 64px;
-      align-items: center;
-      gap: var(--space-3);
-      color: var(--color-foreground-muted);
-      font-size: 12px;
-    }
-
-    .asr-comparison-track {
-      height: 10px;
-      overflow: hidden;
-      border-radius: 999px;
-      background: var(--color-surface-muted);
-      border: 1px solid var(--color-border-subtle);
-    }
-
-    .asr-comparison-fill {
-      width: 0%;
-      height: 100%;
-      border-radius: inherit;
-      background: var(--color-danger);
-      transition: width var(--transition-base);
-    }
-
-    .asr-comparison-fill.after {
-      background: var(--color-success);
-    }
-
     .benchmark-section[hidden] {
       display: none;
     }
@@ -1808,151 +1783,6 @@
       line-height: var(--line-height-relaxed);
       max-width: 760px;
       margin-top: var(--space-2);
-    }
-
-    .supervisor-summary-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: var(--space-3);
-      margin-bottom: var(--space-5);
-    }
-
-    .supervisor-event-list {
-      display: grid;
-      gap: var(--space-3);
-    }
-
-    .supervisor-event-card {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: var(--space-4);
-      padding: 16px;
-      border: 1px solid var(--color-border-subtle);
-      border-radius: var(--radius-lg);
-      background: rgba(255, 252, 247, 0.72);
-    }
-
-    .supervisor-event-card.deny,
-    .supervisor-event-card.blocked,
-    .supervisor-event-card.rejected {
-      border-color: rgba(154, 92, 80, 0.28);
-      background: var(--color-danger-soft);
-    }
-
-    .supervisor-event-card.ask,
-    .supervisor-event-card.pending {
-      border-color: rgba(171, 120, 67, 0.28);
-      background: var(--color-warning-soft);
-    }
-
-    .supervisor-event-title {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-      flex-wrap: wrap;
-      font-size: 13px;
-      font-weight: 650;
-    }
-
-    .supervisor-event-meta,
-    .supervisor-event-reason,
-    .supervisor-event-payload {
-      margin-top: var(--space-2);
-      color: var(--color-foreground-muted);
-      font-size: 12px;
-      line-height: var(--line-height-relaxed);
-      word-break: break-word;
-    }
-
-    .supervisor-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 3px 8px;
-      border-radius: var(--radius-sm);
-      background: var(--color-surface-muted);
-      color: var(--color-foreground-muted);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .supervisor-badge.deny,
-    .supervisor-badge.blocked,
-    .supervisor-badge.rejected { background: var(--color-danger-soft); color: var(--color-danger); }
-    .supervisor-badge.ask,
-    .supervisor-badge.pending { background: var(--color-warning-soft); color: var(--color-warning); }
-    .supervisor-badge.allow,
-    .supervisor-badge.approved { background: var(--color-success-soft); color: var(--color-success); }
-
-    .supervisor-event-actions {
-      display: flex;
-      gap: var(--space-2);
-      align-items: flex-start;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .trace-timeline-list {
-      display: grid;
-      gap: var(--space-3);
-    }
-
-    .trace-timeline-item {
-      padding: 16px;
-      border: 1px solid var(--color-border-subtle);
-      border-radius: var(--radius-lg);
-      background: rgba(255, 252, 247, 0.72);
-    }
-
-    .trace-timeline-chain {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-      flex-wrap: wrap;
-      margin-bottom: var(--space-3);
-      color: var(--color-foreground-muted);
-      font-size: 12px;
-    }
-
-    .trace-timeline-node {
-      display: inline-flex;
-      align-items: center;
-      padding: 5px 10px;
-      border: 1px solid var(--color-border);
-      border-radius: 999px;
-      background: var(--color-surface);
-      color: var(--color-foreground);
-      font-weight: 600;
-    }
-
-    .trace-timeline-fields {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: var(--space-2);
-    }
-
-    .trace-timeline-field {
-      padding: 10px;
-      border: 1px solid var(--color-border-subtle);
-      border-radius: var(--radius-sm);
-      background: var(--color-surface-muted);
-    }
-
-    .trace-timeline-label {
-      color: var(--color-foreground-subtle);
-      font-size: 10px;
-      font-weight: 650;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 3px;
-    }
-
-    .trace-timeline-value {
-      color: var(--color-foreground);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      word-break: break-word;
     }
 
     .logs-table-wrap[hidden],
@@ -3026,10 +2856,6 @@
       .dashboard-actions { grid-template-columns: 1fr; align-items: flex-start; }
       .dashboard-action-buttons { width: 100%; justify-content: flex-start; }
       .benchmark-toolbar { grid-template-columns: 1fr; }
-      .supervisor-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .supervisor-event-card { grid-template-columns: 1fr; }
-      .supervisor-event-actions { justify-content: flex-start; }
-      .asr-comparison-row { grid-template-columns: 1fr; }
       .section { padding: var(--space-4); }
       .section-header { flex-direction: column; align-items: flex-start; }
       .filters { width: 100%; }
@@ -3058,8 +2884,6 @@
       .replay-btn { padding: 8px 14px; font-size: 11px; }
       .stage-item { grid-template-columns: 24px minmax(0, 1fr); }
       .stage-state { grid-column: 2; }
-      .supervisor-summary-grid { grid-template-columns: 1fr; }
-      .trace-timeline-fields { grid-template-columns: 1fr; }
       .dashboard-action-buttons .primary-action,
       .dashboard-action-buttons .secondary-action { width: 100%; }
     }
@@ -3083,6 +2907,829 @@
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+      }
+    }
+
+    .public-homepage[hidden],
+    .auth-view[hidden],
+    .product-workspace[hidden] {
+      display: none !important;
+    }
+
+    .public-homepage,
+    .auth-view {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 20% 18%, rgba(255, 59, 92, 0.26), transparent 28%),
+        radial-gradient(circle at 84% 16%, rgba(34, 211, 238, 0.18), transparent 26%),
+        linear-gradient(135deg, #000000 0%, #07080D 46%, #110006 100%);
+      color: var(--sentinel-text);
+      border-bottom: 0;
+    }
+
+    .public-homepage::before,
+    .auth-view::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      z-index: -2;
+      background:
+        linear-gradient(rgba(34, 211, 238, 0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 211, 238, 0.045) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.78), transparent 76%);
+    }
+
+    .public-homepage::after,
+    .auth-view::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.09), transparent 28%),
+        linear-gradient(115deg, transparent 0 38%, rgba(255, 59, 92, 0.10) 45%, transparent 56%),
+        linear-gradient(245deg, transparent 0 48%, rgba(34, 211, 238, 0.09) 56%, transparent 68%);
+      pointer-events: none;
+    }
+
+    .public-homepage {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .home-shell {
+      width: min(1180px, calc(100% - 48px));
+    }
+
+    .home-header {
+      position: relative;
+      z-index: 2;
+      padding: 18px 0 0;
+    }
+
+    .home-nav {
+      padding: 12px;
+      border: 1px solid var(--sentinel-line);
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.075);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.30);
+      backdrop-filter: blur(56px);
+    }
+
+    .home-brand,
+    .home-card-title,
+    .home-section-title,
+    .home-cta-title {
+      color: var(--sentinel-text);
+    }
+
+    .home-brand-text span,
+    .home-link,
+    .home-card-copy,
+    .home-section-copy,
+    .home-cta-copy,
+    .home-proof-label,
+    .home-stream-detail,
+    .home-footer {
+      color: var(--sentinel-muted);
+    }
+
+    .home-logo {
+      background: linear-gradient(135deg, var(--sentinel-red), rgba(34, 211, 238, 0.28));
+      box-shadow: 0 0 38px rgba(255, 59, 92, 0.28);
+    }
+
+    .home-link:hover {
+      color: var(--sentinel-text);
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    .home-button-primary,
+    .auth-submit {
+      background: linear-gradient(135deg, var(--sentinel-red), #B91534);
+      border-color: rgba(255, 107, 131, 0.52);
+      color: white;
+      box-shadow: 0 18px 42px rgba(255, 59, 92, 0.28);
+    }
+
+    .home-button-primary:hover,
+    .auth-submit:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--sentinel-red-hover), var(--sentinel-red));
+      border-color: rgba(255, 107, 131, 0.78);
+    }
+
+    .home-button-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--sentinel-line);
+      color: var(--sentinel-text);
+    }
+
+    .home-button-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(34, 211, 238, 0.36);
+      color: var(--sentinel-text);
+    }
+
+    .home-hero {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      grid-template-columns: minmax(0, 1.02fr) minmax(360px, 0.88fr);
+      min-height: calc(100vh - 116px);
+      gap: clamp(24px, 4vw, 54px);
+      padding: clamp(28px, 5vh, 58px) 0 20px;
+    }
+
+    .home-eyebrow {
+      border-color: rgba(34, 211, 238, 0.28);
+      background: rgba(34, 211, 238, 0.08);
+      color: var(--sentinel-cyan);
+      backdrop-filter: blur(24px);
+    }
+
+    .home-eyebrow-dot {
+      background: var(--sentinel-cyan);
+      box-shadow: 0 0 0 5px rgba(34, 211, 238, 0.13), 0 0 24px rgba(34, 211, 238, 0.55);
+    }
+
+    .home-hero-title {
+      max-width: 720px;
+      color: var(--sentinel-text);
+      font-family: var(--font-display);
+      font-size: clamp(46px, 6.4vw, 82px);
+      font-weight: 400;
+      line-height: 0.95;
+      letter-spacing: -0.055em;
+      text-wrap: balance;
+    }
+
+    .home-hero-title span {
+      color: var(--sentinel-red);
+    }
+
+    .home-hero-copy {
+      max-width: 610px;
+      color: var(--sentinel-muted);
+      font-size: 17px;
+      line-height: 1.65;
+    }
+
+    .home-hero-actions {
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .home-hero-proof,
+    .home-metric-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 720px;
+      margin-top: 24px;
+    }
+
+    .home-proof-item,
+    .home-metric-item,
+    .home-core-card,
+    .home-ops-panel {
+      border: 1px solid var(--sentinel-line);
+      background: var(--sentinel-panel);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.30);
+      backdrop-filter: blur(56px);
+    }
+
+    .home-proof-item,
+    .home-metric-item {
+      padding: 16px;
+      border-radius: 18px;
+    }
+
+    .home-proof-value,
+    .home-metric-value,
+    .home-ops-value {
+      color: var(--sentinel-cyan);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+
+    .home-metric-label {
+      margin-bottom: 6px;
+      color: var(--sentinel-muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+
+    .home-metric-value {
+      font-size: clamp(20px, 2.4vw, 30px);
+    }
+
+    .home-ops-panel {
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.10);
+      overflow: hidden;
+    }
+
+    .home-ops-header {
+      border-bottom-color: var(--sentinel-line);
+      background: rgba(0, 0, 0, 0.24);
+    }
+
+    .home-ops-title {
+      color: var(--sentinel-text);
+    }
+
+    .home-ops-status {
+      color: var(--sentinel-cyan);
+    }
+
+    .home-ops-metric,
+    .home-stream-row {
+      border-color: var(--sentinel-line);
+      background: rgba(0, 0, 0, 0.22);
+    }
+
+    .home-ops-label,
+    .home-stream-time {
+      color: var(--sentinel-muted);
+    }
+
+    .home-stream-title {
+      color: var(--sentinel-text);
+    }
+
+    .home-stream-marker {
+      background: var(--sentinel-cyan);
+      box-shadow: 0 0 18px rgba(34, 211, 238, 0.42);
+    }
+
+    .home-stream-marker.warning {
+      background: var(--sentinel-red);
+      box-shadow: 0 0 18px rgba(255, 59, 92, 0.46);
+    }
+
+    .home-core-section {
+      position: relative;
+      z-index: 1;
+      padding: 0 0 24px;
+    }
+
+    .home-core-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 14px;
+    }
+
+    .home-core-header .home-section-title {
+      margin-top: 4px;
+      font-family: var(--font-display);
+      font-size: clamp(28px, 3.8vw, 46px);
+      font-weight: 400;
+    }
+
+    .home-core-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .home-core-card {
+      min-height: 158px;
+      padding: 18px;
+      border-radius: 22px;
+    }
+
+    .home-mini-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+      padding: 0;
+      list-style: none;
+      color: var(--sentinel-muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .home-mini-list li {
+      position: relative;
+      padding-left: 16px;
+    }
+
+    .home-mini-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.62em;
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--sentinel-cyan);
+      box-shadow: 0 0 16px rgba(34, 211, 238, 0.42);
+    }
+
+    .home-core-card .home-button {
+      margin-top: 18px;
+    }
+
+    .home-core-card-accent {
+      background:
+        linear-gradient(145deg, rgba(255, 59, 92, 0.20), rgba(34, 211, 238, 0.10)),
+        var(--sentinel-panel);
+    }
+
+    .home-capability-icon {
+      background: rgba(34, 211, 238, 0.10);
+      color: var(--sentinel-cyan);
+      margin-bottom: 16px;
+    }
+
+    .home-footer {
+      display: none;
+    }
+
+    .auth-view {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 32px 0;
+    }
+
+    .auth-shell {
+      width: min(980px, calc(100% - 48px));
+      min-height: auto;
+      padding: 0;
+      grid-template-columns: minmax(0, 0.86fr) minmax(360px, 1fr);
+    }
+
+    .auth-panel,
+    .auth-card {
+      border-color: var(--sentinel-line);
+      background: var(--sentinel-panel);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(64px);
+    }
+
+    .auth-card {
+      background: rgba(255, 255, 255, 0.11);
+    }
+
+    .auth-kicker,
+    .auth-link {
+      color: var(--sentinel-cyan);
+    }
+
+    .auth-title {
+      color: var(--sentinel-text);
+      font-family: var(--font-display);
+      font-weight: 400;
+    }
+
+    .auth-card-title,
+    .auth-proof-item code {
+      color: var(--sentinel-text);
+    }
+
+    .auth-copy,
+    .auth-card-copy,
+    .auth-proof-list,
+    .auth-checkbox-label,
+    .auth-switch {
+      color: var(--sentinel-muted);
+    }
+
+    .auth-proof-item,
+    .auth-field input,
+    .auth-password-toggle {
+      border-color: var(--sentinel-line);
+      background: rgba(0, 0, 0, 0.28);
+      color: var(--sentinel-text);
+    }
+
+    .auth-field label {
+      color: rgba(255, 255, 255, 0.54);
+    }
+
+    .auth-field input:hover,
+    .auth-password-toggle:hover {
+      border-color: rgba(34, 211, 238, 0.42);
+      background: rgba(255, 255, 255, 0.10);
+    }
+
+    .auth-field input:focus {
+      border-color: var(--sentinel-cyan);
+      box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.16);
+    }
+
+    .auth-field input[aria-invalid="true"] {
+      border-color: rgba(255, 59, 92, 0.74);
+      background: rgba(255, 59, 92, 0.10);
+    }
+
+    .auth-form-error {
+      border-color: rgba(255, 59, 92, 0.34);
+      background: rgba(255, 59, 92, 0.10);
+      color: #FF9AAD;
+    }
+
+    .auth-field-error {
+      color: #FF9AAD;
+    }
+
+    .auth-password-toggle {
+      color: var(--sentinel-cyan);
+    }
+
+    @media (max-width: 1024px) {
+      .home-core-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .home-hero {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .public-homepage {
+        overflow: visible;
+      }
+      .home-shell,
+      .auth-shell {
+        width: min(100% - 28px, 1180px);
+      }
+      .home-nav {
+        border-radius: 22px;
+      }
+      .home-links {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .home-hero {
+        padding: 34px 0 22px;
+      }
+      .home-hero-proof,
+      .home-metric-strip,
+      .home-core-grid,
+      .home-ops-metrics {
+        grid-template-columns: 1fr;
+      }
+      .home-core-header {
+        display: block;
+      }
+      .auth-shell {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Swiss spa visual pass: calm surfaces, restrained color, precise spacing. */
+    .public-homepage,
+    .auth-view {
+      background:
+        radial-gradient(circle at 18% 0%, rgba(255, 252, 247, 0.98), transparent 34%),
+        radial-gradient(circle at 86% 10%, rgba(232, 227, 216, 0.68), transparent 28%),
+        linear-gradient(180deg, #FFFCF7 0%, #F7F4EE 58%, #EFE9DE 100%);
+      color: var(--home-foreground);
+    }
+
+    .public-homepage::before,
+    .auth-view::before {
+      background:
+        linear-gradient(rgba(216, 205, 189, 0.24) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(216, 205, 189, 0.18) 1px, transparent 1px);
+      background-size: 72px 72px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.36), transparent 78%);
+    }
+
+    .public-homepage::after,
+    .auth-view::after {
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.72), transparent 30%),
+        linear-gradient(125deg, transparent 0 42%, rgba(138, 122, 94, 0.08) 50%, transparent 62%);
+    }
+
+    .home-header {
+      padding: 22px 0 0;
+    }
+
+    .home-nav {
+      min-height: 68px;
+      padding: 12px 14px;
+      border-color: rgba(216, 205, 189, 0.78);
+      background: rgba(255, 252, 247, 0.82);
+      box-shadow: 0 18px 58px rgba(35, 29, 20, 0.075);
+      backdrop-filter: blur(34px);
+    }
+
+    .home-brand,
+    .home-card-title,
+    .home-section-title,
+    .home-cta-title,
+    .home-ops-title,
+    .home-stream-title,
+    .auth-title,
+    .auth-card-title,
+    .auth-proof-item code {
+      color: var(--home-foreground);
+    }
+
+    .home-brand-text span,
+    .home-link,
+    .home-card-copy,
+    .home-section-copy,
+    .home-cta-copy,
+    .home-proof-label,
+    .home-stream-detail,
+    .home-footer,
+    .auth-copy,
+    .auth-card-copy,
+    .auth-proof-list,
+    .auth-checkbox-label,
+    .auth-switch {
+      color: var(--color-foreground-muted);
+    }
+
+    .home-logo {
+      background: var(--home-primary);
+      box-shadow: 0 12px 32px rgba(31, 42, 36, 0.14);
+    }
+
+    .home-link {
+      padding: 10px 12px;
+      color: var(--color-foreground-muted);
+    }
+
+    .home-link:hover {
+      color: var(--home-primary);
+      background: rgba(31, 42, 36, 0.055);
+    }
+
+    .home-button,
+    .auth-submit {
+      min-height: 44px;
+      padding: 11px 18px;
+      border-radius: 999px;
+      letter-spacing: -0.01em;
+    }
+
+    .home-button-primary,
+    .auth-submit {
+      background: var(--home-primary);
+      border-color: var(--home-primary);
+      color: #FFFCF7;
+      box-shadow: 0 14px 36px rgba(31, 42, 36, 0.16);
+    }
+
+    .home-button-primary:hover,
+    .auth-submit:hover:not(:disabled) {
+      background: var(--home-primary-hover);
+      border-color: var(--home-primary-hover);
+    }
+
+    .home-button-secondary {
+      background: rgba(255, 252, 247, 0.88);
+      border-color: rgba(216, 205, 189, 0.88);
+      color: var(--home-primary);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.70) inset;
+    }
+
+    .home-button-secondary:hover {
+      background: #F7F3EC;
+      border-color: rgba(31, 42, 36, 0.24);
+      color: var(--home-primary-hover);
+    }
+
+    .home-hero {
+      min-height: calc(100vh - 126px);
+      gap: clamp(30px, 4vw, 58px);
+      padding: clamp(46px, 7vh, 78px) 0 28px;
+    }
+
+    .home-eyebrow {
+      border-color: rgba(216, 205, 189, 0.86);
+      background: rgba(255, 252, 247, 0.76);
+      color: var(--home-secondary);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.72) inset;
+      backdrop-filter: blur(18px);
+    }
+
+    .home-eyebrow-dot {
+      background: var(--home-secondary);
+      box-shadow: 0 0 0 5px rgba(109, 124, 103, 0.12);
+    }
+
+    .home-hero-title {
+      color: var(--home-foreground);
+      font-size: clamp(46px, 6vw, 76px);
+      line-height: 0.98;
+    }
+
+    .home-hero-title span {
+      color: var(--home-accent);
+    }
+
+    .home-hero-copy {
+      max-width: 620px;
+      color: var(--color-foreground-muted);
+      font-size: 16px;
+      line-height: 1.72;
+    }
+
+    .home-metric-strip {
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .home-proof-item,
+    .home-metric-item,
+    .home-core-card,
+    .home-ops-panel,
+    .auth-panel,
+    .auth-card {
+      border-color: rgba(216, 205, 189, 0.78);
+      background: rgba(255, 252, 247, 0.82);
+      box-shadow: var(--shadow-card);
+      backdrop-filter: blur(28px);
+    }
+
+    .home-metric-item {
+      padding: 18px;
+      border-radius: 20px;
+    }
+
+    .home-proof-value,
+    .home-metric-value,
+    .home-ops-value {
+      color: var(--home-primary);
+    }
+
+    .home-metric-label,
+    .home-ops-label,
+    .home-stream-time {
+      color: var(--color-foreground-subtle);
+    }
+
+    .home-ops-panel {
+      border-radius: 30px;
+      background: rgba(255, 252, 247, 0.88);
+      box-shadow: 0 26px 72px rgba(35, 29, 20, 0.10);
+    }
+
+    .home-ops-header {
+      border-bottom-color: rgba(216, 205, 189, 0.78);
+      background: rgba(247, 244, 238, 0.66);
+    }
+
+    .home-ops-body {
+      padding: 24px;
+    }
+
+    .home-ops-status {
+      color: var(--home-secondary);
+    }
+
+    .home-ops-metric,
+    .home-stream-row,
+    .auth-proof-item,
+    .auth-field input,
+    .auth-password-toggle {
+      border-color: rgba(216, 205, 189, 0.76);
+      background: rgba(255, 252, 247, 0.70);
+      color: var(--home-foreground);
+    }
+
+    .home-stream-marker {
+      background: var(--home-secondary);
+      box-shadow: 0 0 0 5px rgba(109, 124, 103, 0.10);
+    }
+
+    .home-stream-marker.warning {
+      background: var(--home-accent);
+      box-shadow: 0 0 0 5px rgba(138, 122, 94, 0.10);
+    }
+
+    .home-core-section {
+      padding: 0 0 30px;
+    }
+
+    .home-core-header {
+      margin-bottom: 16px;
+    }
+
+    .home-core-grid {
+      gap: 16px;
+    }
+
+    .home-core-card {
+      min-height: 166px;
+      padding: 22px;
+      border-radius: 26px;
+    }
+
+    .home-mini-list {
+      color: var(--color-foreground-muted);
+    }
+
+    .home-mini-list li::before {
+      background: var(--home-secondary);
+      box-shadow: none;
+    }
+
+    .home-core-card-accent {
+      background:
+        linear-gradient(145deg, rgba(232, 227, 216, 0.78), rgba(255, 252, 247, 0.90)),
+        var(--sentinel-panel);
+    }
+
+    .home-capability-icon {
+      background: var(--color-accent-soft);
+      color: var(--home-primary);
+    }
+
+    .auth-view {
+      padding: 36px 0;
+    }
+
+    .auth-shell {
+      width: min(960px, calc(100% - 48px));
+      gap: 26px;
+    }
+
+    .auth-panel,
+    .auth-card {
+      border-radius: 30px;
+      padding: 32px;
+      background: rgba(255, 252, 247, 0.88);
+      box-shadow: 0 24px 70px rgba(35, 29, 20, 0.09);
+    }
+
+    .auth-card {
+      background: rgba(255, 252, 247, 0.96);
+    }
+
+    .auth-kicker,
+    .auth-link,
+    .auth-password-toggle {
+      color: var(--home-primary);
+    }
+
+    .auth-field label {
+      color: var(--color-foreground-subtle);
+    }
+
+    .auth-field input:hover,
+    .auth-password-toggle:hover {
+      border-color: rgba(31, 42, 36, 0.28);
+      background: #FFFCF7;
+    }
+
+    .auth-field input:focus {
+      border-color: var(--home-primary);
+      box-shadow: 0 0 0 3px var(--home-focus-ring);
+    }
+
+    .auth-field input[aria-invalid="true"] {
+      border-color: var(--color-danger);
+      background: var(--color-danger-soft);
+    }
+
+    .auth-form-error {
+      border-color: rgba(154, 92, 80, 0.26);
+      background: var(--color-danger-soft);
+      color: var(--color-danger);
+    }
+
+    .auth-field-error {
+      color: var(--color-danger);
+    }
+
+    @media (max-width: 768px) {
+      .home-header {
+        padding-top: 14px;
+      }
+      .home-nav {
+        padding: 12px;
+      }
+      .home-hero {
+        padding: 38px 0 24px;
+      }
+      .home-hero-title {
+        font-size: clamp(36px, 10vw, 44px);
+      }
+      .home-core-card,
+      .auth-panel,
+      .auth-card {
+        padding: 22px;
+        border-radius: 24px;
+      }
+      .auth-shell {
+        width: min(100% - 28px, 960px);
+        gap: 18px;
       }
     }
 
@@ -3126,10 +3773,8 @@
         </a>
         <div class="home-links">
           <a class="home-link" href="#home-capabilities">核心能力</a>
-          <a class="home-link" href="#home-flow">使用流程</a>
-          <a class="home-link" href="#home-trust">信任信息</a>
-          <a class="home-link" id="home-nav-login-link" href="#login">登录使用</a>
-          <a class="home-button home-button-secondary" id="home-nav-register-link" href="#register">立即注册</a>
+          <a class="home-link" id="home-nav-login-link" href="#login">登录</a>
+          <a class="home-button home-button-secondary" id="home-nav-register-link" href="#register">注册</a>
           <a class="home-button home-button-primary" id="home-nav-workspace-link" href="#product-workspace">工作区</a>
         </div>
       </nav>
@@ -3138,26 +3783,26 @@
     <section class="home-shell home-hero" id="home-hero" aria-labelledby="home-hero-title">
       <div>
         <div class="home-eyebrow"><span class="home-eyebrow-dot" aria-hidden="true"></span>Real-time Agent Security Ops</div>
-        <h1 class="home-hero-title" id="home-hero-title">Agent 安全评测，可追溯<span>。</span></h1>
+        <h1 class="home-hero-title" id="home-hero-title">Agent 风险，一目了然<span>。</span></h1>
         <p class="home-hero-copy">
-          接入 Agent，运行 benchmark，查看报告与日志。无数据时保持空状态，有结果时完整追溯。
+          接入被测 Agent，运行安全评测，查看告警、报告和下一轮建议。信息克制，链路清楚。
         </p>
         <div class="home-hero-actions" aria-label="首页关键操作">
           <a class="home-button home-button-primary" id="home-hero-register-link" href="#register">立即注册</a>
           <a class="home-button home-button-secondary" id="home-hero-workspace-link" href="#product-workspace">进入产品工作区</a>
         </div>
-        <div class="home-hero-proof" aria-label="平台能力摘要">
-          <div class="home-proof-item">
-            <div class="home-proof-value">接入</div>
-            <div class="home-proof-label">源码、Docker、API 三种方式。</div>
+        <div class="home-metric-strip" aria-label="平台核心指标">
+          <div class="home-metric-item">
+            <div class="home-metric-label">ASR</div>
+            <div class="home-metric-value">100% -> 12.4%</div>
           </div>
-          <div class="home-proof-item">
-            <div class="home-proof-value">评测</div>
-            <div class="home-proof-label">ASR、FPR 和风险等级。</div>
+          <div class="home-metric-item">
+            <div class="home-metric-label">FPR</div>
+            <div class="home-metric-value">0.0%</div>
           </div>
-          <div class="home-proof-item">
-            <div class="home-proof-value">迭代</div>
-            <div class="home-proof-label">基于报告生成下一轮。</div>
+          <div class="home-metric-item">
+            <div class="home-metric-label">Cases</div>
+            <div class="home-metric-value">7类 / 105</div>
           </div>
         </div>
       </div>
@@ -3170,24 +3815,24 @@
         <div class="home-ops-body">
           <div class="home-ops-metrics" aria-label="实时指标预览">
             <div class="home-ops-metric">
-              <div class="home-ops-label">Score</div>
-              <div class="home-ops-value">--</div>
+              <div class="home-ops-label">Block</div>
+              <div class="home-ops-value">92</div>
             </div>
             <div class="home-ops-metric">
-              <div class="home-ops-label">Risk</div>
-              <div class="home-ops-value">Live</div>
+              <div class="home-ops-label">Ask</div>
+              <div class="home-ops-value">9</div>
             </div>
             <div class="home-ops-metric">
               <div class="home-ops-label">Logs</div>
-              <div class="home-ops-value">Audit</div>
+              <div class="home-ops-value">Live</div>
             </div>
           </div>
           <div class="home-stream" aria-label="评测事件流预览">
             <div class="home-stream-row">
               <span class="home-stream-marker" aria-hidden="true"></span>
               <div class="home-stream-copy">
-                <div class="home-stream-title">画像已生成</div>
-                <div class="home-stream-detail">Agent 与租户上下文已绑定。</div>
+                <div class="home-stream-title">Agent 已接入</div>
+                <div class="home-stream-detail">绑定租户上下文，准备评测。</div>
               </div>
               <div class="home-stream-time">T+00:04</div>
             </div>
@@ -3195,15 +3840,15 @@
               <span class="home-stream-marker warning" aria-hidden="true"></span>
               <div class="home-stream-copy">
                 <div class="home-stream-title">Benchmark 运行中</div>
-                <div class="home-stream-detail">记录风险指标和节点状态。</div>
+                <div class="home-stream-detail">持续记录拦截、询问和放行。</div>
               </div>
               <div class="home-stream-time">T+02:18</div>
             </div>
             <div class="home-stream-row">
               <span class="home-stream-marker" aria-hidden="true"></span>
               <div class="home-stream-copy">
-                <div class="home-stream-title">报告可追溯</div>
-                <div class="home-stream-detail">摘要、轨迹和日志保持一致。</div>
+                <div class="home-stream-title">报告已生成</div>
+                <div class="home-stream-detail">指标、轨迹、日志保持一致。</div>
               </div>
               <div class="home-stream-time">T+04:12</div>
             </div>
@@ -3212,14 +3857,16 @@
       </aside>
     </section>
 
-    <section class="home-shell home-section" id="home-capabilities" aria-labelledby="home-capabilities-title">
-      <div class="home-section-header">
-        <div class="home-section-kicker">Core Capabilities</div>
-        <h2 class="home-section-title" id="home-capabilities-title">接入、评测、复盘，一屏清楚。</h2>
-        <p class="home-section-copy">三组能力对应三组动作，减少重复说明。</p>
+    <section class="home-shell home-core-section" id="home-capabilities" aria-labelledby="home-capabilities-title">
+      <div class="home-core-header">
+        <div>
+          <div class="home-section-kicker">Core Capabilities</div>
+          <h2 class="home-section-title" id="home-capabilities-title">接入、评测、复盘，一页完成。</h2>
+        </div>
+        <p class="home-section-copy">保留核心信息，减少长篇说明。</p>
       </div>
-      <div class="home-capability-grid">
-        <article class="home-capability-card">
+      <div class="home-core-grid">
+        <article class="home-core-card">
           <div class="home-capability-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 3v18"/>
@@ -3228,86 +3875,26 @@
               <path d="M15 15h4v4h-4z"/>
             </svg>
           </div>
-          <h3 class="home-card-title">Agent 接入</h3>
-          <p class="home-card-copy">提交接入物料，生成 Agent 画像。</p>
+          <h3 class="home-card-title">核心能力</h3>
+          <ul class="home-mini-list" aria-label="核心能力列表">
+            <li>Agent 接入</li>
+            <li>安全评测</li>
+            <li>报告与日志</li>
+          </ul>
         </article>
-        <article class="home-capability-card">
-          <div class="home-capability-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 6h16"/>
-              <path d="M4 12h16"/>
-              <path d="M4 18h10"/>
-            </svg>
-          </div>
-          <h3 class="home-card-title">安全评测</h3>
-          <p class="home-card-copy">选择 benchmark，运行测试用例。</p>
+        <article class="home-core-card" id="home-flow" aria-labelledby="home-flow-title">
+          <h3 class="home-card-title" id="home-flow-title">使用流程</h3>
+          <p class="home-card-copy">接入 Agent，选择 benchmark，查看报告和下一轮攻击建议。</p>
         </article>
-        <article class="home-capability-card">
-          <div class="home-capability-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="20" x2="18" y2="10"/>
-              <line x1="12" y1="20" x2="12" y2="4"/>
-              <line x1="6" y1="20" x2="6" y2="14"/>
-            </svg>
-          </div>
-          <h3 class="home-card-title">报告与日志</h3>
-          <p class="home-card-copy">查看指标、轨迹和下一轮建议。</p>
+        <article class="home-core-card" id="home-trust" aria-labelledby="home-trust-title">
+          <h3 class="home-card-title" id="home-trust-title">信任信息</h3>
+          <p class="home-card-copy">租户上下文隔离，密钥不落盘；无评测数据时不造数。</p>
         </article>
-      </div>
-    </section>
-
-    <section class="home-shell home-section" id="home-flow" aria-labelledby="home-flow-title">
-      <div class="home-section-header">
-        <div class="home-section-kicker">Workflow</div>
-        <h2 class="home-section-title" id="home-flow-title">三步完成一次安全巡检。</h2>
-      </div>
-      <div class="home-flow-list">
-        <article class="home-flow-step">
-          <h3 class="home-card-title">接入 Agent</h3>
-          <p class="home-card-copy">填写基础信息并绑定上下文。</p>
+        <article class="home-core-card home-core-card-accent" id="home-cta" aria-labelledby="home-cta-title">
+          <h3 class="home-card-title" id="home-cta-title">开始使用</h3>
+          <p class="home-card-copy">登录后进入工作区，完成接入和评测。</p>
+          <a class="home-button home-button-primary" id="home-cta-workspace-link" href="#product-workspace">打开工作区</a>
         </article>
-        <article class="home-flow-step">
-          <h3 class="home-card-title">启动评测</h3>
-          <p class="home-card-copy">选择测试集并运行评测。</p>
-        </article>
-        <article class="home-flow-step">
-          <h3 class="home-card-title">查看报告</h3>
-          <p class="home-card-copy">复盘指标、日志和下一轮建议。</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="home-shell home-section" id="home-trust" aria-labelledby="home-trust-title">
-      <div class="home-trust-panel">
-        <div class="home-section-header">
-          <div class="home-section-kicker">Trust Signals</div>
-          <h2 class="home-section-title" id="home-trust-title">真实数据，清晰边界。</h2>
-          <p class="home-section-copy">没有评测数据时保持空状态；有结果时保留报告和日志链路。</p>
-        </div>
-        <div class="home-trust-grid">
-          <article class="home-trust-item">
-            <h3 class="home-card-title">租户上下文</h3>
-            <p class="home-card-copy">tenant_id + agent_id 绑定上下文。</p>
-          </article>
-          <article class="home-trust-item">
-            <h3 class="home-card-title">密钥不落盘</h3>
-            <p class="home-card-copy">API Key 仅进入运行时适配器。</p>
-          </article>
-          <article class="home-trust-item">
-            <h3 class="home-card-title">真实指标优先</h3>
-            <p class="home-card-copy">无数据不造数，有数据可追溯。</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="home-shell home-cta" id="home-cta" aria-labelledby="home-cta-title">
-      <div>
-        <h2 class="home-cta-title" id="home-cta-title">准备开始一轮 Agent 安全评测？</h2>
-        <p class="home-cta-copy">登录后进入工作区，开始接入、评测和复盘。</p>
-      </div>
-      <div class="home-hero-actions">
-        <a class="home-button home-button-primary" id="home-cta-workspace-link" href="#product-workspace">打开工作区</a>
       </div>
     </section>
 
@@ -3671,8 +4258,8 @@
       </div>
       <div class="dashboard-action-buttons">
         <button class="primary-action" type="button" id="go-evaluation-entry">去评测</button>
-        <a class="secondary-action" id="logs-entry-link" href="#evaluation-logs">查日志</a>
         <a class="secondary-action" id="supervision-entry-link" href="#supervision-panel">监督端</a>
+        <a class="secondary-action" id="logs-entry-link" href="#evaluation-logs">查日志</a>
       </div>
     </nav>
 
@@ -3682,22 +4269,26 @@
           <div class="section-title" id="supervision-title">
             <div class="section-title-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3-8-3v7c0 6 8 10 8 10z"/>
-                <path d="M9 12l2 2 4-4"/>
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="M8 12h8"/>
+                <path d="M12 8v8"/>
               </svg>
             </div>
             监督端
           </div>
-          <p class="logs-intro">实时查看放行、阻断和询问事件；ask 状态可由人工批准或拒绝。</p>
+          <p class="onboarding-intro">实时展示 allow / deny / ask 事件；ask 态可由人工批准或拒绝。</p>
         </div>
         <div class="dashboard-action-buttons">
           <button class="secondary-action" type="button" id="supervision-refresh-button">刷新监督事件</button>
           <button class="primary-action" type="button" id="supervision-demo-seed-button">生成演示事件</button>
         </div>
       </div>
-      <div class="benchmark-status" id="supervision-status" aria-live="polite">等待读取监督事件。</div>
-      <div class="dashboard-action-copy" id="supervision-last-update">Last update: --</div>
-      <div class="supervisor-summary-grid" aria-label="监督统计">
+      <div class="benchmark-status" id="supervision-status" aria-live="polite">等待加载监督事件。</div>
+      <div class="meta-item">
+        <span class="meta-label">Last Update</span>
+        <span class="meta-value" id="supervision-last-update">--</span>
+      </div>
+      <div class="benchmark-summary-grid" aria-label="监督事件摘要">
         <div class="benchmark-summary-item">
           <div class="benchmark-summary-label">放行</div>
           <div class="benchmark-summary-value" id="supervision-summary-allow">0</div>
@@ -3715,30 +4306,10 @@
           <div class="benchmark-summary-value" id="supervision-summary-high-risk">0</div>
         </div>
       </div>
-      <div class="empty-state" id="supervision-empty-state">暂无监督事件。点击“生成演示事件”查看 allow / deny / ask 示例。</div>
-      <div class="supervisor-event-list" id="supervision-events-list" aria-live="polite"></div>
-    </section>
-
-    <section class="section" id="attack-trace-timeline" aria-labelledby="attack-trace-title">
-      <div class="section-header">
-        <div>
-          <div class="section-title" id="attack-trace-title">
-            <div class="section-title-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 6h4v4H4z"/>
-                <path d="M16 14h4v4h-4z"/>
-                <path d="M8 8h4a4 4 0 0 1 4 4v2"/>
-              </svg>
-            </div>
-            告警 → 工具调用 → payload id
-          </div>
-          <p class="logs-intro">按真实事件字段追溯 event_id / agent_id / call_type / rule_name / payload_id / case_id / decision。</p>
-        </div>
+      <div class="empty-state" id="supervision-empty-state" role="status" aria-live="polite">
+        监督事件暂不可用，未展示伪造事件。
       </div>
-      <div class="empty-state" id="attack-trace-empty-state" role="status" aria-live="polite">
-        暂无溯源事件。等待实验摘要或监督事件返回真实 event_id / agent_id / call_type / rule_name / payload_id / case_id / decision。
-      </div>
-      <div class="trace-timeline-list" id="attack-trace-timeline-list" aria-live="polite"></div>
+      <div class="supervision-events-list" id="supervision-events-list" aria-live="polite"></div>
     </section>
 
     <section class="section benchmark-section" id="benchmark-selection" aria-labelledby="benchmark-selection-title" hidden>
@@ -3913,7 +4484,7 @@
             </div>
             防御前后 ASR 对照
           </div>
-          <p class="logs-intro">优先读取实验摘要接口；接口不可用时尝试 latest JSON，仍无数据则保持空状态。</p>
+          <p class="logs-intro">优先读取实验摘要接口；接口不可用时保持空状态。</p>
         </div>
       </div>
       <div class="benchmark-status" id="experiment-summary-status" aria-live="polite">等待读取实验摘要。</div>
@@ -3980,6 +4551,29 @@
         <div class="chart-empty-state" id="chart-empty-state" hidden>暂无 ASR/FPR 趋势数据。</div>
       </div>
     </div>
+
+    <section class="section" id="attack-trace-timeline" aria-labelledby="attack-trace-title">
+      <div class="section-header">
+        <div>
+          <div class="section-title" id="attack-trace-title">
+            <div class="section-title-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4v16"/>
+                <path d="M4 8h8"/>
+                <path d="M4 16h12"/>
+                <path d="M16 12h4"/>
+              </svg>
+            </div>
+            告警 → 工具调用 → payload id
+          </div>
+          <p class="logs-intro">从真实监控事件提取溯源链；无事件时保持空状态。</p>
+        </div>
+      </div>
+      <div class="empty-state" id="attack-trace-empty-state" role="status" aria-live="polite">
+        暂无溯源事件，未展示任何伪造指标。
+      </div>
+      <div class="trace-timeline-list" id="attack-trace-timeline-list" aria-live="polite"></div>
+    </section>
 
     <section class="section" id="evaluation-logs" aria-labelledby="evaluation-logs-title">
       <div class="section-header">
@@ -4177,8 +4771,6 @@
     let isPlaying = false;
     let playInterval = null;
     let dashboardSummaryData = null;
-    let experimentSummaryData = null;
-    let attackTraceTimelineData = [];
     let asrFprChart = null;
     let benchmarksData = [];
     let currentBenchmarkId = '';
@@ -4193,8 +4785,8 @@
     let activeLogEvaluationId = '';
     let currentAgentIntegration = '';
     let currentAgentHasApiKey = false;
-    let supervisionPollTimer = null;
-    let supervisionLoaded = false;
+    let supervisionPollingTimer = null;
+    let lastSecurityEvents = [];
     const DEMO_EVALUATION_MODE = 'offline_trace';
     const AUTH_TOKEN_STORAGE_KEY = 'redsentinel.auth.token';
     let authToken = '';
@@ -4323,7 +4915,7 @@
     }
 
     function handleAuthRoute() {
-      const hash = window.location.hash;
+      const hash = window.location.hash || '#public-home';
       if (hash === '#login') {
         showAuthView('login');
         return;
@@ -4341,16 +4933,31 @@
         showProductWorkspace();
         return;
       }
+      const targetId = hash.startsWith('#') ? hash.slice(1) : '';
+      const target = targetId ? document.getElementById(targetId) : null;
+      const workspace = document.getElementById('product-workspace');
+      if (target && workspace?.contains(target)) {
+        if (!hasAuthToken()) {
+          promptLoginForWorkspace();
+          return;
+        }
+        hideAuthViews();
+        showProductWorkspace();
+        if (targetId === 'supervision-panel') showSupervisionPanel();
+        return;
+      }
+      showPublicHome();
       hideAuthViews();
-      if (!hasAuthToken()) hideProductWorkspace();
+      hideProductWorkspace();
     }
 
     function showAuthView(view, message = '') {
       const loginView = document.getElementById('login');
       const registerView = document.getElementById('register');
+      hidePublicHome();
+      hideProductWorkspace();
       if (loginView) loginView.hidden = view !== 'login';
       if (registerView) registerView.hidden = view !== 'register';
-      if (!hasAuthToken()) hideProductWorkspace();
       if (message) setAuthFormError(view, message);
 
       const target = document.getElementById(view);
@@ -4370,7 +4977,19 @@
       if (registerView) registerView.hidden = true;
     }
 
+    function showPublicHome() {
+      const home = document.getElementById('public-home');
+      if (home) home.hidden = false;
+    }
+
+    function hidePublicHome() {
+      const home = document.getElementById('public-home');
+      if (home) home.hidden = true;
+    }
+
     function showProductWorkspace() {
+      hidePublicHome();
+      hideAuthViews();
       const workspace = document.getElementById('product-workspace');
       if (workspace) workspace.hidden = false;
     }
@@ -4391,8 +5010,12 @@
           : '未登录';
       }
       if (isLoggedIn) {
-        showProductWorkspace();
         syncWorkspaceUserFields();
+        if (window.location.hash === '#product-workspace') {
+          showProductWorkspace();
+        } else {
+          hideProductWorkspace();
+        }
       } else {
         hideProductWorkspace();
       }
@@ -4687,6 +5310,8 @@
       currentAuthUser = null;
       updateAuthSessionUI();
       hideAuthViews();
+      hideProductWorkspace();
+      showPublicHome();
       window.location.hash = '#public-home';
       const home = document.getElementById('public-home');
       if (home) home.scrollIntoView({ behavior: 'auto', block: 'start' });
@@ -5054,6 +5679,341 @@
       }[char]));
     }
 
+    async function loadSecurityEvents(options = {}) {
+      options.limit = options.limit || 50;
+      const params = new URLSearchParams();
+      const agentId = options.agent_id || getEvaluationAgentId();
+      const sessionId = options.session_id || currentEvaluationId;
+      if (agentId) params.set('agent_id', agentId);
+      if (options.decision) params.set('decision', options.decision);
+      if (sessionId) params.set('session_id', sessionId);
+      params.set('limit', String(options.limit));
+      const query = params.toString();
+
+      try {
+        const response = await fetch('/v1/monitor/events' + (query ? '?' + query : ''), {
+          headers: authHeaders()
+        });
+        if (!response.ok) throw new Error('monitor events returned ' + response.status);
+        const data = await response.json();
+        const events = normalizeSecurityEvents(data);
+        lastSecurityEvents = events;
+        if (events.length) renderAttackTraceTimeline(events);
+        return events;
+      } catch (error) {
+        console.warn('Failed to load security events:', error);
+        try {
+          const fallbackResponse = await fetch('data/mock_events.json');
+          if (!fallbackResponse.ok) throw new Error('mock events returned ' + fallbackResponse.status);
+          const fallbackData = await fallbackResponse.json();
+          const events = normalizeSecurityEvents(fallbackData);
+          lastSecurityEvents = events;
+          if (events.length) renderAttackTraceTimeline(events);
+          return events;
+        } catch (fallbackError) {
+          console.warn('Failed to load mock security events:', fallbackError);
+          return [];
+        }
+      }
+    }
+
+    function normalizeSecurityEvents(data) {
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.events)) return data.events;
+      if (Array.isArray(data?.items)) return data.items;
+      return [];
+    }
+
+    async function loadExperimentSummary() {
+      let summary = null;
+      try {
+        const response = await fetch('/v1/experiments/summary', {
+          headers: authHeaders()
+        });
+        if (!response.ok) throw new Error('experiment summary returned ' + response.status);
+        summary = await response.json();
+      } catch (error) {
+        console.warn('Failed to load experiment summary API:', error);
+        summary = await loadExperimentSummaryFallback();
+      }
+
+      renderExperimentSummary(summary);
+      const traces = normalizeAttackTraceEvents(summary?.events || summary?.security_events || summary?.traces || lastSecurityEvents);
+      renderAttackTraceTimeline(traces);
+      return summary;
+    }
+
+    async function loadExperimentSummaryFallback() {
+      try {
+        const response = await fetch('experiments/results/latest/asr_before_after.json');
+        if (!response.ok) throw new Error('latest experiment summary returned ' + response.status);
+        return response.json();
+      } catch (error) {
+        console.warn('Failed to load experiment fallback:', error);
+        return null;
+      }
+    }
+
+    function renderExperimentSummary(summary) {
+      const empty = document.getElementById('experiment-summary-empty-state');
+      const content = document.getElementById('experiment-summary-content');
+      const status = document.getElementById('experiment-summary-status');
+      if (!empty || !content) return;
+
+      const metrics = normalizeExperimentSummary(summary);
+      if (!metrics) {
+        empty.hidden = false;
+        content.hidden = true;
+        if (status) status.textContent = '暂无实验摘要，未展示任何伪造指标。';
+        return;
+      }
+
+      empty.hidden = true;
+      content.hidden = false;
+      if (status) status.textContent = '已加载防御前后 ASR 对照。';
+      setText('experiment-asr-before', formatPercent(metrics.asrBefore));
+      setText('experiment-asr-after', formatPercent(metrics.asrAfter));
+      setText('experiment-fpr', formatPercent(metrics.fpr));
+      setText('experiment-blocked', metrics.blocked);
+      setText('experiment-asked', metrics.asked);
+      updateExperimentBar('experiment-asr-before-bar', 'experiment-asr-before-bar-value', metrics.asrBefore);
+      updateExperimentBar('experiment-asr-after-bar', 'experiment-asr-after-bar-value', metrics.asrAfter);
+    }
+
+    function normalizeExperimentSummary(summary) {
+      const source = summary?.summary || summary;
+      if (!source) return null;
+      const scenarios = Array.isArray(summary?.scenarios) ? summary.scenarios : [];
+      const asrBefore = firstFinite(source.asr_no_defense, source.asr_before, source.baseline_asr, source.asrNoDefense);
+      const asrAfter = firstFinite(source.asr_with_defense, source.asr_after, source.defended_asr, source.asrWithDefense);
+      const fpr = firstFinite(source.fpr, source.false_positive_rate);
+      const blocked = source.blocked ?? scenarios.reduce((total, item) => total + Number(item.blocked || 0), 0);
+      const asked = source.asked ?? scenarios.reduce((total, item) => total + Number(item.asked || 0), 0);
+      if (!isFiniteNumber(asrBefore) && !isFiniteNumber(asrAfter) && !isFiniteNumber(fpr)) return null;
+      return {
+        asrBefore: isFiniteNumber(asrBefore) ? asrBefore : 0,
+        asrAfter: isFiniteNumber(asrAfter) ? asrAfter : 0,
+        fpr: isFiniteNumber(fpr) ? fpr : 0,
+        blocked,
+        asked
+      };
+    }
+
+    function firstFinite(...values) {
+      for (const value of values) {
+        const number = Number(value);
+        if (Number.isFinite(number)) return number;
+      }
+      return null;
+    }
+
+    function updateExperimentBar(barId, labelId, value) {
+      const percent = clamp((isFiniteNumber(value) ? value : 0) * 100, 0, 100);
+      const bar = document.getElementById(barId);
+      if (bar) bar.style.width = percent + '%';
+      setText(labelId, percent.toFixed(1) + '%');
+    }
+
+    function normalizeAttackTraceEvents(events) {
+      return (Array.isArray(events) ? events : []).map(event => ({
+        event_id: event.event_id || event.id || '--',
+        agent_id: event.agent_id || '--',
+        call_type: event.call_type || event.type || '--',
+        rule_name: event.rule_name || event.rule || (Array.isArray(event.rules) ? event.rules.join(', ') : '--'),
+        payload_id: event.payload_id || event.case_id || event.payload?.payload_id || '--',
+        case_id: event.case_id || event.payload?.case_id || '--',
+        decision: event.decision || event.status || '--',
+        timestamp: event.timestamp || event.created_at || event.observed_at || ''
+      })).filter(event => event.event_id !== '--' || event.payload_id !== '--' || event.call_type !== '--');
+    }
+
+    function renderAttackTraceTimeline(events = []) {
+      const list = document.getElementById('attack-trace-timeline-list');
+      const empty = document.getElementById('attack-trace-empty-state');
+      const traces = normalizeAttackTraceEvents(events);
+      if (!list || !empty) return;
+      if (!traces.length) {
+        empty.hidden = false;
+        list.innerHTML = '';
+        return;
+      }
+
+      empty.hidden = true;
+      list.innerHTML = traces.map(event => `
+        <article class="trace-timeline-item">
+          <div class="trace-timeline-meta">
+            <span>${escapeHtml(event.decision)}</span>
+            <code>${escapeHtml(event.event_id)}</code>
+          </div>
+          <div class="trace-timeline-main">
+            <strong>${escapeHtml(event.call_type)}</strong>
+            <span>${escapeHtml(event.rule_name)}</span>
+            <span>payload id: ${escapeHtml(event.payload_id)}</span>
+            <span>case id: ${escapeHtml(event.case_id)}</span>
+            <span>agent id: ${escapeHtml(event.agent_id)}</span>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function initSupervisionPanel() {
+      const entry = document.getElementById('supervision-entry-link');
+      const refreshButton = document.getElementById('supervision-refresh-button');
+      const seedButton = document.getElementById('supervision-demo-seed-button');
+      if (entry) {
+        entry.addEventListener('click', event => {
+          event.preventDefault();
+          if (!requireAuthenticatedWorkspace('请先登录后查看监督端。')) return;
+          showProductWorkspace();
+          showSupervisionPanel();
+        });
+      }
+      if (refreshButton) refreshButton.addEventListener('click', () => loadSupervisionLatest());
+      if (seedButton) seedButton.addEventListener('click', seedSupervisionDemoEvents);
+      window.addEventListener('hashchange', () => {
+        if (window.location.hash === '#supervision-panel') {
+          showSupervisionPanel();
+        }
+      });
+      if (window.location.hash === '#supervision-panel') {
+        showSupervisionPanel();
+      }
+    }
+
+    function showSupervisionPanel() {
+      const section = document.getElementById('supervision-panel');
+      if (!section) return;
+      section.hidden = false;
+      if (window.location.hash !== '#supervision-panel') {
+        history.pushState(null, '', '#supervision-panel');
+      }
+      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+      section.scrollIntoView({ behavior: behavior, block: 'start' });
+      loadSupervisionLatest({ quiet: true });
+      startSupervisionPolling();
+    }
+
+    function startSupervisionPolling() {
+      if (supervisionPollingTimer) window.clearInterval(supervisionPollingTimer);
+      supervisionPollingTimer = window.setInterval(() => {
+        loadSupervisionLatest({ quiet: true });
+      }, 5000);
+    }
+
+    async function loadSupervisionLatest(options = {}) {
+      const status = document.getElementById('supervision-status');
+      if (status && !options.quiet) status.textContent = '正在刷新监督事件。';
+      try {
+        const response = await fetch('/v1/supervision/latest', {
+          headers: authHeaders()
+        });
+        if (!response.ok) throw new Error('supervision latest returned ' + response.status);
+        const snapshot = await response.json();
+        renderSupervisionSnapshot(snapshot);
+        if (status) status.textContent = '监督事件已刷新。';
+        return snapshot;
+      } catch (error) {
+        console.warn('Failed to load supervision latest:', error);
+        if (status) status.textContent = '监督事件暂不可用，未展示伪造事件。';
+        return null;
+      }
+    }
+
+    async function seedSupervisionDemoEvents() {
+      const status = document.getElementById('supervision-status');
+      if (status) status.textContent = '正在生成演示事件。';
+      try {
+        const response = await fetch('/v1/supervision/demo-seed', {
+          method: 'POST',
+          headers: authHeaders()
+        });
+        if (!response.ok) throw new Error('supervision seed returned ' + response.status);
+        const snapshot = await response.json();
+        renderSupervisionSnapshot(snapshot);
+        if (status) status.textContent = '演示事件已生成。';
+      } catch (error) {
+        console.warn('Failed to seed supervision demo events:', error);
+        if (status) status.textContent = '生成演示事件失败。';
+      }
+    }
+
+    function renderSupervisionSnapshot(snapshot = {}) {
+      const summary = snapshot.summary || {};
+      const events = normalizeSecurityEvents(snapshot);
+      setText('supervision-summary-allow', summary.allow ?? summary.allowed ?? countDecisions(events, 'allow'));
+      setText('supervision-summary-deny', summary.deny ?? summary.denied ?? countDecisions(events, 'deny'));
+      setText('supervision-summary-ask', summary.ask ?? summary.pending ?? countDecisions(events, 'ask'));
+      setText('supervision-summary-high-risk', summary.high_risk ?? events.filter(event => Number(event.risk_score || 0) >= 0.7).length);
+      setText('supervision-last-update', snapshot.updated_at || new Date().toISOString());
+      renderSupervisionEvents(events);
+    }
+
+    function countDecisions(events, decision) {
+      return events.filter(event => event.decision === decision).length;
+    }
+
+    function renderSupervisionEvents(events) {
+      const empty = document.getElementById('supervision-empty-state');
+      const list = document.getElementById('supervision-events-list');
+      if (!empty || !list) return;
+      if (!events.length) {
+        empty.hidden = false;
+        list.innerHTML = '';
+        return;
+      }
+      empty.hidden = true;
+      list.innerHTML = events.map(renderSupervisionEventCard).join('');
+      list.querySelectorAll('[data-supervision-action]').forEach(button => {
+        button.addEventListener('click', () => respondToSupervisionAsk(button.dataset.eventId, button.dataset.supervisionAction));
+      });
+    }
+
+    function renderSupervisionEventCard(event) {
+      const canRespond = event.decision === 'ask' && event.status === 'pending';
+      const reason = event.reason || event.message || event.rule_name || '无补充原因。';
+      return `
+        <article class="supervision-event-card ${escapeHtml(safeCssToken(event.decision, 'unknown'))}">
+          <div class="supervision-event-head">
+            <strong>${escapeHtml(event.decision || '--')}</strong>
+            <code>${escapeHtml(event.event_id || event.id || '--')}</code>
+          </div>
+          <p>${escapeHtml(reason)}</p>
+          <div class="supervision-event-meta">
+            <span>${escapeHtml(event.call_type || '--')}</span>
+            <span>risk ${escapeHtml(event.risk_score ?? '--')}</span>
+            <span>${escapeHtml(event.timestamp || event.created_at || '--')}</span>
+          </div>
+          ${canRespond ? `
+            <div class="dashboard-action-buttons">
+              <button class="secondary-action" type="button" data-supervision-action="approve" data-event-id="${escapeHtml(event.event_id || event.id || '')}">批准</button>
+              <button class="secondary-action" type="button" data-supervision-action="reject" data-event-id="${escapeHtml(event.event_id || event.id || '')}">拒绝</button>
+            </div>
+          ` : ''}
+        </article>
+      `;
+    }
+
+    async function respondToSupervisionAsk(eventId, action) {
+      if (!eventId || !action) return;
+      try {
+        const response = await fetch('/v1/supervision/ask/' + encodeURIComponent(eventId) + '/respond', {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            action,
+            operator: currentAuthUser?.username || 'frontend',
+            reason: 'handled from supervision panel'
+          })
+        });
+        if (!response.ok) throw new Error('supervision response returned ' + response.status);
+        await loadSupervisionLatest();
+      } catch (error) {
+        console.warn('Failed to respond to supervision ask:', error);
+        const status = document.getElementById('supervision-status');
+        if (status) status.textContent = '人工确认提交失败。';
+      }
+    }
+
       function safeCssToken(value, fallback = '') {
         return String(value ?? '').toLowerCase().replace(/[^a-z0-9_-]/g, '') || fallback;
       }
@@ -5094,37 +6054,6 @@
         if (fallbackEl) {
           reportData = JSON.parse(fallbackEl.textContent);
           renderReport();
-        }
-      }
-    }
-
-    async function loadSecurityEvents(options = {}) {
-      const params = new URLSearchParams();
-      const agentId = options.agent_id || options.agentId || '';
-      const sessionId = options.session_id || options.sessionId || '';
-      if (agentId) params.set('agent_id', agentId);
-      if (options.decision) params.set('decision', options.decision);
-      if (sessionId) params.set('session_id', sessionId);
-      if (options.limit) params.set('limit', String(options.limit));
-      const query = params.toString();
-
-      try {
-        const response = await fetch('/v1/monitor/events' + (query ? '?' + query : ''), {
-          headers: authHeaders()
-        });
-        if (!response.ok) throw new Error('monitor events returned ' + response.status);
-        const events = await response.json();
-        return Array.isArray(events) ? events : [];
-      } catch (error) {
-        console.warn('Failed to load security events:', error);
-        try {
-          const fallbackResponse = await fetch('data/mock_events.json');
-          if (!fallbackResponse.ok) return [];
-          const fallbackEvents = await fallbackResponse.json();
-          return Array.isArray(fallbackEvents) ? fallbackEvents : [];
-        } catch (fallbackError) {
-          console.warn('Failed to load mock security events:', fallbackError);
-          return [];
         }
       }
     }
@@ -5419,198 +6348,6 @@
       });
     }
 
-    async function loadExperimentSummary() {
-      setExperimentSummaryStatus('正在读取实验摘要。', 'info');
-      try {
-        const response = await fetch('/v1/experiments/summary', {
-          headers: authHeaders()
-        });
-        if (!response.ok) throw new Error('experiment summary returned ' + response.status);
-        experimentSummaryData = await response.json();
-        renderExperimentSummary(experimentSummaryData);
-        setExperimentSummaryStatus('实验摘要已刷新。', 'success');
-      } catch (error) {
-        console.warn('Failed to load experiment summary:', error);
-        await loadExperimentSummaryFallback();
-      }
-    }
-
-    async function loadExperimentSummaryFallback() {
-      try {
-        const response = await fetch('experiments/results/latest/asr_before_after.json');
-        if (!response.ok) throw new Error('latest experiment summary returned ' + response.status);
-        experimentSummaryData = await response.json();
-        renderExperimentSummary(experimentSummaryData);
-        setExperimentSummaryStatus('已读取 latest 实验摘要。', 'success');
-      } catch (fallbackError) {
-        console.warn('Failed to load latest experiment summary:', fallbackError);
-        experimentSummaryData = null;
-        renderExperimentSummary(null);
-        setExperimentSummaryStatus('实验摘要暂不可用。', 'error');
-      }
-    }
-
-    function renderExperimentSummary(summary) {
-      const content = document.getElementById('experiment-summary-content');
-      const empty = document.getElementById('experiment-summary-empty-state');
-      if (!content || !empty) return;
-
-      const metrics = extractExperimentMetrics(summary || {});
-      const traces = extractExperimentTraceEvents(summary || {});
-      if (traces.length) {
-        renderAttackTraceTimeline(traces);
-      }
-
-      if (!hasExperimentSummaryMetrics(metrics)) {
-        content.hidden = true;
-        empty.textContent = '暂无防御前后 ASR 对照数据。未展示任何伪造指标。';
-        empty.hidden = false;
-        resetExperimentBars();
-        return;
-      }
-
-      empty.hidden = true;
-      content.hidden = false;
-      setText('experiment-asr-before', formatExperimentPercent(metrics.asr_before));
-      setText('experiment-asr-after', formatExperimentPercent(metrics.asr_after));
-      setText('experiment-fpr', formatExperimentPercent(metrics.fpr));
-      setText('experiment-blocked', valueOrDash(metrics.blocked));
-      setText('experiment-asked', valueOrDash(metrics.asked));
-      updateExperimentBar('experiment-asr-before-bar', 'experiment-asr-before-bar-value', metrics.asr_before);
-      updateExperimentBar('experiment-asr-after-bar', 'experiment-asr-after-bar-value', metrics.asr_after);
-    }
-
-    function extractExperimentMetrics(summary) {
-      const metrics = summary.metrics || summary.summary || {};
-      return {
-        asr_before: firstDefined(summary.asr_before, summary.before_asr, metrics.asr_before, metrics.before_asr, metrics.baseline_asr),
-        asr_after: firstDefined(summary.asr_after, summary.after_asr, metrics.asr_after, metrics.after_asr, metrics.defended_asr),
-        fpr: firstDefined(summary.fpr, summary.false_positive_rate, metrics.fpr, metrics.false_positive_rate),
-        blocked: firstDefined(summary.blocked, summary.attacks_blocked, metrics.blocked, metrics.attacks_blocked),
-        asked: firstDefined(summary.asked, summary.ask, summary.human_reviewed, metrics.asked, metrics.ask, metrics.human_reviewed)
-      };
-    }
-
-    function extractExperimentTraceEvents(summary) {
-      return normalizeAttackTraceEvents(firstDefined(
-        summary.attack_trace,
-        summary.attack_traces,
-        summary.trace_timeline,
-        summary.events,
-        summary.security_events,
-        []
-      ));
-    }
-
-    function hasExperimentSummaryMetrics(metrics) {
-      return isFiniteNumber(metrics.asr_before)
-        || isFiniteNumber(metrics.asr_after)
-        || isFiniteNumber(metrics.fpr)
-        || metrics.blocked === 0
-        || Boolean(metrics.blocked)
-        || metrics.asked === 0
-        || Boolean(metrics.asked);
-    }
-
-    function firstDefined(...values) {
-      return values.find(value => value !== undefined && value !== null && value !== '');
-    }
-
-    function toDisplayPercent(value) {
-      if (!isFiniteNumber(value)) return null;
-      return Math.abs(value) <= 1 ? value * 100 : value;
-    }
-
-    function formatExperimentPercent(value) {
-      const percent = toDisplayPercent(value);
-      return isFiniteNumber(percent) ? percent.toFixed(1) + '%' : '--';
-    }
-
-    function updateExperimentBar(barId, valueId, value) {
-      const bar = document.getElementById(barId);
-      const displayValue = formatExperimentPercent(value);
-      const percent = toDisplayPercent(value);
-      if (bar) bar.style.width = isFiniteNumber(percent) ? clamp(percent, 0, 100) + '%' : '0%';
-      setText(valueId, displayValue);
-    }
-
-    function resetExperimentBars() {
-      ['experiment-asr-before', 'experiment-asr-after', 'experiment-fpr', 'experiment-blocked', 'experiment-asked'].forEach(id => {
-        setText(id, '--');
-      });
-      updateExperimentBar('experiment-asr-before-bar', 'experiment-asr-before-bar-value', null);
-      updateExperimentBar('experiment-asr-after-bar', 'experiment-asr-after-bar-value', null);
-    }
-
-    function setExperimentSummaryStatus(message, status) {
-      const element = document.getElementById('experiment-summary-status');
-      if (!element) return;
-      element.textContent = message;
-      element.className = status ? 'benchmark-status ' + status : 'benchmark-status';
-    }
-
-    function normalizeAttackTraceEvents(events) {
-      const source = Array.isArray(events) ? events : events ? [events] : [];
-      return source.map(event => ({
-        event_id: firstDefined(event.event_id, event.id),
-        agent_id: firstDefined(event.agent_id, event.agent?.id),
-        call_type: firstDefined(event.call_type, event.type),
-        rule_name: firstDefined(event.rule_name, event.rule?.name, event.rule_id),
-        payload_id: firstDefined(event.payload_id, event.payload?.payload_id, event.payload_summary?.payload_id),
-        case_id: firstDefined(event.case_id, event.case?.case_id, event.payload_summary?.case_id),
-        decision: firstDefined(event.decision, event.action)
-      })).filter(trace => Object.values(trace).some(value => value !== undefined && value !== null && value !== ''));
-    }
-
-    function renderAttackTraceTimeline(events = []) {
-      const list = document.getElementById('attack-trace-timeline-list');
-      const empty = document.getElementById('attack-trace-empty-state');
-      if (!list || !empty) return;
-
-      attackTraceTimelineData = normalizeAttackTraceEvents(events);
-      if (!attackTraceTimelineData.length) {
-        empty.hidden = false;
-        list.innerHTML = '';
-        return;
-      }
-
-      empty.hidden = true;
-      list.innerHTML = attackTraceTimelineData.map(renderAttackTraceTimelineItem).join('');
-    }
-
-    function renderAttackTraceTimelineItem(trace) {
-      const decision = safeCssToken(trace.decision || 'observed', 'observed');
-      return `
-        <article class="trace-timeline-item ${decision}">
-          <div class="trace-timeline-chain" aria-label="告警到工具调用再到 payload id">
-            <span class="trace-timeline-node">告警 ${escapeHtml(valueOrDash(trace.event_id))}</span>
-            <span aria-hidden="true">→</span>
-            <span class="trace-timeline-node">工具调用 ${escapeHtml(valueOrDash(trace.call_type))}</span>
-            <span aria-hidden="true">→</span>
-            <span class="trace-timeline-node">payload id ${escapeHtml(valueOrDash(trace.payload_id))}</span>
-          </div>
-          <div class="trace-timeline-fields">
-            ${renderAttackTraceField('event_id', trace.event_id)}
-            ${renderAttackTraceField('agent_id', trace.agent_id)}
-            ${renderAttackTraceField('call_type', trace.call_type)}
-            ${renderAttackTraceField('rule_name', trace.rule_name)}
-            ${renderAttackTraceField('payload_id', trace.payload_id)}
-            ${renderAttackTraceField('case_id', trace.case_id)}
-            ${renderAttackTraceField('decision', trace.decision)}
-          </div>
-        </article>
-      `;
-    }
-
-    function renderAttackTraceField(label, value) {
-      return `
-        <div class="trace-timeline-field">
-          <div class="trace-timeline-label">${escapeHtml(label)}</div>
-          <div class="trace-timeline-value">${escapeHtml(valueOrDash(value))}</div>
-        </div>
-      `;
-    }
-
     function initDashboardActions() {
       const evaluationEntry = document.getElementById('go-evaluation-entry');
       if (!evaluationEntry) return;
@@ -5639,178 +6376,6 @@
       if (window.location.hash === '#evaluation-logs') {
         showEvaluationLogs();
       }
-    }
-
-    function initSupervisionPanel() {
-      const entry = document.getElementById('supervision-entry-link');
-      const refreshButton = document.getElementById('supervision-refresh-button');
-      const demoButton = document.getElementById('supervision-demo-seed-button');
-      if (entry) {
-        entry.addEventListener('click', (event) => {
-          event.preventDefault();
-          showSupervisionPanel();
-        });
-      }
-      if (refreshButton) {
-        refreshButton.addEventListener('click', () => loadSupervisionLatest({ force: true }));
-      }
-      if (demoButton) {
-        demoButton.addEventListener('click', seedSupervisionDemoEvents);
-      }
-      if (window.location.hash === '#supervision-panel') {
-        showSupervisionPanel();
-      }
-    }
-
-    function showSupervisionPanel() {
-      if (!requireAuthenticatedWorkspace('请先登录后查看监督端。')) return;
-      const section = document.getElementById('supervision-panel');
-      if (!section) return;
-      section.hidden = false;
-      if (window.location.hash !== '#supervision-panel') {
-        history.pushState(null, '', '#supervision-panel');
-      }
-      loadSupervisionLatest({ force: true });
-      startSupervisionPolling();
-      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
-      section.scrollIntoView({ behavior: behavior, block: 'start' });
-    }
-
-    function startSupervisionPolling() {
-      if (supervisionPollTimer) return;
-      supervisionPollTimer = window.setInterval(() => {
-        const section = document.getElementById('supervision-panel');
-        if (!section || section.hidden) return;
-        loadSupervisionLatest({ silent: true });
-      }, 5000);
-    }
-
-    async function loadSupervisionLatest(options = {}) {
-      if (!hasAuthToken()) {
-        renderSupervisionSnapshot({ events: [], summary: {} });
-        setSupervisionStatus('请先登录后查看监督事件。', 'error');
-        return;
-      }
-      if (supervisionLoaded && !options.force && !options.silent) return;
-      if (!options.silent) setSupervisionStatus('正在读取监督事件。', 'info');
-      try {
-        const response = await fetch('/v1/supervision/latest', { headers: authHeaders() });
-        if (!response.ok) throw new Error('supervision latest returned ' + response.status);
-        const snapshot = await response.json();
-        renderSupervisionSnapshot(snapshot);
-        supervisionLoaded = true;
-        setSupervisionStatus('监督事件已刷新。', 'success');
-      } catch (error) {
-        console.warn('Failed to load supervision latest:', error);
-        setSupervisionStatus('监督事件暂不可用，未展示伪造事件。', 'error');
-      }
-    }
-
-    async function seedSupervisionDemoEvents() {
-      if (!requireAuthenticatedWorkspace('请先登录后生成监督演示事件。')) return;
-      setSupervisionStatus('正在生成演示事件。', 'info');
-      try {
-        const response = await fetch('/v1/supervision/demo-seed', {
-          method: 'POST',
-          headers: authHeaders()
-        });
-        if (!response.ok) throw new Error('supervision demo seed returned ' + response.status);
-        const snapshot = await response.json();
-        renderSupervisionSnapshot(snapshot);
-        supervisionLoaded = true;
-        setSupervisionStatus('已生成 allow / deny / ask 演示事件。', 'success');
-      } catch (error) {
-        console.warn('Failed to seed supervision demo events:', error);
-        setSupervisionStatus('生成演示事件失败。', 'error');
-      }
-    }
-
-    function renderSupervisionSnapshot(snapshot = {}) {
-      const summary = snapshot.summary || {};
-      const decisions = summary.decision_counts || {};
-      setText('supervision-summary-allow', decisions.allow ?? 0);
-      setText('supervision-summary-deny', decisions.deny ?? 0);
-      setText('supervision-summary-ask', decisions.ask ?? 0);
-      setText('supervision-summary-high-risk', summary.high_risk_count ?? 0);
-      setText('supervision-last-update', 'Last update: ' + (snapshot.updated_at || '--'));
-      const events = Array.isArray(snapshot.events) ? snapshot.events : [];
-      renderSupervisionEvents(events);
-      if (events.length) renderAttackTraceTimeline(events);
-    }
-
-    function renderSupervisionEvents(events) {
-      const list = document.getElementById('supervision-events-list');
-      const empty = document.getElementById('supervision-empty-state');
-      if (!list || !empty) return;
-      if (!events.length) {
-        empty.hidden = false;
-        list.innerHTML = '';
-        return;
-      }
-      empty.hidden = true;
-      const ordered = [...events].reverse();
-      list.innerHTML = ordered.map(event => renderSupervisionEventCard(event)).join('');
-      list.querySelectorAll('[data-supervision-action]').forEach(button => {
-        button.addEventListener('click', () => respondToSupervisionAsk(button.dataset.eventId, button.dataset.supervisionAction));
-      });
-    }
-
-    function renderSupervisionEventCard(event) {
-      const decision = safeCssToken(event.decision || 'allow', 'allow');
-      const status = safeCssToken(event.status || 'observed', 'observed');
-      const riskScore = isFiniteNumber(event.risk_score) ? Number(event.risk_score).toFixed(1) : '--';
-      const payload = event.payload_summary ? JSON.stringify(event.payload_summary) : '{}';
-      const canRespond = event.decision === 'ask' && event.status === 'pending';
-      return `
-        <article class="supervisor-event-card ${decision} ${status}">
-          <div>
-            <div class="supervisor-event-title">
-              <span>${escapeHtml(event.call_type || '--')}</span>
-              <span class="supervisor-badge ${decision}">${escapeHtml(event.decision || '--')}</span>
-              <span class="supervisor-badge ${status}">${escapeHtml(event.status || '--')}</span>
-              <span class="supervisor-badge">risk ${escapeHtml(riskScore)}</span>
-            </div>
-            <div class="supervisor-event-meta">${escapeHtml(event.timestamp || '--')} · ${escapeHtml(event.agent_id || '--')}</div>
-            <div class="supervisor-event-reason">${escapeHtml(event.reason || '--')}</div>
-            <div class="supervisor-event-payload">${escapeHtml(payload)}</div>
-          </div>
-          <div class="supervisor-event-actions">
-            ${canRespond ? `
-              <button class="secondary-action" type="button" data-event-id="${escapeHtml(event.event_id)}" data-supervision-action="approve">批准</button>
-              <button class="secondary-action" type="button" data-event-id="${escapeHtml(event.event_id)}" data-supervision-action="reject">拒绝</button>
-            ` : ''}
-          </div>
-        </article>
-      `;
-    }
-
-    async function respondToSupervisionAsk(eventId, action) {
-      if (!eventId || !action) return;
-      setSupervisionStatus(action === 'approve' ? '正在批准询问事件。' : '正在拒绝询问事件。', 'info');
-      try {
-        const response = await fetch('/v1/supervision/ask/' + encodeURIComponent(eventId) + '/respond', {
-          method: 'POST',
-          headers: authHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({
-            action: action,
-            operator: currentAuthUser?.username || 'supervisor',
-            reason: action === 'approve' ? 'Approved from supervisor panel.' : 'Rejected from supervisor panel.'
-          })
-        });
-        if (!response.ok) throw new Error('supervision response returned ' + response.status);
-        await loadSupervisionLatest({ force: true });
-        setSupervisionStatus(action === 'approve' ? '询问事件已批准。' : '询问事件已拒绝。', 'success');
-      } catch (error) {
-        console.warn('Failed to respond to supervision ask:', error);
-        setSupervisionStatus('人工确认写回失败。', 'error');
-      }
-    }
-
-    function setSupervisionStatus(message, status) {
-      const element = document.getElementById('supervision-status');
-      if (!element) return;
-      element.textContent = message;
-      element.className = status ? 'benchmark-status ' + status : 'benchmark-status';
     }
 
     function showEvaluationLogs() {
@@ -6547,6 +7112,15 @@
 
       const evaluationId = status.evaluation_id || '--';
       const reportId = status.report_id || evaluationId;
+        const runtimeSummary = reportData?.summary || {};
+        const runtimeBadges = reportState === 'loaded'
+          ? `
+          <span>runtime_mode: ${escapeHtml(runtimeSummary.runtime_mode || reportData?.summary?.evaluation_mode || '--')}</span>
+          <span>real_runtime: ${escapeHtml(String(runtimeSummary.real_runtime ?? false))}</span>
+          <span>simulated: ${escapeHtml(String(runtimeSummary.simulated ?? true))}</span>
+          <span>real_tool_executions: ${escapeHtml(String(runtimeSummary.real_tool_execution_count ?? '--'))}</span>
+        `
+          : '';
         const reportMessage = reportState === 'loaded'
           ? '评测完成，真实报告摘要已刷新。'
           : reportState === 'error'
@@ -6561,6 +7135,7 @@
           ${reportLink}
         <span>evaluation_id: ${escapeHtml(evaluationId)}</span>
         <span>report_id: ${escapeHtml(reportId)}</span>
+          ${runtimeBadges}
       `;
     }
 
@@ -7076,16 +7651,17 @@
       await loadReport();
       await loadDashboardSummary();
       await loadExperimentSummary();
+      await loadSecurityEvents({ limit: 50 });
     }
 
     initAuth();
     initAgentOnboarding();
     initDashboardActions();
     initEvaluationLogs();
-    initSupervisionPanel();
     initBenchmarkSelection();
     initEvaluationLaunchControl();
     initNextRoundControl();
+    initSupervisionPanel();
 
     if (typeof Chart === 'undefined') {
       const script = document.createElement('script');
