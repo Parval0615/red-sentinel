@@ -3,7 +3,10 @@ from __future__ import annotations
 import pytest
 
 import auto_evaluation_system.detection.trajectory_risk.anomaly_model as anomaly_model
+<<<<<<< HEAD
 from auto_evaluation_system.detection.oracle import evaluate_oracle
+=======
+>>>>>>> origin/main
 from auto_evaluation_system.detection.trajectory_risk import (
     TrajectoryAnomalyDetector,
     extract_trajectory_features,
@@ -50,6 +53,7 @@ def test_anomaly_model_fallback_is_deterministic_without_sklearn(monkeypatch: py
     assert first.score_with_evidence(attack_trace).top_features == second.score_with_evidence(attack_trace).top_features
 
 
+<<<<<<< HEAD
 def test_oracle_mixes_rule_and_anomaly_evidence() -> None:
     normal_training = [_normal_trace("keyboard"), _normal_trace("mouse"), _normal_trace("monitor")]
     attack_trace = _attack_trace()
@@ -64,6 +68,8 @@ def test_oracle_mixes_rule_and_anomaly_evidence() -> None:
     assert result.verdict == "abnormal"
 
 
+=======
+>>>>>>> origin/main
 def _normal_trace(query: str) -> list[dict[str, object]]:
     return [
         {"call_type": "tool_call", "tool_name": "product_search", "arguments": {"query": query}},

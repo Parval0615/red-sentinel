@@ -7,6 +7,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 DetectorMetric = Literal["MIS", "GDM", "TRS"]
+OracleStatus = Literal["normal", "abnormal", "review"]
 DetectorDecision = Literal[
     "clean",
     "poisoned",
@@ -50,6 +51,29 @@ class DetectorOutput(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class OracleFinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source: Literal["monitor", "detector", "llm_judge"] = "monitor"
+    risk_type: str = Field(min_length=1)
+    severity: Literal["low", "medium", "high", "critical"] = "medium"
+    confidence: float = Field(ge=0.0, le=1.0)
+    summary: str = Field(min_length=1)
+    evidence: list[str] = Field(default_factory=list)
+    recommended_action: str = Field(min_length=1)
+
+
+class OracleVerdict(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["anomaly-oracle-verdict-v0.1"] = "anomaly-oracle-verdict-v0.1"
+    status: OracleStatus
+    confidence: float = Field(ge=0.0, le=1.0)
+    findings: list[OracleFinding] = Field(default_factory=list)
+    rationale: str = Field(min_length=1)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 class AcceptanceFixtureRecord(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -87,5 +111,8 @@ __all__ = [
     "DetectorInput",
     "DetectorMetric",
     "DetectorOutput",
+    "OracleFinding",
+    "OracleStatus",
+    "OracleVerdict",
     "load_acceptance_fixture_manifest",
 ]

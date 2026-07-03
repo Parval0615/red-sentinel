@@ -19,8 +19,12 @@ def test_openmanus_adapter_runs_offline_fixture_and_exports_events() -> None:
     assert result.blocked is False
     assert result.risk_level == "low"
     assert result.tool_calls
+<<<<<<< HEAD
     assert result.audit_events[0]["decision"] == "allow"
     assert result.audit_events[0]["rules"] == ["browser_search.passed"]
+=======
+    assert {event["event_type"] for event in result.audit_events} >= {"tool_call", "tool_result"}
+>>>>>>> origin/main
     assert trajectory["session_id"] == "openmanus-test"
     assert trajectory["agent_framework"] == "OpenManus"
     assert trajectory["tool_calls"] == result.tool_calls
@@ -31,8 +35,12 @@ def test_openmanus_adapter_runs_offline_fixture_and_exports_events() -> None:
 
 def test_openmanus_adapter_accepts_runner_payload_and_resets_session() -> None:
     class Runner:
+<<<<<<< HEAD
         def __call__(self, _user_id: str, message: str, _context: dict) -> dict:
             del _user_id, _context
+=======
+        def __call__(self, user_id: str, message: str, context: dict) -> dict:
+>>>>>>> origin/main
             return {
                 "answer": f"runner answered {message}",
                 "blocked": True,
@@ -55,9 +63,14 @@ def test_openmanus_adapter_accepts_runner_payload_and_resets_session() -> None:
 
     assert adapter.list_tools()[0].name == "python_execute"
     result = adapter.send_message("user_002", "hello 13900001111", {})
+<<<<<<< HEAD
     assert result.blocked is False
     assert result.risk_level == "low"
     assert result.tool_calls[0]["name"] == "browser_search"
+=======
+    assert result.blocked is True
+    assert result.risk_level == "high"
+>>>>>>> origin/main
     assert any(event["event_type"] == "runner_audit" for event in result.audit_events)
     assert "13900001111" not in str(adapter.export_trajectory())
 
@@ -67,6 +80,7 @@ def test_openmanus_adapter_accepts_runner_payload_and_resets_session() -> None:
     assert trajectory["turns"] == []
     assert trajectory["tool_calls"] == []
     assert trajectory["audit_events"] == []
+<<<<<<< HEAD
 
 
 def test_openmanus_adapter_uses_injected_monitor_decision_fields() -> None:
@@ -226,3 +240,5 @@ def test_openmanus_adapter_keeps_core_tool_priority_over_prompt_markers() -> Non
         for _, expected_call_type, expected_tool_name in cases
     ]
     assert all(tool_name != "prompt_input" for _, tool_name in seen)
+=======
+>>>>>>> origin/main

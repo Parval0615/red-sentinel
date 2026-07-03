@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shlex
 import tempfile
 import time
 import uuid
@@ -90,6 +91,8 @@ class DockerTraceExecutor:
             args.extend(["-e", f"RED_SENTINEL_NODE_TARGET={self.plan.node_targets[0]}"])
 
         args.append(self.plan.docker_image)
+        if self.plan.adapter_entrypoint:
+            args.extend(shlex.split(self.plan.adapter_entrypoint))
         return args
 
     def _collect_artifacts(self, result: BoundedCaptureResult) -> TrajectoryArtifacts:

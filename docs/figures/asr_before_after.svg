@@ -21,8 +21,13 @@
 <rect x="163.93" y="240.41" width="30.00" height="185.59" rx="3" fill="#2F6F73"><title>jailbreak with defense: 53.3%</title></rect>
 <text x="178.93" y="234.41" font-size="11" text-anchor="middle" fill="#1F2933">53%</text>
 <text x="159.43" y="456" font-size="11" text-anchor="middle" fill="#1F2933" transform="rotate(-35 159.43,456)">jailbreak</text>
+<<<<<<< HEAD
 <rect x="267.79" y="124.39" width="30.00" height="301.61" rx="3" fill="#8B3A3A"><title>training_data_leakage no defense: 86.7%</title></rect>
 <text x="282.79" y="118.39" font-size="11" text-anchor="middle" fill="#1F2933">87%</text>
+=======
+<rect x="267.79" y="78.00" width="30.00" height="348.00" rx="3" fill="#8B3A3A"><title>training_data_leakage no defense: 100.0%</title></rect>
+<text x="282.79" y="72.00" font-size="11" text-anchor="middle" fill="#1F2933">100%</text>
+>>>>>>> origin/main
 <rect x="306.79" y="426.00" width="30.00" height="0.00" rx="3" fill="#2F6F73"><title>training_data_leakage with defense: 0.0%</title></rect>
 <text x="321.79" y="420.00" font-size="11" text-anchor="middle" fill="#1F2933">0%</text>
 <text x="302.29" y="456" font-size="11" text-anchor="middle" fill="#1F2933" transform="rotate(-35 302.29,456)">data leakage</text>

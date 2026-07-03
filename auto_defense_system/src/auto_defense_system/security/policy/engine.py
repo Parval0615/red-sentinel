@@ -17,7 +17,24 @@ import json
 import os
 import re
 from email.utils import parseaddr
+from pathlib import Path
+from dataclasses import dataclass, field
+from typing import Literal
 from urllib.parse import urlparse
+
+PolicyDecisionValue = Literal["allow", "deny", "ask"]
+
+
+@dataclass(frozen=True)
+class PolicyDecision:
+    decision: PolicyDecisionValue
+    reason: str
+    risk_level: str
+    detail: dict = field(default_factory=dict)
+
+    @property
+    def allowed(self) -> bool:
+        return self.decision == "allow"
 
 # ============================================================
 # 默认策略规则（可通过 JSON 文件覆盖）
@@ -72,7 +89,11 @@ DEFAULT_POLICY_RULES = {
             "max_recipients": 5,
             "block_external_recipients": True,
             "internal_domains": ["@company.com", "@internal.com"],
+<<<<<<< HEAD
             "ask_domains": ["*"],
+=======
+            "ask_domains": [".net", ".org", ".com"],
+>>>>>>> origin/main
             "block_content_patterns": [
                 "password", "credential", "token", "secret", "api_key",
                 "密码", "密钥", "令牌", "凭证",
@@ -185,10 +206,11 @@ def _block_sql_disallowed_operation(policy: dict, operation: str) -> tuple:
     )
 
 
-def _check_file_policy(args: dict, policy: dict) -> tuple:
+def _check_file_policy(args: dict, policy: dict, *, workspace_root: str | None = None) -> tuple:
     """Check file_operation against policy rules."""
     path = args.get("path", "")
     action = args.get("action", "").lower()
+    boundary = _file_boundary(path, workspace_root)
 
     # Check blocked actions
     if action in policy.get("block_actions", []):
@@ -199,6 +221,9 @@ def _check_file_policy(args: dict, policy: dict) -> tuple:
                 "risk_level": policy["risk_level"],
                 "blocked_reason": f"blocked_action: {action}",
                 "rule_name": "file_operation.block_actions",
+                "decision": "deny",
+                "file_action": action,
+                "boundary": boundary,
             },
         )
 
@@ -222,6 +247,9 @@ def _check_file_policy(args: dict, policy: dict) -> tuple:
                     "risk_level": policy["risk_level"],
                     "blocked_reason": f"blocked_path: {bp}",
                     "rule_name": "file_operation.block_paths",
+                    "decision": "deny",
+                    "file_action": action,
+                    "boundary": boundary,
                 },
             )
 
@@ -235,10 +263,63 @@ def _check_file_policy(args: dict, policy: dict) -> tuple:
                     "risk_level": policy["risk_level"],
                     "blocked_reason": f"blocked_pattern: {pattern}",
                     "rule_name": "file_operation.block_path_patterns",
+                    "decision": "deny",
+                    "file_action": action,
+                    "boundary": boundary,
                 },
             )
 
-    return True, "", {"risk_level": "low", "blocked_reason": None, "rule_name": "file_operation.passed"}
+    if action in {"write", "append"}:
+        if boundary["outside_workspace"]:
+            return (
+                False,
+                f"{policy['message']} 写入路径 '{path}' 越出工作区，禁止执行。",
+                {
+                    "risk_level": "critical",
+                    "blocked_reason": "outside_workspace_write",
+                    "rule_name": "file_operation.workspace_boundary",
+                    "decision": "deny",
+                    "file_action": action,
+                    "boundary": boundary,
+                },
+            )
+        return (
+            False,
+            f"文件 {action} 操作需要监督端确认。",
+            {
+                "risk_level": "medium",
+                "blocked_reason": "supervisor_confirmation_required",
+                "rule_name": "file_operation.ask_write",
+                "decision": "ask",
+                "pending": True,
+                "file_action": action,
+                "boundary": boundary,
+            },
+        )
+
+    allowed_actions = set(policy.get("allowed_actions", []))
+    if allowed_actions and action not in allowed_actions:
+        return (
+            False,
+            f"{policy['message']} 操作 '{action}' 不在允许列表中。",
+            {
+                "risk_level": policy["risk_level"],
+                "blocked_reason": f"unsupported_action: {action}",
+                "rule_name": "file_operation.allowed_actions",
+                "decision": "deny",
+                "file_action": action,
+                "boundary": boundary,
+            },
+        )
+
+    return True, "", {
+        "risk_level": "low",
+        "blocked_reason": None,
+        "rule_name": "file_operation.passed",
+        "decision": "allow",
+        "file_action": action,
+        "boundary": boundary,
+    }
 
 
 def _check_api_policy(args: dict, policy: dict) -> tuple:
@@ -367,7 +448,41 @@ def _check_email_policy(args: dict, policy: dict) -> tuple:
             },
         )
 
+<<<<<<< HEAD
     # Check content patterns before external recipients so sensitive exfiltration stays deny.
+=======
+    # Check external recipients
+    if policy.get("block_external_recipients", True):
+        internal_domains = policy.get("internal_domains", [])
+        for r in recipients:
+            is_internal = _recipient_matches_internal_domain(r, internal_domains)
+            if not is_internal:
+                _, address = parseaddr(r)
+                domain = address.rsplit("@", 1)[-1].lower() if "@" in address else ""
+                if (
+                    not _domain_contains_internal_lookalike(domain, internal_domains)
+                    and _domain_matches_patterns(domain, policy.get("ask_domains", []))
+                ):
+                    return _ask_result(
+                        f"邮件发送到外部收件人 '{r}' 需要人工确认。",
+                        {
+                            "risk_level": "medium",
+                            "blocked_reason": f"external_recipient: {r}",
+                            "rule_name": "send_email.block_external_recipients",
+                        },
+                    )
+                return (
+                    False,
+                    f"{policy['message']} 收件人 '{r}' 不在内部域白名单中。",
+                    {
+                        "risk_level": policy["risk_level"],
+                        "blocked_reason": f"external_recipient: {r}",
+                        "rule_name": "send_email.block_external_recipients",
+                    },
+                )
+
+    # Check content patterns
+>>>>>>> origin/main
     combined = (subject + " " + body).lower()
     for pattern in policy.get("block_content_patterns", []):
         if re.search(pattern, combined, re.IGNORECASE):
@@ -481,7 +596,22 @@ _POLICY_CHECKERS = {
 }
 
 
-def check_policy(tool_name: str, tool_args: dict, state: dict = None) -> tuple:
+def evaluate_policy(tool_name: str, tool_args: dict, state: dict = None, *, workspace_root: str | None = None) -> PolicyDecision:
+    allowed, message, detail = check_policy(tool_name, tool_args, state, workspace_root=workspace_root)
+    raw_decision = detail.get("decision")
+    if raw_decision in {"allow", "deny", "ask"}:
+        decision = raw_decision
+    else:
+        decision = "allow" if allowed else "deny"
+    return PolicyDecision(
+        decision=decision,
+        reason=message or detail.get("blocked_reason") or "allowed",
+        risk_level=detail.get("risk_level", "normal"),
+        detail=detail,
+    )
+
+
+def check_policy(tool_name: str, tool_args: dict, state: dict = None, *, workspace_root: str | None = None) -> tuple:
     """Check if a tool call complies with security policy.
 
     Args:
@@ -544,6 +674,11 @@ def check_policy(tool_name: str, tool_args: dict, state: dict = None) -> tuple:
     # Dispatch to specific checker
     checker = _POLICY_CHECKERS.get(tool_name)
     if checker:
+<<<<<<< HEAD
+=======
+        if tool_name == "file_operation":
+            return _finalize_policy_result(checker(tool_args, policy, workspace_root=workspace_root), policy)
+>>>>>>> origin/main
         return _finalize_policy_result(checker(tool_args, policy), policy)
 
     # No checker but has policy = unknown dangerous tool, allow with warning
@@ -552,9 +687,28 @@ def check_policy(tool_name: str, tool_args: dict, state: dict = None) -> tuple:
             False,
             f"Tool '{tool_name}' has policy rules but no checker implementation.",
             {"risk_level": "high", "blocked_reason": "policy_checker_missing", "rule_name": f"{tool_name}.no_checker"},
+<<<<<<< HEAD
         ),
         policy,
+=======
+        )
+>>>>>>> origin/main
     )
+
+
+def _file_boundary(path: str, workspace_root: str | None) -> dict:
+    if not workspace_root:
+        return {"workspace_root": None, "resolved_path": str(path), "outside_workspace": False}
+    try:
+        root = Path(workspace_root).resolve()
+        resolved = Path(path).expanduser()
+        if not resolved.is_absolute():
+            resolved = root / resolved
+        resolved = resolved.resolve()
+        outside = root != resolved and root not in resolved.parents
+        return {"workspace_root": str(root), "resolved_path": str(resolved), "outside_workspace": outside}
+    except Exception as exc:
+        return {"workspace_root": workspace_root, "resolved_path": str(path), "outside_workspace": True, "error": str(exc)}
 
 
 # ============================================================

@@ -18,10 +18,17 @@ def test_policy_engine_returns_allow_ask_and_deny_states() -> None:
     )
 
     assert allowed is False
+<<<<<<< HEAD
     assert "人工确认" in message
     assert detail["decision"] == "ask"
     assert detail["pending"] is True
     assert detail["rule_name"] == "file_operation.ask_actions"
+=======
+    assert "确认" in message
+    assert detail["decision"] == "ask"
+    assert detail["pending"] is True
+    assert detail["rule_name"] == "file_operation.ask_write"
+>>>>>>> origin/main
 
     allowed, message, detail = check_policy("db_query", {"sql": "DROP TABLE users"})
 
