@@ -3755,11 +3755,53 @@
       background: var(--color-accent);
       color: white;
     }
+  
+    /* HUD & Glassmorphism & Minimalist Typo Additions */
+    .glass-panel {
+      background: rgba(255, 252, 247, 0.5) !important;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 0 8px 32px 0 rgba(31, 42, 36, 0.05);
+    }
+    
+    .hud-grid {
+      background-image: 
+        linear-gradient(rgba(31, 42, 36, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(31, 42, 36, 0.02) 1px, transparent 1px) !important;
+      background-size: 24px 24px !important;
+    }
+    
+    .fade-in-up {
+      animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* Minimalist Typography overrides */
+    body {
+      letter-spacing: 0.01em;
+    }
+    .home-hero-title, .auth-title, .home-section-title {
+      font-weight: 400 !important;
+      letter-spacing: -0.04em !important;
+    }
+    .home-ops-value, .metric-value {
+      font-weight: 400 !important;
+    }
+
   </style>
 </head>
 <body>
   <a class="home-skip" href="#product-workspace">跳转到产品工作区</a>
-  <main class="public-homepage" id="public-home">
+  <main class="public-homepage hud-grid" id="public-home">
     <header class="home-header">
       <nav class="home-shell home-nav" id="public-home-nav" aria-label="公开首页导航">
         <a class="home-brand" href="#public-home" aria-label="RedSentinel 公开首页">
@@ -3807,7 +3849,7 @@
         </div>
       </div>
 
-      <aside class="home-ops-panel" aria-label="实时安全运营预览">
+      <aside class="home-ops-panel glass-panel fade-in-up" style="animation-delay: 0.1s" aria-label="实时安全运营预览">
         <div class="home-ops-header">
           <div class="home-ops-title">Evaluation Console</div>
           <div class="home-ops-status"><span class="home-eyebrow-dot" aria-hidden="true"></span>Monitoring</div>
@@ -3904,9 +3946,9 @@
     </footer>
   </main>
 
-  <section class="auth-view" id="login" aria-labelledby="login-title" hidden>
+  <section class="auth-view hud-grid" id="login" aria-labelledby="login-title" hidden>
     <div class="auth-shell">
-      <aside class="auth-panel" aria-label="登录说明">
+      <aside class="auth-panel glass-panel" aria-label="登录说明">
         <div class="auth-kicker">Secure Workspace</div>
         <h2 class="auth-title" id="login-title">登录工作区。</h2>
         <p class="auth-copy">Token 按“记住登录状态”保存；页面不保存明文密码。</p>
@@ -3915,7 +3957,7 @@
           <div class="auth-proof-item">退出登录会清理本地会话。</div>
         </div>
       </aside>
-      <section class="auth-card" aria-label="登录表单">
+      <section class="auth-card glass-panel fade-in-up" style="animation-delay: 0.1s" aria-label="登录表单">
         <div class="auth-card-header">
           <h2 class="auth-card-title">登录</h2>
           <p class="auth-card-copy">使用用户名或邮箱登录。</p>
@@ -3946,9 +3988,9 @@
     </div>
   </section>
 
-  <section class="auth-view" id="register" aria-labelledby="register-title" hidden>
+  <section class="auth-view hud-grid" id="register" aria-labelledby="register-title" hidden>
     <div class="auth-shell">
-      <aside class="auth-panel" aria-label="注册说明">
+      <aside class="auth-panel glass-panel" aria-label="注册说明">
         <div class="auth-kicker">Create Account</div>
         <h2 class="auth-title" id="register-title">创建评测账号。</h2>
         <p class="auth-copy">用户名作为工作区租户上下文。</p>
@@ -3957,7 +3999,7 @@
           <div class="auth-proof-item">密码只提交认证接口。</div>
         </div>
       </aside>
-      <section class="auth-card" aria-label="注册表单">
+      <section class="auth-card glass-panel fade-in-up" style="animation-delay: 0.1s" aria-label="注册表单">
         <div class="auth-card-header">
           <h2 class="auth-card-title">注册</h2>
           <p class="auth-card-copy">填写信息后进入工作区。</p>

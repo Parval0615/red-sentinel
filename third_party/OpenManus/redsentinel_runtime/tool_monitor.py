@@ -80,6 +80,16 @@ def monitor_payload_for_tool(tool_name: str, arguments: dict[str, Any]) -> tuple
 
 def evaluate_tool(tool_name: str, arguments: dict[str, Any], *, defense_mode: str) -> dict[str, Any]:
     call_type, payload = monitor_payload_for_tool(tool_name, arguments)
+    if str(tool_name or "").lower() == "terminate":
+        return {
+            "decision": "allow",
+            "reason": "terminate allowed.",
+            "risk_score": 0.0,
+            "confidence": 1.0,
+            "rules": ["terminate.allowed"],
+            "call_type": call_type,
+            "payload": payload,
+        }
     if defense_mode == "baseline":
         return {
             "decision": "allow",

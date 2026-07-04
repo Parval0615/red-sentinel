@@ -45,9 +45,11 @@ class OpenManusDockerRunner:
         agent_id = str(context.get("agent_id") or "openmanus_official")
         turn_dir = self.output_root / _safe_path(session_id) / f"{turn_index:03d}-{_safe_path(scenario_id)}-{case_type}"
         turn_dir.mkdir(parents=True, exist_ok=True)
+        container_name = _docker_container_name(session_id, turn_index, scenario_id, case_type)
 
         command = self._docker_command(
             output_dir=turn_dir,
+            container_name=container_name,
             user_id=user_id,
             agent_id=agent_id,
             message=message,
@@ -58,6 +60,7 @@ class OpenManusDockerRunner:
         stdout_path = turn_dir / "stdout.log"
         stderr_path = turn_dir / "stderr.log"
         error: str | None = None
+        cleanup_error: str | None = None
         returncode = -1
         try:
             completed = subprocess.run(
@@ -74,9 +77,10 @@ class OpenManusDockerRunner:
             if completed.returncode != 0:
                 error = f"docker exited with code {completed.returncode}"
         except subprocess.TimeoutExpired as exc:
-            stdout_path.write_text(exc.stdout or "", encoding="utf-8")
-            stderr_path.write_text(exc.stderr or "", encoding="utf-8")
+            stdout_path.write_text(_process_output_text(exc.stdout), encoding="utf-8")
+            stderr_path.write_text(_process_output_text(exc.stderr), encoding="utf-8")
             error = f"docker timed out after {self.config.timeout_seconds}s"
+            cleanup_error = self._cleanup_container(container_name)
 
         events = _read_events(turn_dir / "events.jsonl")
         duration_ms = round((time.time() - started) * 1000, 3)
@@ -93,9 +97,12 @@ class OpenManusDockerRunner:
             "defense_mode": defense_mode,
             "scenario_id": scenario_id,
             "case_type": case_type,
+            "container_name": container_name,
             "real_runtime": True,
             "simulated": False,
         }
+        if cleanup_error is not None:
+            runtime_meta["cleanup_error"] = cleanup_error
         (turn_dir / "runtime_meta.json").write_text(
             json.dumps(runtime_meta, ensure_ascii=False, indent=2, sort_keys=True),
             encoding="utf-8",
@@ -121,6 +128,7 @@ class OpenManusDockerRunner:
         self,
         *,
         output_dir: Path,
+        container_name: str,
         user_id: str,
         agent_id: str,
         message: str,
@@ -132,6 +140,8 @@ class OpenManusDockerRunner:
             "docker",
             "run",
             "--rm",
+            "--name",
+            container_name,
             "--memory",
             self.config.memory_limit,
             "--cpus",
@@ -170,6 +180,24 @@ class OpenManusDockerRunner:
             "--max-steps",
             str(self.config.max_steps),
         ]
+
+    def _cleanup_container(self, container_name: str) -> str | None:
+        try:
+            completed = subprocess.run(
+                ["docker", "rm", "-f", container_name],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+        except Exception as exc:  # pragma: no cover - defensive host cleanup path
+            return f"docker cleanup failed: {type(exc).__name__}: {exc}"
+        if completed.returncode == 0:
+            return None
+        detail = (completed.stderr or completed.stdout or "").strip()
+        if "No such container" in detail:
+            return None
+        return f"docker rm -f exited with code {completed.returncode}: {_summary(detail, limit=300)}"
 
     def _host_env(self) -> dict[str, str]:
         env = os.environ.copy()
@@ -235,7 +263,7 @@ def _payload_from_events(
     runtime_meta: dict[str, Any],
     error: str | None,
 ) -> dict[str, Any]:
-    blocked = any(
+    policy_blocked = any(
         event.get("type") == "tool_call_blocked"
         or (event.get("type") == "monitor_decision" and event.get("decision") in {"deny", "ask"})
         for event in events
@@ -246,13 +274,12 @@ def _payload_from_events(
     answer = str((finish or {}).get("answer") or error or "OpenManus real run completed.")
     audit_events = [_audit_event_from_monitor(event, runtime_meta) for event in events if event.get("type") == "monitor_decision"]
     if error:
-        blocked = True
         audit_events.append(
             {
                 "event_type": "runtime_error",
                 "call_type": "runtime",
                 "tool_name": "openmanus_runtime",
-                "decision": "deny",
+                "decision": "error",
                 "risk_score": 100.0,
                 "reason": error,
                 "rules": ["openmanus_real.runtime_error"],
@@ -265,8 +292,8 @@ def _payload_from_events(
         "user_id": user_id,
         "message": message,
         "answer": answer,
-        "blocked": blocked,
-        "risk_level": "high" if blocked or error else "low",
+        "blocked": False if error else policy_blocked,
+        "risk_level": "high" if policy_blocked or error else "low",
         "tool_calls": tool_calls,
         "business_events": [],
         "audit_events": audit_events,
@@ -321,6 +348,21 @@ def _read_events(path: Path) -> list[dict[str, Any]]:
 
 def _safe_path(value: str) -> str:
     return "".join(char if char.isalnum() or char in {"-", "_", "."} else "_" for char in value)[:120]
+
+
+def _docker_container_name(session_id: str, turn_index: int, scenario_id: str, case_type: str) -> str:
+    raw = f"redsentinel-{session_id}-{turn_index:03d}-{scenario_id}-{case_type}"
+    safe = "".join(char.lower() if char.isalnum() else "-" for char in raw)
+    safe = "-".join(part for part in safe.split("-") if part)
+    return safe[:120] or "redsentinel-openmanus"
+
+
+def _process_output_text(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value
 
 
 def _summary(value: Any, *, limit: int = 500) -> str:

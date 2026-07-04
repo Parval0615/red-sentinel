@@ -1,0 +1,37 @@
+{
+  "attack_agent": {
+    "api_key": "YOUR_ATTACK_AGENT_API_KEY",
+    "base_url": "https://api.redsentinel.local/v1",
+    "model": "attack-agent-model"
+  },
+  "defense_agent": {
+    "api_key": "YOUR_DEFENSE_AGENT_API_KEY",
+    "base_url": "https://api.redsentinel.local/v1",
+    "model": "defense-agent-model"
+  },
+  "evaluator_agent": {
+    "api_key": "YOUR_EVALUATOR_AGENT_API_KEY",
+    "base_url": "https://api.redsentinel.local/v1",
+    "model": "evaluator-agent-model"
+  },
+  "target_agents": [
+    {
+      "id": "ecommerce_customer_guide",
+      "name": "E-commerce Customer Guide Agent",
+      "type": "ecommerce",
+      "mode": "sdk"
+    },
+    {
+      "id": "openmanus_official",
+      "name": "OpenManus Official",
+      "type": "openmanus",
+      "mode": "sdk"
+    }
+  ],
+  "storage_root": "runs/product",
+  "openmanus": {
+    "real_mode": false,
+    "docker_image": "redsentinel/openmanus-real:local",
+    "timeout_seconds": 300
+  }
+}

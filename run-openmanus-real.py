@@ -23,10 +23,12 @@ def main() -> int:
     args = _parse_args()
     _add_source_paths()
     if args.require_real:
-        _require_real_environment()
+        _require_real_environment(args.image, require_image=not args.build_image)
     _require_vendor_source()
     if args.build_image:
         _build_image(args.image)
+        if args.require_real:
+            _require_docker_image(args.image)
 
     from auto_evaluation_system.product_api.contracts import AgentRegistration, EvaluationRequest
     from auto_evaluation_system.product_api.service import OPENMANUS_BENCHMARK_ID, ProductEvaluationService
@@ -97,11 +99,26 @@ def _add_source_paths() -> None:
             sys.path.insert(0, source_path)
 
 
-def _require_real_environment() -> None:
+def _require_real_environment(image: str, *, require_image: bool = True) -> None:
     missing = [name for name in ("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL") if not os.environ.get(name)]
     if missing:
         raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
     subprocess.run(["docker", "version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if require_image:
+        _require_docker_image(image)
+
+
+def _require_docker_image(image: str) -> None:
+    result = subprocess.run(
+        ["docker", "image", "inspect", image],
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        raise RuntimeError(f"OpenManus Docker image not found or unavailable: {image}. {detail}")
 
 
 def _require_vendor_source() -> None:
