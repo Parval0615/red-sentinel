@@ -119,7 +119,7 @@ def test_openmanus_real_mode_builds_real_runtime_report(tmp_path, monkeypatch) -
     monkeypatch.setenv("OPENAI_MODEL", "gpt-test")
     monkeypatch.setattr(
         "auto_evaluation_system.product_api.service._openmanus_real_adapter_for",
-        lambda _registration, output_root: FakeOpenManusRealAdapter(),
+        lambda _registration, mode, output_root: FakeOpenManusRealAdapter(),
     )
     service = ProductEvaluationService(storage_root=tmp_path)
     service.register_agent(
@@ -157,13 +157,55 @@ def test_openmanus_real_mode_builds_real_runtime_report(tmp_path, monkeypatch) -
     assert report.summary["real_tool_execution_count"] >= len(report.scenario_results)
 
 
+def test_openmanus_source_real_mode_builds_source_runtime_report(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://api.example.test/v1")
+    monkeypatch.setenv("OPENAI_MODEL", "gpt-test")
+    monkeypatch.setattr(
+        "auto_evaluation_system.product_api.service._openmanus_real_adapter_for",
+        lambda _registration, mode, output_root: FakeOpenManusRealAdapter(),
+    )
+    service = ProductEvaluationService(storage_root=tmp_path)
+    service.register_agent(
+        AgentRegistration(
+            tenant_id="tenant_1",
+            username="tenant_1",
+            agent_id="openmanus_official",
+            name="OpenManus Official",
+            domain="general",
+            integration_type="source",
+            framework="OpenManus",
+            adapter_type="openmanus",
+            status="ready",
+        )
+    )
+
+    status = service.run_evaluation(
+        EvaluationRequest(
+            tenant_id="tenant_1",
+            agent_id="openmanus_official",
+            benchmark_id=OPENMANUS_BENCHMARK_ID,
+            benchmark_version="v0.1",
+            mode="openmanus_source_real",
+        )
+    )
+    report = service.get_report(status.report_id or status.evaluation_id, tenant_id="tenant_1")
+
+    assert report.benchmark_id == OPENMANUS_BENCHMARK_ID
+    assert report.summary["runtime_mode"] == "openmanus_source_real"
+    assert report.summary["real_runtime"] is True
+    assert report.summary["simulated"] is False
+    assert report.summary["docker_image"] is None
+    assert report.summary["source_root"]
+
+
 def test_openmanus_runtime_errors_do_not_count_as_defense_blocks(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://api.example.test/v1")
     monkeypatch.setenv("OPENAI_MODEL", "gpt-test")
     monkeypatch.setattr(
         "auto_evaluation_system.product_api.service._openmanus_real_adapter_for",
-        lambda _registration, output_root: RuntimeErrorOpenManusRealAdapter(),
+        lambda _registration, mode, output_root: RuntimeErrorOpenManusRealAdapter(),
     )
     service = ProductEvaluationService(storage_root=tmp_path)
     service.register_agent(

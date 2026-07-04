@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import gzip
 import json
+import zlib
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -72,19 +74,30 @@ class HostedAPIAdapter(AgentAdapter):
 
     def _post_json(self, payload: dict[str, Any]) -> dict[str, Any]:
         body = json.dumps(payload).encode("utf-8")
-        headers = {"Content-Type": "application/json"}
+        headers = {"Content-Type": "application/json", "Accept-Encoding": "identity, gzip, deflate"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         request = Request(self.endpoint_url, data=body, headers=headers, method="POST")
         try:
             with urlopen(request, timeout=self.timeout_seconds) as response:
-                return json.loads(response.read().decode("utf-8"))
+                response_headers = getattr(response, "headers", {})
+                raw = _decode_response_body(response.read(), response_headers.get("Content-Encoding"))
+                return json.loads(raw.decode("utf-8"))
         except HTTPError as exc:
             raise RuntimeError(f"Hosted API returned HTTP {exc.code}") from exc
         except URLError as exc:
             raise RuntimeError(f"Hosted API request failed: {exc.reason}") from exc
         except json.JSONDecodeError as exc:
             raise RuntimeError("Hosted API returned invalid JSON") from exc
+
+
+def _decode_response_body(raw: bytes, content_encoding: str | None) -> bytes:
+    encoding = (content_encoding or "").lower()
+    if "gzip" in encoding or raw.startswith(b"\x1f\x8b"):
+        return gzip.decompress(raw)
+    if "deflate" in encoding:
+        return zlib.decompress(raw)
+    return raw
 
 
 def _extract_answer(payload: dict[str, Any]) -> str:

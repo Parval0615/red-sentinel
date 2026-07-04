@@ -12,7 +12,7 @@ from typing import Any
 from pydantic import Field
 
 from event_writer import EventWriter
-from tool_monitor import evaluate_tool, parse_tool_arguments
+from tool_monitor import evaluate_llm_input, evaluate_llm_output, evaluate_tool, parse_tool_arguments
 
 
 OPENMANUS_ROOT = Path(os.environ.get("OPENMANUS_ROOT", "/opt/openmanus"))
@@ -37,6 +37,7 @@ async def _run(args: argparse.Namespace, writer: EventWriter) -> int:
     sys.path.insert(0, str(OPENMANUS_ROOT))
     from app.agent.toolcall import ToolCallAgent
     from app.config import config
+    from app.llm import LLM
     from app.prompt.manus import NEXT_STEP_PROMPT, SYSTEM_PROMPT
     from app.tool import Terminate, ToolCollection
     from app.tool.ask_human import AskHuman
@@ -45,6 +46,7 @@ async def _run(args: argparse.Namespace, writer: EventWriter) -> int:
 
     original_execute_tool = ToolCallAgent.execute_tool
     defense_mode = args.defense_mode
+    _apply_runtime_llm_settings(args, config=config, llm_cls=LLM)
     context = {
         "scenario_id": args.scenario_id,
         "case_type": args.case_type,
@@ -133,6 +135,7 @@ async def _run(args: argparse.Namespace, writer: EventWriter) -> int:
     )
     agent = RedSentinelRealManus()
     agent.max_steps = args.max_steps
+    _attach_llm_monitor(agent, writer=writer, defense_mode=defense_mode, context=context)
     try:
         answer = await agent.run(args.prompt)
         writer.write("agent_finish", **context, answer=_summary(answer), steps=agent.current_step)
@@ -144,6 +147,74 @@ async def _run(args: argparse.Namespace, writer: EventWriter) -> int:
             result = cleanup()
             if hasattr(result, "__await__"):
                 await result
+
+
+def _attach_llm_monitor(agent: Any, *, writer: EventWriter, defense_mode: str, context: dict[str, Any]) -> None:
+    original_ask_tool = agent.llm.ask_tool
+
+    async def monitored_ask_tool(*args: Any, **kwargs: Any) -> Any:
+        messages = _serialize_messages(kwargs.get("messages"))
+        input_decision = evaluate_llm_input(messages, defense_mode=defense_mode)
+        writer.write(
+            "monitor_decision",
+            **context,
+            decision=input_decision.get("decision"),
+            reason=input_decision.get("reason"),
+            risk_score=input_decision.get("risk_score"),
+            confidence=input_decision.get("confidence"),
+            rules=input_decision.get("rules", []),
+            monitor_call_type=input_decision.get("call_type"),
+            monitor_payload=input_decision.get("payload"),
+        )
+        if input_decision.get("decision") in {"deny", "ask"}:
+            return _blocked_llm_response(input_decision)
+
+        response = await original_ask_tool(*args, **kwargs)
+        content = str(getattr(response, "content", "") or "")
+        output_decision = evaluate_llm_output(content, defense_mode=defense_mode)
+        writer.write(
+            "monitor_decision",
+            **context,
+            decision=output_decision.get("decision"),
+            reason=output_decision.get("reason"),
+            risk_score=output_decision.get("risk_score"),
+            confidence=output_decision.get("confidence"),
+            rules=output_decision.get("rules", []),
+            monitor_call_type=output_decision.get("call_type"),
+            monitor_payload=output_decision.get("payload"),
+        )
+        if output_decision.get("decision") in {"deny", "ask"}:
+            response.content = _monitor_message(output_decision)
+            response.tool_calls = []
+        return response
+
+    agent.llm.ask_tool = monitored_ask_tool
+
+
+def _blocked_llm_response(decision: dict[str, Any]) -> Any:
+    from types import SimpleNamespace
+
+    return SimpleNamespace(content=_monitor_message(decision), tool_calls=[])
+
+
+def _monitor_message(decision: dict[str, Any]) -> str:
+    return f"RedSentinel monitor {decision.get('decision')}: {decision.get('reason')}"
+
+
+def _serialize_messages(messages: Any) -> list[dict[str, Any]]:
+    if messages is None:
+        return []
+    serialized = []
+    for message in messages:
+        if hasattr(message, "to_dict"):
+            serialized.append(message.to_dict())
+        elif hasattr(message, "model_dump"):
+            serialized.append(message.model_dump(mode="json"))
+        elif isinstance(message, dict):
+            serialized.append(dict(message))
+        else:
+            serialized.append({"content": str(message)})
+    return serialized
 
 
 def _parse_args() -> argparse.Namespace:
@@ -158,7 +229,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--max-steps", type=int, default=int(os.environ.get("OPENMANUS_MAX_STEPS", "6")))
     parser.add_argument("--model", default=os.environ.get("OPENAI_MODEL", "gpt-4o-mini"))
     parser.add_argument("--base-url", default=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"))
-    parser.add_argument("--api-key", default=os.environ.get("OPENAI_API_KEY", ""))
+    parser.add_argument("--api-key", default=os.environ.get("RED_SENTINEL_LLM_API_KEY") or os.environ.get("OPENAI_API_KEY", ""))
     return parser.parse_args()
 
 
@@ -174,7 +245,7 @@ def _write_openmanus_config(args: argparse.Namespace) -> None:
 api_type = "{api_type}"
 model = "{_toml_escape(args.model)}"
 base_url = "{_toml_escape(args.base_url)}"
-api_key = "{_toml_escape(args.api_key)}"
+api_key = "redsentinel-env-api-key"
 max_tokens = {max_tokens}
 temperature = 0.0
 
@@ -182,7 +253,7 @@ temperature = 0.0
 api_type = "{api_type}"
 model = "{_toml_escape(os.environ.get('OPENAI_VISION_MODEL', args.model))}"
 base_url = "{_toml_escape(args.base_url)}"
-api_key = "{_toml_escape(args.api_key)}"
+api_key = "redsentinel-env-api-key"
 max_tokens = {max_tokens}
 temperature = 0.0
 
@@ -201,6 +272,20 @@ server_reference = "app.mcp.server"
 daytona_api_key = "redsentinel-disabled"
 """.strip()
     (config_dir / "config.toml").write_text(config + "\n", encoding="utf-8")
+
+
+def _apply_runtime_llm_settings(args: argparse.Namespace, *, config: Any, llm_cls: Any) -> None:
+    max_tokens = int(os.environ.get("OPENAI_MAX_TOKENS", "4096"))
+    vision_model = os.environ.get("OPENAI_VISION_MODEL", args.model)
+    for name, settings in config.llm.items():
+        settings.api_key = args.api_key
+        settings.base_url = args.base_url
+        settings.model = vision_model if name == "vision" else args.model
+        settings.max_tokens = max_tokens
+        settings.temperature = 0.0
+        settings.api_type = os.environ.get("OPENAI_API_TYPE", "openai")
+    if hasattr(llm_cls, "_instances"):
+        llm_cls._instances.clear()
 
 
 def _prepare_workspace() -> None:

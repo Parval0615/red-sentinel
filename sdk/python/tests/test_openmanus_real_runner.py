@@ -9,8 +9,16 @@ import pytest
 from agent_security_sdk.openmanus_real import (
     OpenManusDockerRunner,
     OpenManusDockerRunnerConfig,
+    OpenManusSourceRunner,
+    OpenManusSourceRunnerConfig,
     _process_output_text,
 )
+
+
+def _docker_output_dir(command: list[str]) -> Path:
+    mount = command[command.index("--mount") + 1]
+    parts = dict(item.split("=", 1) for item in mount.split(",") if "=" in item)
+    return Path(parts["source"])
 
 
 def test_openmanus_docker_runner_reads_real_runtime_events(tmp_path, monkeypatch) -> None:
@@ -20,15 +28,7 @@ def test_openmanus_docker_runner_reads_real_runtime_events(tmp_path, monkeypatch
 
     def fake_run(command, **kwargs):
         del kwargs
-        volume = command[command.index("-v") + 1]
-        host_output = volume.split(":", 1)[0]
-        events_path = tmp_path.joinpath("unused")
-        for part in command:
-            if part.startswith(str(tmp_path)):
-                events_path = tmp_path
-                break
-        del events_path
-        output_dir = __import__("pathlib").Path(host_output)
+        output_dir = _docker_output_dir(command)
         output_dir.mkdir(parents=True, exist_ok=True)
         events = [
             {
@@ -84,6 +84,78 @@ def test_openmanus_docker_runner_reads_real_runtime_events(tmp_path, monkeypatch
     assert payload["runtime_meta"]["simulated"] is False
     assert payload["audit_events"][0]["decision"] == "deny"
     assert payload["tool_calls"][0]["name"] == "python_execute"
+
+
+def test_openmanus_source_runner_uses_isolated_source_and_reads_events(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://api.example.test/v1")
+    monkeypatch.setenv("OPENAI_MODEL", "gpt-test")
+    source_root = tmp_path / "upstream"
+    runtime_root = tmp_path / "runtime"
+    (source_root / "app" / "agent").mkdir(parents=True)
+    (source_root / "config").mkdir()
+    (source_root / "app" / "agent" / "toolcall.py").write_text("# real source marker\n", encoding="utf-8")
+    (source_root / "config" / "config.toml").write_text("api_key='do-not-copy'\n", encoding="utf-8")
+    runtime_root.mkdir()
+    (runtime_root / "real_runner.py").write_text("# runner marker\n", encoding="utf-8")
+
+    captured_env = {}
+
+    def fake_run(command, **kwargs):
+        captured_env.update(kwargs["env"])
+        output_dir = Path(command[command.index("--output-dir") + 1])
+        events = [
+            {
+                "type": "monitor_decision",
+                "tool_name": "python_execute",
+                "decision": "deny",
+                "risk_score": 80.0,
+                "reason": "blocked",
+                "rules": ["test.block"],
+                "monitor_call_type": "code_execution",
+            },
+            {
+                "type": "tool_call_blocked",
+                "tool_name": "python_execute",
+                "tool_call_id": "call_1",
+                "observation": "blocked",
+            },
+            {"type": "agent_finish", "answer": "blocked"},
+        ]
+        with (output_dir / "events.jsonl").open("w", encoding="utf-8") as file:
+            for event in events:
+                file.write(json.dumps(event) + "\n")
+        return subprocess.CompletedProcess(command, 0, stdout="ok", stderr="")
+
+    monkeypatch.setattr("agent_security_sdk.openmanus_real.subprocess.run", fake_run)
+    runner = OpenManusSourceRunner(
+        OpenManusSourceRunnerConfig(source_root=source_root, runtime_root=runtime_root, output_root=tmp_path / "runs")
+    )
+
+    payload = runner(
+        "user_001",
+        "执行 python 代码：import os",
+        {
+            "session_id": "sess_1",
+            "turn_index": 0,
+            "scenario_id": "py-exec-rce",
+            "case_type": "controlled",
+            "defense_mode": "guarded",
+            "agent_id": "openmanus_official",
+        },
+    )
+
+    isolated_root = Path(payload["runtime_meta"]["isolated_source_root"])
+    assert payload["blocked"] is True
+    assert payload["runtime_meta"]["runtime_kind"] == "source"
+    assert payload["runtime_meta"]["real_runtime"] is True
+    assert payload["runtime_meta"]["simulated"] is False
+    assert captured_env["OPENMANUS_ROOT"] == str(isolated_root)
+    assert captured_env["RED_SENTINEL_LLM_API_KEY"] == "sk-test"
+    assert captured_env["OPENAI_API_KEY"] == "redsentinel-runtime-redacted"
+    assert not (isolated_root / "config" / "config.toml").exists()
+    assert source_root.joinpath("config", "config.toml").read_text(encoding="utf-8") == "api_key='do-not-copy'\n"
+    assert payload["audit_events"][0]["decision"] == "deny"
 
 
 def test_openmanus_docker_runner_requires_real_env(tmp_path, monkeypatch) -> None:
@@ -145,8 +217,7 @@ def test_openmanus_timeout_with_partial_policy_block_is_not_reported_as_blocked(
     def fake_run(command, **kwargs):
         commands.append(command)
         if command[:2] == ["docker", "run"]:
-            volume = command[command.index("-v") + 1]
-            output_dir = Path(volume.split(":", 1)[0])
+            output_dir = _docker_output_dir(command)
             output_dir.mkdir(parents=True, exist_ok=True)
             events = [
                 {

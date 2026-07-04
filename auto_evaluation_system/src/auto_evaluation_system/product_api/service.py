@@ -11,7 +11,13 @@ from uuid import uuid4
 from agent_security_sdk.adapter import AgentAdapter
 from agent_security_sdk.ecommerce import EcommerceEnterpriseAdapter
 from agent_security_sdk.openmanus import OpenManusAdapter
-from agent_security_sdk.openmanus_real import OpenManusDockerRunner, OpenManusDockerRunnerConfig, OpenManusRealAdapter
+from agent_security_sdk.openmanus_real import (
+    OpenManusDockerRunner,
+    OpenManusDockerRunnerConfig,
+    OpenManusRealAdapter,
+    OpenManusSourceRunner,
+    OpenManusSourceRunnerConfig,
+)
 from auto_evaluation_system.product_api.attack_pack import (
     EcommerceAttackScenario,
     load_ecommerce_attack_pack,
@@ -864,9 +870,9 @@ class ProductEvaluationService:
         expected_case_count = _expected_case_count(benchmark, selected_cases, selected_ids)
         integrity = _benchmark_integrity(integrity_profile, selected_cases)
         evaluation_dir = self.storage.evaluation_dir(request.tenant_id, evaluation_id)
-        is_openmanus_real = request.mode == "openmanus_real"
+        is_openmanus_real = _is_openmanus_real_mode(request.mode)
         adapter = (
-            _openmanus_real_adapter_for(registration, output_root=evaluation_dir / "openmanus-runtime")
+            _openmanus_real_adapter_for(registration, mode=request.mode, output_root=evaluation_dir / "openmanus-runtime")
             if is_openmanus_real
             else self._adapter_for(registration, mode=request.mode)
         )
@@ -1104,13 +1110,14 @@ class ProductEvaluationService:
                 "pilot_preset": request.pilot_preset or "full_benchmark",
                 "defense_enabled": request.defense_enabled,
                 "evaluation_mode": "guarded" if request.defense_enabled else "baseline_no_defense",
-                "runtime_mode": "openmanus_real" if is_openmanus_real else request.mode,
+                "runtime_mode": request.mode if is_openmanus_real else request.mode,
                 "real_runtime": bool(is_openmanus_real),
                 "simulated": False if is_openmanus_real else request.mode in {"sdk", "offline_trace"},
                 "openmanus_commit": "52a13f2a57d8c7f6737eefb02ccf569594d44273" if is_openmanus_real else None,
                 "docker_image": os.environ.get("RED_SENTINEL_OPENMANUS_IMAGE", "redsentinel/openmanus-real:local")
-                if is_openmanus_real
+                if request.mode == "openmanus_real"
                 else None,
+                "source_root": str(_openmanus_source_root()) if request.mode == "openmanus_source_real" else None,
                 "model": os.environ.get("OPENAI_MODEL") if is_openmanus_real else None,
                 "base_url_host": _base_url_host(os.environ.get("OPENAI_BASE_URL", "")) if is_openmanus_real else None,
                 "baseline_attack_success_rate": _rate(baseline_attack_successes, len(selected))
@@ -1302,9 +1309,10 @@ class ProductEvaluationService:
         if mode == "offline_trace":
             # offline_trace is the built-in e-commerce demo path, not a replay of an external Agent runtime.
             return EcommerceEnterpriseAdapter(session_id=f"{registration.agent_id}-offline-trace")
-        if mode == "openmanus_real":
+        if _is_openmanus_real_mode(mode):
             return _openmanus_real_adapter_for(
                 registration,
+                mode=mode,
                 output_root=self.storage.root / "openmanus-real-runtime",
             )
         key = (registration.tenant_id, registration.agent_id)
@@ -1317,17 +1325,17 @@ class ProductEvaluationService:
         return adapter
 
     def _validate_adapter_available(self, registration: AgentRegistration, mode: str) -> None:
-        if mode == "openmanus_real":
+        if _is_openmanus_real_mode(mode):
             if registration.adapter_type != "openmanus":
                 raise EvaluationRequestError(
                     "incompatible_adapter",
-                    "mode=openmanus_real requires adapter_type=openmanus.",
+                    f"mode={mode} requires adapter_type=openmanus.",
                 )
             missing = _missing_openmanus_real_env()
             if missing:
                 raise EvaluationRequestError(
                     "openmanus_real_env_missing",
-                    f"OpenManus real runtime requires environment variables: {', '.join(missing)}.",
+                    f"OpenManus real runtime mode={mode} requires environment variables: {', '.join(missing)}.",
                 )
             return
         key = (registration.tenant_id, registration.agent_id)
@@ -1681,9 +1689,26 @@ def _builtin_adapter_for(registration: AgentRegistration) -> AgentAdapter:
     return EcommerceEnterpriseAdapter(session_id=session_id)
 
 
-def _openmanus_real_adapter_for(registration: AgentRegistration, *, output_root: Path) -> AgentAdapter:
+def _openmanus_real_adapter_for(registration: AgentRegistration, *, mode: str, output_root: Path) -> AgentAdapter:
     if registration.adapter_type != "openmanus":
-        raise ValueError("mode=openmanus_real requires adapter_type=openmanus.")
+        raise ValueError(f"mode={mode} requires adapter_type=openmanus.")
+    if mode == "openmanus_source_real":
+        timeout_seconds = int(os.environ.get("RED_SENTINEL_OPENMANUS_TIMEOUT_SECONDS", "300"))
+        max_steps = int(os.environ.get("RED_SENTINEL_OPENMANUS_MAX_STEPS", "6"))
+        runner = OpenManusSourceRunner(
+            OpenManusSourceRunnerConfig(
+                source_root=_openmanus_source_root(),
+                runtime_root=_openmanus_runtime_root(),
+                output_root=output_root,
+                timeout_seconds=timeout_seconds,
+                max_steps=max_steps,
+            )
+        )
+        return OpenManusRealAdapter(
+            session_id=f"{registration.agent_id}-source-real",
+            runner=runner,
+            runtime_mode="openmanus_source_real",
+        )
     image = os.environ.get("RED_SENTINEL_OPENMANUS_IMAGE", "redsentinel/openmanus-real:local")
     timeout_seconds = int(os.environ.get("RED_SENTINEL_OPENMANUS_TIMEOUT_SECONDS", "300"))
     max_steps = int(os.environ.get("RED_SENTINEL_OPENMANUS_MAX_STEPS", "6"))
@@ -1695,7 +1720,19 @@ def _openmanus_real_adapter_for(registration: AgentRegistration, *, output_root:
             max_steps=max_steps,
         )
     )
-    return OpenManusRealAdapter(session_id=f"{registration.agent_id}-real", runner=runner)
+    return OpenManusRealAdapter(session_id=f"{registration.agent_id}-real", runner=runner, runtime_mode="openmanus_real")
+
+
+def _is_openmanus_real_mode(mode: str) -> bool:
+    return mode in {"openmanus_real", "openmanus_source_real"}
+
+
+def _openmanus_source_root() -> Path:
+    return Path(__file__).resolve().parents[4] / "third_party" / "OpenManus" / "upstream"
+
+
+def _openmanus_runtime_root() -> Path:
+    return Path(__file__).resolve().parents[4] / "third_party" / "OpenManus" / "redsentinel_runtime"
 
 
 def _missing_openmanus_real_env() -> list[str]:

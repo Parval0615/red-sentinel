@@ -1,3 +1,4 @@
+import gzip
 from pathlib import Path
 
 import pytest
@@ -111,6 +112,41 @@ def test_hosted_api_onboarding_registers_runnable_http_adapter(tmp_path: Path, m
     assert calls[0][0] == "https://example.test/v1/chat/completions"
     assert calls[0][1] == "Bearer sk-live-secret"
     assert "sk-live-secret" not in "\n".join(path.read_text(encoding="utf-8") for path in tmp_path.rglob("*.json"))
+
+
+def test_hosted_api_adapter_accepts_gzip_response(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    class FakeResponse:
+        headers = {"Content-Encoding": "gzip"}
+
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, *_args) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return gzip.compress(b'{"choices":[{"message":{"content":"Compressed hosted answer."}}]}')
+
+    def fake_urlopen(_request, timeout):  # noqa: ANN001, ARG001
+        return FakeResponse()
+
+    monkeypatch.setattr("auto_evaluation_system.product_api.hosted_adapter.urlopen", fake_urlopen)
+    service = ProductEvaluationService(storage_root=tmp_path)
+    service.onboard_agent(
+        AgentOnboardingRequest(
+            agent_id="hosted_agent",
+            name="Hosted Agent",
+            integration_type="api",
+            endpoint_url="https://example.test/v1/chat/completions",
+            api_key="sk-live-secret",
+        )
+    )
+
+    status = service.run_evaluation(
+        EvaluationRequest(agent_id="hosted_agent", mode="hosted_api", scenarios=["support-pii-masking"])
+    )
+
+    assert status.status == "completed"
 
 
 def test_initial_benchmark_stage_fails_without_metric_snapshot(

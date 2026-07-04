@@ -6,6 +6,7 @@ from typing import Any, Literal, cast
 from uuid import uuid4
 
 from auto_defense_system.security.firewall.input_guard import check_malicious_input
+from auto_defense_system.security.exec_guard import CodeExecutionRequest, evaluate_code_execution
 from auto_defense_system.security.output.filter import check_output_compliance
 from auto_defense_system.security.policy.engine import check_policy
 from auto_defense_system.security.trajectory_anomaly import score_payload_trajectory
@@ -65,7 +66,10 @@ def intercept(call_type: CallType | str, payload: dict[str, Any] | str | None = 
 
     if normalized_call_type == "llm_input":
         return _intercept_llm_input(normalized_payload)
-    if normalized_call_type in {"llm_output", "tool_result", "code_execution"}:
+    if normalized_call_type == "code_execution":
+        decision = _intercept_code_execution(normalized_payload)
+        return _apply_trajectory_anomaly(normalized_call_type, normalized_payload, decision)
+    if normalized_call_type in {"llm_output", "tool_result"}:
         decision = _intercept_text_boundary(normalized_call_type, normalized_payload)
         return _apply_trajectory_anomaly(normalized_call_type, normalized_payload, decision)
     if normalized_call_type == "tool_call":
@@ -131,6 +135,36 @@ def _intercept_tool_call(payload: dict[str, Any]) -> Decision:
     state = payload.get("state") if isinstance(payload.get("state"), dict) else None
     allowed, reason, detail = check_policy(tool_name, arguments, state)
     return _policy_decision(allowed, reason, detail, allowed_reason="Policy allowed tool call.")
+
+
+def _intercept_code_execution(payload: dict[str, Any]) -> Decision:
+    arguments = _payload_arguments(payload)
+    code = str(payload.get("code") or arguments.get("code") or "")
+    if not code.strip():
+        return _decision(
+            "deny",
+            "Code execution payload is missing code.",
+            80.0,
+            0.95,
+            ["exec_guard.missing_code"],
+        )
+    request = CodeExecutionRequest(
+        code=code,
+        language=str(arguments.get("language") or payload.get("language") or "python"),
+        entrypoint=arguments.get("entrypoint") or payload.get("entrypoint"),
+        working_dir=arguments.get("working_dir") or payload.get("working_dir"),
+        metadata={"source": payload.get("source")},
+    )
+    guard_decision = evaluate_code_execution(request, workspace_root=payload.get("workspace_root"))
+    if guard_decision.decision == "deny":
+        return _decision(
+            "deny",
+            guard_decision.reason,
+            _risk_score_from_level(guard_decision.risk_level),
+            0.95,
+            ["exec_guard.dangerous_code"],
+        )
+    return _decision("allow", "Code execution allowed by exec guard.", 0.0, 0.9, ["exec_guard.allowed"])
 
 
 def _intercept_file_access(payload: dict[str, Any]) -> Decision:

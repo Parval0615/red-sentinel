@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
+import shutil
 import subprocess
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from agent_security_sdk.adapter import AgentAdapter
 from agent_security_sdk.models import AgentTurnResult, ToolSpec
@@ -15,6 +18,7 @@ from agent_security_sdk.telemetry import TraceRecorder
 
 DEFAULT_OPENMANUS_IMAGE = "redsentinel/openmanus-real:local"
 DEFAULT_OUTPUT_ROOT = "runs/openmanus-real"
+DEFAULT_SOURCE_OUTPUT_ROOT = "runs/openmanus-source-real"
 
 
 @dataclass(frozen=True)
@@ -25,6 +29,23 @@ class OpenManusDockerRunnerConfig:
     memory_limit: str = "1g"
     cpus: str = "2"
     max_steps: int = 6
+
+
+@dataclass(frozen=True)
+class OpenManusSourceRunnerConfig:
+    source_root: str | Path | None = None
+    runtime_root: str | Path | None = None
+    output_root: str | Path = DEFAULT_SOURCE_OUTPUT_ROOT
+    timeout_seconds: int = 300
+    max_steps: int = 6
+
+
+class OpenManusRunner(Protocol):
+    def __call__(self, user_id: str, message: str, context: dict[str, Any]) -> dict[str, Any]:
+        ...
+
+    def list_tools(self) -> list[ToolSpec]:
+        ...
 
 
 class OpenManusDockerRunner:
@@ -68,6 +89,8 @@ class OpenManusDockerRunner:
                 check=False,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=self.config.timeout_seconds,
                 env=self._host_env(),
             )
@@ -160,8 +183,8 @@ class OpenManusDockerRunner:
             "OPENAI_MAX_TOKENS",
             "-e",
             "OPENAI_VISION_MODEL",
-            "-v",
-            f"{output_dir}:/tmp/redsentinel-artifacts",
+            "--mount",
+            f"type=bind,source={output_dir},target=/tmp/redsentinel-artifacts",
             self.config.image,
             "--prompt",
             message,
@@ -207,16 +230,199 @@ class OpenManusDockerRunner:
         return env
 
 
+class OpenManusSourceRunner:
+    """Run vendored OpenManus source directly and return normalized turn payloads."""
+
+    def __init__(self, config: OpenManusSourceRunnerConfig | None = None) -> None:
+        self.config = config or OpenManusSourceRunnerConfig()
+        repo_root = _repo_root()
+        self.source_root = Path(self.config.source_root or repo_root / "third_party" / "OpenManus" / "upstream").resolve()
+        self.runtime_root = Path(
+            self.config.runtime_root or repo_root / "third_party" / "OpenManus" / "redsentinel_runtime"
+        ).resolve()
+        self.output_root = Path(self.config.output_root).resolve()
+        self.output_root.mkdir(parents=True, exist_ok=True)
+
+    def __call__(self, user_id: str, message: str, context: dict[str, Any]) -> dict[str, Any]:
+        started = time.time()
+        session_id = str(context.get("session_id") or "openmanus-source-real")
+        turn_index = int(context.get("turn_index") or 0)
+        scenario_id = str(context.get("scenario_id") or "manual")
+        case_type = str(context.get("case_type") or "manual")
+        defense_mode = str(context.get("defense_mode") or "guarded")
+        agent_id = str(context.get("agent_id") or "openmanus_official")
+        session_key = hashlib.sha1(session_id.encode("utf-8")).hexdigest()[:12]
+        scenario_key = hashlib.sha1(scenario_id.encode("utf-8")).hexdigest()[:8]
+        turn_dir = self.output_root / session_key / f"{turn_index:03d}-{scenario_key}-{case_type}"
+        turn_dir.mkdir(parents=True, exist_ok=True)
+        isolated_source_root = self._prepare_isolated_source(turn_dir)
+        workspace_root = turn_dir / "workspace"
+        workspace_root.mkdir(parents=True, exist_ok=True)
+
+        command = self._source_command(
+            output_dir=turn_dir,
+            user_id=user_id,
+            agent_id=agent_id,
+            message=message,
+            scenario_id=scenario_id,
+            case_type=case_type,
+            defense_mode=defense_mode,
+        )
+        stdout_path = turn_dir / "stdout.log"
+        stderr_path = turn_dir / "stderr.log"
+        error: str | None = None
+        returncode = -1
+        try:
+            completed = subprocess.run(
+                command,
+                check=False,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=self.config.timeout_seconds,
+                env=self._host_env(isolated_source_root=isolated_source_root, workspace_root=workspace_root),
+            )
+            returncode = completed.returncode
+            stdout_path.write_text(completed.stdout or "", encoding="utf-8")
+            stderr_path.write_text(completed.stderr or "", encoding="utf-8")
+            if completed.returncode != 0:
+                error = f"source runner exited with code {completed.returncode}"
+        except subprocess.TimeoutExpired as exc:
+            stdout_path.write_text(_process_output_text(exc.stdout), encoding="utf-8")
+            stderr_path.write_text(_process_output_text(exc.stderr), encoding="utf-8")
+            error = f"source runner timed out after {self.config.timeout_seconds}s"
+
+        events = _read_events(turn_dir / "events.jsonl")
+        duration_ms = round((time.time() - started) * 1000, 3)
+        runtime_meta = {
+            "schema_version": "openmanus-real-runtime-meta-v0.1",
+            "runtime_kind": "source",
+            "source_root": str(self.source_root),
+            "isolated_source_root": str(isolated_source_root),
+            "runner_path": str(self.runtime_root / "real_runner.py"),
+            "returncode": returncode,
+            "duration_ms": duration_ms,
+            "error": error,
+            "stdout_path": str(stdout_path),
+            "stderr_path": str(stderr_path),
+            "events_path": str(turn_dir / "events.jsonl"),
+            "memory_path": str(turn_dir / "memory.json"),
+            "defense_mode": defense_mode,
+            "scenario_id": scenario_id,
+            "case_type": case_type,
+            "real_runtime": True,
+            "simulated": False,
+        }
+        (turn_dir / "runtime_meta.json").write_text(
+            json.dumps(runtime_meta, ensure_ascii=False, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+        return _payload_from_events(
+            user_id=user_id,
+            message=message,
+            events=events,
+            runtime_meta=runtime_meta,
+            error=error,
+        )
+
+    def list_tools(self) -> list[ToolSpec]:
+        return [
+            ToolSpec(name="python_execute", risk_level="high", description="Run Python code in real OpenManus source."),
+            ToolSpec(name="str_replace_editor", risk_level="high", description="Read or edit files from OpenManus."),
+            ToolSpec(name="ask_human", risk_level="low", description="Ask the operator for input."),
+            ToolSpec(name="terminate", risk_level="low", description="Finish the OpenManus task."),
+        ]
+
+    def _source_command(
+        self,
+        *,
+        output_dir: Path,
+        user_id: str,
+        agent_id: str,
+        message: str,
+        scenario_id: str,
+        case_type: str,
+        defense_mode: str,
+    ) -> list[str]:
+        return [
+            sys.executable,
+            str(self.runtime_root / "real_runner.py"),
+            "--prompt",
+            message,
+            "--output-dir",
+            str(output_dir),
+            "--scenario-id",
+            scenario_id,
+            "--case-type",
+            case_type,
+            "--defense-mode",
+            defense_mode,
+            "--user-id",
+            user_id,
+            "--agent-id",
+            agent_id,
+            "--max-steps",
+            str(self.config.max_steps),
+        ]
+
+    def _prepare_isolated_source(self, turn_dir: Path) -> Path:
+        if not (self.source_root / "app" / "agent" / "toolcall.py").exists():
+            raise RuntimeError(f"OpenManus source root is incomplete: {self.source_root}")
+        if not (self.runtime_root / "real_runner.py").exists():
+            raise RuntimeError(f"OpenManus RedSentinel runtime is incomplete: {self.runtime_root}")
+        source_id = hashlib.sha1(str(turn_dir).encode("utf-8")).hexdigest()[:12]
+        target = self.output_root / "_src" / source_id
+        if target.exists():
+            return target
+        target.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(
+            self.source_root / "app",
+            target / "app",
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        )
+        for file_name in ("main.py",):
+            source_file = self.source_root / file_name
+            if source_file.exists():
+                shutil.copy2(source_file, target / file_name)
+        (target / "config").mkdir(parents=True, exist_ok=True)
+        return target
+
+    def _host_env(self, *, isolated_source_root: Path, workspace_root: Path) -> dict[str, str]:
+        env = os.environ.copy()
+        missing = [name for name in ("OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL") if not env.get(name)]
+        if missing:
+            raise RuntimeError(f"Missing required OpenManus real runtime environment: {', '.join(missing)}")
+        source_paths = [
+            str(isolated_source_root),
+            str(self.runtime_root),
+            str(_repo_root() / "auto_defense_system" / "src"),
+            str(_repo_root() / "auto_evaluation_system" / "src"),
+            str(_repo_root() / "sdk" / "python" / "src"),
+        ]
+        if env.get("PYTHONPATH"):
+            source_paths.append(env["PYTHONPATH"])
+        env["PYTHONPATH"] = os.pathsep.join(source_paths)
+        env["OPENMANUS_ROOT"] = str(isolated_source_root)
+        env["OPENMANUS_WORKSPACE"] = str(workspace_root)
+        env["RED_SENTINEL_ARTIFACTS"] = str(workspace_root.parent)
+        env["RED_SENTINEL_LLM_API_KEY"] = env["OPENAI_API_KEY"]
+        env["OPENAI_API_KEY"] = "redsentinel-runtime-redacted"
+        return env
+
+
 class OpenManusRealAdapter(AgentAdapter):
     def __init__(
         self,
         session_id: str = "openmanus-real",
         *,
-        runner: OpenManusDockerRunner | None = None,
+        runner: OpenManusRunner | None = None,
+        runtime_mode: str = "openmanus_real",
     ) -> None:
         self.recorder = TraceRecorder(session_id=session_id)
         self._runner = runner or OpenManusDockerRunner()
         self._turn_index = 0
+        self._runtime_mode = runtime_mode
 
     def send_message(self, user_id: str, message: str, context: dict[str, Any]) -> AgentTurnResult:
         context = dict(context)
@@ -243,7 +449,7 @@ class OpenManusRealAdapter(AgentAdapter):
     def export_trajectory(self) -> dict[str, Any]:
         trajectory = self.recorder.export()
         trajectory["agent_framework"] = "OpenManus"
-        trajectory["runtime_mode"] = "openmanus_real"
+        trajectory["runtime_mode"] = self._runtime_mode
         trajectory["real_runtime"] = True
         trajectory["simulated"] = False
         trajectory["tool_calls"] = [call for turn in trajectory["turns"] for call in turn.get("tool_calls", [])]
@@ -373,8 +579,14 @@ def _summary(value: Any, *, limit: int = 500) -> str:
     return text if len(text) <= limit else text[: limit - 3] + "..."
 
 
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[4]
+
+
 __all__ = [
     "OpenManusDockerRunner",
     "OpenManusDockerRunnerConfig",
     "OpenManusRealAdapter",
+    "OpenManusSourceRunner",
+    "OpenManusSourceRunnerConfig",
 ]

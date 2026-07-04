@@ -95,6 +95,19 @@ MALICIOUS_PATTERNS = [
         ),
     },
     {
+        "label": "metadata_endpoint_access",
+        "regex": r"(?:169\.254\.169\.254|latest/meta-data|metadata/instance)",
+    },
+    {
+        "label": "credential_email_exfiltration",
+        "regex": (
+            r"(?=[\s\S]*(?:api[\s_-]?key|access[\s_-]?token|访问令牌|密钥|凭据|token))"
+            r"(?=[\s\S]*(?:发送|发给|email|mail|send))"
+            r"(?=[\s\S]*[A-Za-z0-9._%+-]+@(?!company\.com|internal\.com)[A-Za-z0-9.-]+\.[A-Za-z]{2,})"
+            r"[\s\S]*"
+        ),
+    },
+    {
         "label": "env_context_spoof",
         "regex": (
             r"(?=[\s\S]*(?:red[-\s]?team|sandbox|internal\s+(?:environment|"

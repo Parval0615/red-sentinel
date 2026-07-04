@@ -80,13 +80,13 @@ def monitor_payload_for_tool(tool_name: str, arguments: dict[str, Any]) -> tuple
 
 def evaluate_tool(tool_name: str, arguments: dict[str, Any], *, defense_mode: str) -> dict[str, Any]:
     call_type, payload = monitor_payload_for_tool(tool_name, arguments)
-    if str(tool_name or "").lower() == "terminate":
+    if str(tool_name or "").lower() in {"terminate", "ask_human"}:
         return {
             "decision": "allow",
-            "reason": "terminate allowed.",
+            "reason": f"{tool_name} allowed.",
             "risk_score": 0.0,
             "confidence": 1.0,
-            "rules": ["terminate.allowed"],
+            "rules": [f"{tool_name}.allowed"],
             "call_type": call_type,
             "payload": payload,
         }
@@ -110,6 +110,54 @@ def evaluate_tool(tool_name: str, arguments: dict[str, Any], *, defense_mode: st
     return data
 
 
+def evaluate_llm_input(messages: list[dict[str, Any]], *, defense_mode: str) -> dict[str, Any]:
+    text = _primary_user_request(messages)
+    payload = {
+        "content": text,
+        "messages": messages,
+        "source": "openmanus_real_runner",
+    }
+    return _evaluate_boundary("llm_input", payload, defense_mode=defense_mode)
+
+
+def evaluate_llm_output(content: str, *, defense_mode: str) -> dict[str, Any]:
+    payload = {
+        "content": content,
+        "source": "openmanus_real_runner",
+    }
+    return _evaluate_boundary("llm_output", payload, defense_mode=defense_mode)
+
+
+def _evaluate_boundary(call_type: str, payload: dict[str, Any], *, defense_mode: str) -> dict[str, Any]:
+    if defense_mode == "baseline":
+        return {
+            "decision": "allow",
+            "reason": "baseline_no_defense",
+            "risk_score": 0.0,
+            "confidence": 1.0,
+            "rules": ["baseline.no_defense"],
+            "call_type": call_type,
+            "payload": payload,
+        }
+
+    from auto_defense_system.monitor_plugin import intercept
+
+    decision = intercept(call_type, payload)
+    data = decision.to_dict() if hasattr(decision, "to_dict") else dict(decision)
+    data["call_type"] = call_type
+    data["payload"] = payload
+    return data
+
+
+def _primary_user_request(messages: list[dict[str, Any]]) -> str:
+    for message in messages:
+        if str(message.get("role") or "").lower() == "user":
+            content = str(message.get("content") or "")
+            if content.strip():
+                return content
+    return "\n".join(str(message.get("content") or "") for message in messages)
+
+
 def _file_action_for_editor_command(command: str) -> str:
     if command == "view":
         return "read"
@@ -126,4 +174,10 @@ def _browser_target(arguments: dict[str, Any]) -> str:
     return json.dumps(arguments, ensure_ascii=False, sort_keys=True, default=str)
 
 
-__all__ = ["evaluate_tool", "monitor_payload_for_tool", "parse_tool_arguments"]
+__all__ = [
+    "evaluate_llm_input",
+    "evaluate_llm_output",
+    "evaluate_tool",
+    "monitor_payload_for_tool",
+    "parse_tool_arguments",
+]

@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
 
 RiskLevel = Literal["low", "medium", "high", "critical"]
-EvaluationMode = Literal["sdk", "hosted_api", "offline_trace", "openmanus_real"]
+EvaluationMode = Literal["sdk", "hosted_api", "offline_trace", "openmanus_real", "openmanus_source_real"]
 EvaluationState = Literal["queued", "running", "completed", "failed"]
 FindingComparisonStatus = Literal["resolved", "new", "persisted"]
 ScenarioComparisonStatus = Literal["improved", "regressed", "unchanged_pass", "unchanged_fail"]

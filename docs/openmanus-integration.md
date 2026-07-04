@@ -1,5 +1,8 @@
 # OpenManus Integration Notes
 
+For the current source-mode real runtime and evaluation report, see
+[`docs/openmanus-source-real-evaluation.md`](./openmanus-source-real-evaluation.md).
+
 ## Scope
 
 Branch A uses OpenManus as the supervised application surface. The upstream project is external and should be cloned separately from this repository:
