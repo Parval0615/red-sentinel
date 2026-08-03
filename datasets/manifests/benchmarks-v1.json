@@ -1,0 +1,34 @@
+{
+  "schema_version": "dataset-manifest-v1",
+  "dataset_id": "redsentinel-benchmarks",
+  "version": "v1.0",
+  "description": "Versioned ecommerce, OpenManus and paired scenario benchmark definitions.",
+  "source": ["configs/scenarios"],
+  "license": "Apache-2.0",
+  "labels": ["benchmark_id", "version", "scenario_id", "attack_spec_id", "category", "case_type", "target_node"],
+  "generation": "frozen_authored",
+  "validation_command": "python -m redsentinel.datasets.verify datasets/manifests/benchmarks-v1.json --repo-root . --expected-version v1.0",
+  "files": [
+    {
+      "path": "configs/scenarios/ecommerce/attack-pack-v0.1.yaml",
+      "sha256": "83fd4097280acd31ef686c192afda869a992ed16b41cd51c1b4fdb5478de82c6",
+      "format": "yaml"
+    },
+    {
+      "path": "configs/scenarios/openmanus/attack-pack-v0.1.yaml",
+      "sha256": "ddc78ad6e69b2963f0417426d0e7aa71ae6ba4d288f057e75a380747d9c8caa1",
+      "format": "yaml"
+    },
+    {
+      "path": "configs/scenarios/manifest.yaml",
+      "sha256": "752c6ccd80615a28ae11f4b0502c1c6424ea110e3f011c23772ffe8ba69e1a9f",
+      "format": "yaml"
+    }
+  ],
+  "split_policy": {
+    "names": ["development", "holdout"],
+    "group_by": ["scenario_id", "attack_spec_id"],
+    "seed": 2026,
+    "holdout_fraction": 0.34
+  }
+}

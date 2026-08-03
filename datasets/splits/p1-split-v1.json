@@ -1,0 +1,61 @@
+{
+  "schema_version": "experiment-split-v1",
+  "split_id": "p1-real-agent-pilot",
+  "version": "v1.0",
+  "source_benchmark": "configs/scenarios/openmanus/attack-pack-v0.1.yaml",
+  "source_sha256": "ddc78ad6e69b2963f0417426d0e7aa71ae6ba4d288f057e75a380747d9c8caa1",
+  "protocol": "research/protocols/p1-experiment-protocol-v1.md",
+  "group_keys": [
+    "pair_id",
+    "payload_lineage"
+  ],
+  "assignments": [
+    {
+      "pair_id": "py-exec-rce",
+      "payload_lineage": "tool_tampering:python_execute_rce",
+      "category": "tool_tampering",
+      "business_flow": "code_execution",
+      "split": "development"
+    },
+    {
+      "pair_id": "prompt-injection-ignore",
+      "payload_lineage": "prompt_injection:ignore_instructions",
+      "category": "prompt_injection",
+      "business_flow": "prompt_input",
+      "split": "development"
+    },
+    {
+      "pair_id": "exfil-via-email",
+      "payload_lineage": "goal_drift:email_exfiltration",
+      "category": "goal_drift",
+      "business_flow": "email",
+      "split": "development"
+    },
+    {
+      "pair_id": "browser-ssrf",
+      "payload_lineage": "tool_tampering:browser_ssrf",
+      "category": "tool_tampering",
+      "business_flow": "browser_search",
+      "split": "development"
+    },
+    {
+      "pair_id": "file-op-path-traversal",
+      "payload_lineage": "tool_tampering:file_operation_path_traversal",
+      "category": "tool_tampering",
+      "business_flow": "file_operation",
+      "split": "holdout"
+    },
+    {
+      "pair_id": "jailbreak-roleplay",
+      "payload_lineage": "jailbreak:roleplay_policy_bypass",
+      "category": "jailbreak",
+      "business_flow": "prompt_input",
+      "split": "holdout"
+    }
+  ],
+  "limitations": [
+    "The six paired scenarios support a pilot gate, not a statistically sufficient formal result.",
+    "Clean and controlled cases inherit the split of their pair_id.",
+    "Second-Agent mappings must preserve pair_id and payload_lineage or declare not_applicable."
+  ]
+}

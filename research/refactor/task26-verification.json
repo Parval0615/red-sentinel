@@ -1,0 +1,109 @@
+{
+  "schema_version": "task26-verification-v1",
+  "task": 26,
+  "status": "passed",
+  "direct_legacy_import_scan": {
+    "count": 0,
+    "findings": []
+  },
+  "active_non_test_legacy_import_scan": {
+    "count": 0,
+    "scope": "src, root/application runners, experiments, frontend generator, legacy app shells and examples; tests and third_party excluded"
+  },
+  "legacy_package_scan": {
+    "python_file_count": 225,
+    "compatibility_file_count": 225,
+    "implementation_file_count": 0,
+    "implementation_files": [],
+    "alias_target_count": 165,
+    "missing_alias_targets": []
+  },
+  "api_equivalence": {
+    "all_same_object": true,
+    "checks": [
+      {
+        "legacy": "auto_attack_system.attack_spec.AttackSpec",
+        "canonical": "redsentinel.attacks.engine.attack_spec.AttackSpec",
+        "same_object": true
+      },
+      {
+        "legacy": "auto_attack_system.attack_agent.AttackAgent",
+        "canonical": "redsentinel.attacks.engine.attack_agent.AttackAgent",
+        "same_object": true
+      },
+      {
+        "legacy": "auto_defense_system.monitor_plugin.Decision",
+        "canonical": "redsentinel.defenses.engine.monitor_plugin.Decision",
+        "same_object": true
+      },
+      {
+        "legacy": "auto_evaluation_system.runner.paired_evaluation.run_paired_evaluation_dry_run",
+        "canonical": "redsentinel.evaluation.engine.runner.paired_evaluation.run_paired_evaluation_dry_run",
+        "same_object": true
+      },
+      {
+        "legacy": "auto_evaluation_system.product_api.service.ProductEvaluationService",
+        "canonical": "redsentinel.application.engine.service.ProductEvaluationService",
+        "same_object": true
+      },
+      {
+        "legacy": "agent_security_sdk.models.AgentTurnResult",
+        "canonical": "redsentinel.adapters.engine.models.AgentTurnResult",
+        "same_object": true
+      },
+      {
+        "legacy": "agent_integration_system.config.schema.AgentConfig",
+        "canonical": "redsentinel.profiling.manifest.AgentConfig",
+        "same_object": true
+      },
+      {
+        "legacy": "auto_defense_system.security.audit (module)",
+        "canonical": "redsentinel.defenses.engine.security.audit (module)",
+        "same_object": true
+      }
+    ]
+  },
+  "runner_consolidation": {
+    "benchmark_evaluation_report_implementations": "redsentinel.evaluation.engine and redsentinel.reporting.engine",
+    "legacy_entrypoints": "compatibility aliases only",
+    "duplicate_legacy_implementation_count": 0
+  },
+  "retained_assets": [
+    {
+      "path": "third_party/OpenManus",
+      "reason": "pinned historical/real-runtime reproduction",
+      "boundary": "redsentinel.adapters"
+    },
+    {
+      "path": "auto_evaluation_system/configs,datasets,tests",
+      "reason": "historical fixtures and regression evidence",
+      "boundary": "resource files, not formal Python imports"
+    }
+  ],
+  "verification": [
+    {
+      "command": "pytest -o addopts=''",
+      "result": "749 passed, 3 warnings"
+    },
+    {
+      "command": "pytest product/frontend/sdk",
+      "result": "222 passed, 1 warning"
+    },
+    {
+      "command": "pytest attack/defense/profiling",
+      "result": "241 passed, 2 warnings"
+    },
+    {
+      "command": "pytest contract/architecture/integration/runner/sandbox/sdk",
+      "result": "137 passed, 1 warning"
+    },
+    {
+      "command": "ruff check migrated source roots",
+      "result": "passed"
+    },
+    {
+      "command": "compileall migrated source roots",
+      "result": "passed"
+    }
+  ]
+}

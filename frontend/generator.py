@@ -5,7 +5,7 @@ from html import escape
 from pathlib import Path
 from typing import Any
 
-from auto_evaluation_system.product_api.contracts import AgentSecurityReport
+from redsentinel.application.contracts import AgentSecurityReport
 
 
 def _safe_json_for_html(data: dict[str, Any]) -> str:

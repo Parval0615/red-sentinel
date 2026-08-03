@@ -17,8 +17,8 @@ the M0 contract-first onboarding baseline for external agents.
 | Dashboard | `agent-security-dashboard-v0.1.html` | Local interactive executive / engineer view |
 | Retest comparison | `agent-security-comparison-v0.1.json` | Before / after remediation evidence |
 | Readiness audit | `docs/product/product-readiness-audit.md` | Product audit and regression evidence |
-| Agent onboarding manifest | `agent_integration_system/examples/simple_agent/redsentinel.yaml` | Example `agent-manifest-v1` input |
-| Shared contracts | `auto_evaluation_system/schemas/agent-*.schema.json`, `optimization-directive-v1.schema.json` | Frozen attack / defense / evaluation contracts |
+| Agent onboarding manifest | `examples/agents/simple_agent/redsentinel.yaml` | Example `agent-manifest-v1` input |
+| Shared contracts | `schemas/agent-*.schema.json`, `optimization-directive-v1.schema.json` | Frozen attack / defense / evaluation contracts |
 | Onboarding CLI | `python -m agent_integration_system.cli validate/profile ...` | Validate manifest and generate `agent-profile-v1` |
 
 ## Pilot Script
@@ -43,8 +43,8 @@ For a new enterprise agent, the M0 path is contract-first:
    `optimization-directive-v1` outputs.
 
 ```powershell
-$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli validate agent_integration_system/examples/simple_agent/redsentinel.yaml
-$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli profile agent_integration_system/examples/simple_agent/redsentinel.yaml --output runs/m0-agent-profile.json
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli validate examples/agents/simple_agent/redsentinel.yaml
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli profile examples/agents/simple_agent/redsentinel.yaml --output runs/m0-agent-profile.json
 ```
 
 ## Acceptance Talk Track

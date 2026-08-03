@@ -101,7 +101,7 @@ def evaluate_tool(tool_name: str, arguments: dict[str, Any], *, defense_mode: st
             "payload": payload,
         }
 
-    from auto_defense_system.monitor_plugin import intercept
+    from redsentinel.defenses.engine.monitor_plugin import intercept
 
     decision = intercept(call_type, payload)
     data = decision.to_dict() if hasattr(decision, "to_dict") else dict(decision)

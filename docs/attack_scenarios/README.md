@@ -1,7 +1,7 @@
 # Attack Scenario Case Sets
 
 本目录沉淀 7 类攻击场景的离线用例集。每条 case 都由
-`auto_attack_system.payloads` 中的可枚举 payload 生成，并通过
+`redsentinel.attacks.engine.payloads` 中的可枚举 payload 生成，并通过
 `payload_id` / `payload_source` 回溯到源码。
 
 ## 生成与校验
@@ -9,13 +9,13 @@
 预览生成结果，不写文件：
 
 ```bash
-PYTHONPATH=auto_attack_system/src python -m auto_attack_system.scripts.build_case_sets --dry-run
+python -m redsentinel.attacks.engine.scripts.build_case_sets --dry-run
 ```
 
 写入 7 类 `cases.jsonl`：
 
 ```bash
-PYTHONPATH=auto_attack_system/src python -m auto_attack_system.scripts.build_case_sets --write
+python -m redsentinel.attacks.engine.scripts.build_case_sets --write
 ```
 
 生成器会校验每类至少 15 条、必填字段完整、`payload_id` 可回溯到源码。写入时按
@@ -32,13 +32,13 @@ FPR 分子；`allow` 则计入正常通过。
 
 | Scenario | Canonical category | Cases | Payload source | Script entry | Dry-run metric |
 |---|---:|---:|---|---|---|
-| `jailbreak` | `prompt_injection` | 15 | `JAILBREAK_PAYLOADS` | `python -m auto_attack_system.scripts.attack_jailbreak --dry-run` | `not_evaluated` |
-| `training_data_leakage` | `sensitive_leakage` | 15 | `LEAKAGE_PAYLOADS` | `python -m auto_attack_system.scripts.attack_training_data_leakage --dry-run` | `not_evaluated` |
-| `environment_awareness_pollution` | `memory_poisoning` | 15 | `ENVIRONMENT_CONTEXT_PAYLOADS`, `ENVIRONMENT_AWARENESS_PAYLOADS` | `python -m auto_attack_system.scripts.attack_environment_awareness_pollution --dry-run` | `not_evaluated` |
-| `prompt_injection` | `prompt_injection` | 15 | `INJECTION_PAYLOADS`, `OBFUSCATION_PAYLOADS` | `python -m auto_attack_system.scripts.attack_prompt_injection --dry-run` | `not_evaluated` |
-| `tool_tampering` | `tool_tampering` | 15 | `TOOL_TAMPERING_PAYLOADS` | `python -m auto_attack_system.scripts.attack_tool_tampering --dry-run` | `not_evaluated` |
-| `memory_poisoning` | `memory_poisoning` | 15 | `MEMORY_POISONING_PAYLOADS` | `python -m auto_attack_system.scripts.attack_memory_poisoning --dry-run` | `not_evaluated` |
-| `goal_drift` | `goal_drift` | 15 | `GOAL_DRIFT_PAYLOADS` | `python -m auto_attack_system.scripts.attack_goal_drift --dry-run` | `not_evaluated` |
+| `jailbreak` | `prompt_injection` | 15 | `JAILBREAK_PAYLOADS` | `python -m redsentinel.attacks.engine.scripts.attack_jailbreak --dry-run` | `not_evaluated` |
+| `training_data_leakage` | `sensitive_leakage` | 15 | `LEAKAGE_PAYLOADS` | `python -m redsentinel.attacks.engine.scripts.attack_training_data_leakage --dry-run` | `not_evaluated` |
+| `environment_awareness_pollution` | `memory_poisoning` | 15 | `ENVIRONMENT_CONTEXT_PAYLOADS`, `ENVIRONMENT_AWARENESS_PAYLOADS` | `python -m redsentinel.attacks.engine.scripts.attack_environment_awareness_pollution --dry-run` | `not_evaluated` |
+| `prompt_injection` | `prompt_injection` | 15 | `INJECTION_PAYLOADS`, `OBFUSCATION_PAYLOADS` | `python -m redsentinel.attacks.engine.scripts.attack_prompt_injection --dry-run` | `not_evaluated` |
+| `tool_tampering` | `tool_tampering` | 15 | `TOOL_TAMPERING_PAYLOADS` | `python -m redsentinel.attacks.engine.scripts.attack_tool_tampering --dry-run` | `not_evaluated` |
+| `memory_poisoning` | `memory_poisoning` | 15 | `MEMORY_POISONING_PAYLOADS` | `python -m redsentinel.attacks.engine.scripts.attack_memory_poisoning --dry-run` | `not_evaluated` |
+| `goal_drift` | `goal_drift` | 15 | `GOAL_DRIFT_PAYLOADS` | `python -m redsentinel.attacks.engine.scripts.attack_goal_drift --dry-run` | `not_evaluated` |
 
 ## Case Schema
 

@@ -1,0 +1,437 @@
+{
+  "schema_version": "redsentinel-asset-inventory-v1",
+  "generated_for": "refactor-agent-security-coevolution-research/task-2",
+  "scope": {
+    "roots": [
+      "agent_integration_system",
+      "auto_attack_system",
+      "auto_defense_system",
+      "auto_evaluation_system",
+      "sdk",
+      "frontend",
+      "experiments",
+      "docs",
+      "root runners and configuration"
+    ],
+    "file_counts": {
+      "agent_integration_system": 63,
+      "auto_attack_system": 127,
+      "auto_defense_system": 147,
+      "auto_evaluation_system": 493,
+      "sdk": 23,
+      "frontend": 11,
+      "experiments": 16,
+      "docs": 38,
+      "python_or_html_implementation_files": 341,
+      "test_files": 95
+    },
+    "coverage_note": "Counts include ignored caches and generated files found on disk; classifications below operate on source-controlled capability groups and named entry points."
+  },
+  "classification_values": [
+    "keep",
+    "move",
+    "merge",
+    "compat",
+    "archive",
+    "delete-candidate"
+  ],
+  "assets": [
+    {
+      "id": "profiling-package",
+      "paths": ["agent_integration_system/src/agent_integration_system/**"],
+      "kind": "package",
+      "classification": "compat",
+      "target": "src/redsentinel/profiling",
+      "evidence": ["implementation moved to redsentinel.profiling", "legacy modules are compatibility re-exports", "profiling/config/CLI tests pass"],
+      "risk": "Duplicate AgentProfile/schema definitions must be merged through explicit converters."
+    },
+    {
+      "id": "attack-package",
+      "paths": ["auto_attack_system/src/auto_attack_system/**"],
+      "kind": "package",
+      "classification": "compat",
+      "target": "src/redsentinel/attacks/engine",
+      "evidence": ["implementation moved to redsentinel.attacks.engine", "legacy modules are identity-preserving aliases", "payload, injector, ingestion, profile-driven and evolution tests pass"],
+      "risk": "Payload IDs and fixed-seed behavior are research evidence and must remain stable."
+    },
+    {
+      "id": "defense-package",
+      "paths": ["auto_defense_system/src/auto_defense_system/**"],
+      "kind": "package",
+      "classification": "compat",
+      "target": "src/redsentinel/defenses/engine and src/redsentinel/adapters/engine",
+      "evidence": ["generic implementation moved to defenses", "ecommerce/OpenManus integration moved to adapters", "legacy modules are compatibility aliases"],
+      "risk": "Generic guards are mixed with ecommerce demo behavior."
+    },
+    {
+      "id": "evaluation-core",
+      "paths": [
+        "auto_evaluation_system/src/auto_evaluation_system/detection/**",
+        "auto_evaluation_system/src/auto_evaluation_system/runner/**",
+        "auto_evaluation_system/src/auto_evaluation_system/optimizer/**",
+        "auto_evaluation_system/src/auto_evaluation_system/feedback/**"
+      ],
+      "kind": "package-group",
+      "classification": "compat",
+      "target": "src/redsentinel/evaluation/engine and src/redsentinel/reporting/engine",
+      "evidence": ["implementation moved to canonical domains", "legacy runner/report entry points alias the canonical modules", "COMP1/COMP4 regression passes"],
+      "risk": "Historical runner and new product evaluation use overlapping report concepts."
+    },
+    {
+      "id": "runtime-package",
+      "paths": [
+        "auto_evaluation_system/src/auto_evaluation_system/sandbox/**",
+        "auto_evaluation_system/src/auto_evaluation_system/telemetry/**",
+        "auto_evaluation_system/src/auto_evaluation_system/events/**",
+        "auto_evaluation_system/src/auto_evaluation_system/memory/**"
+      ],
+      "kind": "package-group",
+      "classification": "compat",
+      "target": "src/redsentinel/runtime/engine",
+      "evidence": ["implementation moved to redsentinel.runtime.engine", "direct API, LangGraph, Docker, replay, telemetry and memory tests pass"],
+      "risk": "Framework dispatch and public trajectory schema must migrate together."
+    },
+    {
+      "id": "product-api",
+      "paths": ["auto_evaluation_system/src/auto_evaluation_system/product_api/**"],
+      "kind": "application",
+      "classification": "compat",
+      "target": "src/redsentinel/application/engine",
+      "evidence": ["Product API implementation moved to redsentinel.application.engine", "legacy product_api modules alias canonical modules", "authentication, tenant, benchmark, report, supervision and storage tests pass"],
+      "risk": "service.py combines application orchestration, research execution and persistence."
+    },
+    {
+      "id": "sdk-package",
+      "paths": ["sdk/python/src/agent_security_sdk/**"],
+      "kind": "adapter-package",
+      "classification": "compat",
+      "target": "src/redsentinel/adapters/engine",
+      "evidence": ["SDK implementation moved to redsentinel.adapters.engine", "agent_security_sdk is an identity-preserving compatibility package", "SDK/OpenManus adapter tests pass"],
+      "risk": "Preserve package compatibility for external consumers."
+    },
+    {
+      "id": "frontend",
+      "paths": ["frontend/**"],
+      "kind": "application",
+      "classification": "move",
+      "target": "apps/dashboard",
+      "evidence": ["24 frontend rendering/auth/report tests", "served by product_api.app"],
+      "risk": "index.html is a large single-file product shell; do not split during metric migration."
+    },
+    {
+      "id": "experiments",
+      "paths": ["experiments/**"],
+      "kind": "research",
+      "classification": "move",
+      "target": "research/experiments",
+      "evidence": ["ASR and report-table tests", "reproduce-all.sh consumes experiment entry points"],
+      "risk": "Some experiments call ProductEvaluationService and must be decoupled later."
+    },
+    {
+      "id": "scenario-configs",
+      "paths": ["auto_evaluation_system/configs/**"],
+      "kind": "configuration",
+      "classification": "move",
+      "target": "configs/benchmarks and configs/experiments",
+      "evidence": ["14 files", "scenario loaders and integration tests consume manifests"],
+      "risk": "Relative paths change when moved."
+    },
+    {
+      "id": "datasets-and-schemas",
+      "paths": [
+        "datasets/**",
+        "schemas/**",
+        "docs/attack_scenarios/**"
+      ],
+      "kind": "data",
+      "classification": "move",
+      "target": "datasets/manifests, datasets/fixtures and src/redsentinel/core",
+      "evidence": ["12 dataset files, 5 schemas, 10 attack-scenario files", "contract and case-set tests consume them"],
+      "risk": "Dataset source, license, split and hash metadata are incomplete."
+    },
+    {
+      "id": "competition-docs",
+      "paths": ["docs/competition/**"],
+      "kind": "documentation",
+      "classification": "archive",
+      "target": "docs/archive/competition",
+      "evidence": ["13 historical competition/evidence files", "README links to this material"],
+      "risk": "Links must be rewritten before movement."
+    },
+    {
+      "id": "product-docs",
+      "paths": ["docs/product/**"],
+      "kind": "documentation",
+      "classification": "archive",
+      "target": "docs/archive/product",
+      "evidence": ["8 historical product planning/readiness files"],
+      "risk": "Some files are still the only explanation of current API boundaries."
+    },
+    {
+      "id": "generated-security-reports",
+      "paths": ["auto_evaluation_system/reports/**"],
+      "kind": "report",
+      "classification": "archive",
+      "target": "docs/archive/reports or reproducible artifacts",
+      "evidence": ["10 report files", "not imported as Python modules"],
+      "risk": "Retain only if their source data and generation method are traceable."
+    },
+    {
+      "id": "root-run-py",
+      "paths": ["run.py"],
+      "kind": "cli",
+      "classification": "compat",
+      "target": "apps/cli and redsentinel CLI",
+      "evidence": ["thin wrapper delegates to redsentinel.legacy_entrypoints.run_root_main", "legacy help and regression tests pass"],
+      "exit_conditions": ["active docs no longer reference run.py", "external usage window closes before 1.0.0"],
+      "risk": "Historical CLI output and artifact contracts must remain stable while wrappers dispatch to canonical implementations."
+    },
+    {
+      "id": "root-main-py",
+      "paths": ["main.py"],
+      "kind": "cli",
+      "classification": "move",
+      "target": "apps/cli",
+      "evidence": ["test_cli_agent_evaluation_runner imports it as cli_main", "contains production CLI configuration and execution logic"],
+      "risk": "Large root module has direct Product Service dependencies."
+    },
+    {
+      "id": "root-comp-wrappers",
+      "paths": ["run-comp2.py", "run-comp3.py", "run-comp4.py", "run-demo.py"],
+      "kind": "cli-wrapper",
+      "classification": "compat",
+      "target": "redsentinel experiment/evolve subcommands",
+      "evidence": ["all files are thin wrappers tested by tests/unit/test_unified_cli.py", "README uses the unified CLI"],
+      "exit_conditions": ["archived reproduction pins a pre-1.0 release or uses the unified CLI", "external usage window closes"],
+      "risk": "run-demo.py intentionally narrows the old all-in-one demo to deterministic evaluation."
+    },
+    {
+      "id": "root-openmanus-wrapper",
+      "paths": ["run-openmanus-real.py"],
+      "kind": "cli-wrapper",
+      "classification": "compat",
+      "target": "redsentinel evaluate --adapter openmanus",
+      "evidence": ["thin wrapper delegates to redsentinel.legacy_entrypoints", "real-runtime preflight regression remains covered"],
+      "exit_conditions": ["first-class OpenManus CLI adapter command exists", "real OpenManus equivalence run passes"],
+      "risk": "Cannot delete before a real OpenManus equivalence run."
+    },
+    {
+      "id": "frontend-oneoff-optimizer",
+      "paths": ["optimize_frontend.py"],
+      "kind": "one-off-script",
+      "classification": "delete-candidate",
+      "replacement": "frontend/index.html already contains the applied presentation changes; future dashboard changes use reviewed source edits and frontend tests",
+      "no_reference_evidence": [
+        "rg --fixed-strings optimize_frontend.py outside docs/.trae returned zero references",
+        "script only reads and overwrites frontend/index.html",
+        "not imported by tests, CLI, pyproject or reproduce-all.sh"
+      ],
+      "deletion_gate": "Run frontend/tests/test_report_rendering.py and compare index.html before deletion.",
+      "risk": "low"
+    },
+    {
+      "id": "autogen-scaffold",
+      "paths": ["auto_evaluation_system/src/auto_evaluation_system/sandbox/backends/autogen.py"],
+      "kind": "scaffold",
+      "classification": "archive",
+      "target": "docs/archive or explicit unsupported-adapter fixture",
+      "evidence": ["raises NotImplementedError by design", "tests assert it is not publicly dispatchable"],
+      "risk": "Do not silently convert it into a runnable adapter or delete its boundary tests."
+    },
+    {
+      "id": "legacy-evaluation-runners",
+      "paths": ["auto_evaluation_system/src/auto_evaluation_system/runners/**"],
+      "kind": "script-group",
+      "classification": "merge",
+      "target": "research/experiments and redsentinel CLI",
+      "evidence": ["run_evaluation.py and run_pdf_comparison.py are thin aliases", "several demos require external model APIs"],
+      "risk": "Each script needs producer/consumer and documentation checks before removal."
+    },
+    {
+      "id": "legacy-attack-evaluation-scripts",
+      "paths": [
+        "auto_attack_system/src/auto_attack_system/scripts/**",
+        "auto_evaluation_system/src/auto_evaluation_system/scripts/**"
+      ],
+      "kind": "script-group",
+      "classification": "merge",
+      "target": "research/experiments or scripts",
+      "evidence": ["case-set generators are tested", "full Garak/HackAPrompt scripts are standalone research utilities"],
+      "risk": "Separate reproducible dataset builders from ad-hoc benchmark launchers."
+    },
+    {
+      "id": "legacy-package-names",
+      "paths": [
+        "auto_attack_system",
+        "auto_defense_system",
+        "auto_evaluation_system",
+        "agent_integration_system"
+      ],
+      "kind": "namespace",
+      "classification": "compat",
+      "target": "redsentinel.*",
+      "evidence": ["hundreds of internal and test imports use current namespaces"],
+      "risk": "No namespace deletion until compatibility tests and repository-wide migration are complete."
+    }
+  ],
+  "relationships": [
+    {
+      "type": "compatibility-adapter",
+      "producer": "src/redsentinel",
+      "consumer": [
+        "auto_attack_system",
+        "auto_defense_system",
+        "auto_evaluation_system",
+        "agent_security_sdk"
+      ],
+      "contract": "Legacy namespaces are thin aliases/re-exports of canonical redsentinel implementations. New logic is prohibited in legacy packages."
+    },
+    {
+      "type": "static-import",
+      "producer": "redsentinel.profiling",
+      "consumer": ["redsentinel.attacks.engine.ingestion", "redsentinel CLI"],
+      "contract": "AgentManifest and AgentProfile"
+    },
+    {
+      "type": "static-import",
+      "producer": "redsentinel.attacks",
+      "consumer": ["redsentinel.runtime Docker executor", "COMP2/COMP4", "experiments"],
+      "contract": "attack specs, DockerTracePlan and cases"
+    },
+    {
+      "type": "static-import",
+      "producer": "redsentinel.defenses",
+      "consumer": ["redsentinel.adapters ecommerce/OpenManus adapters", "COMP3/COMP4", "evaluation runners"],
+      "contract": "guard decisions, audit and defense runtime"
+    },
+    {
+      "type": "static-import",
+      "producer": "redsentinel.adapters",
+      "consumer": ["redsentinel.application.engine"],
+      "contract": "AgentAdapter and AgentTurnResult"
+    },
+    {
+      "type": "dynamic-import",
+      "producer": "agent manifest entrypoint strings",
+      "consumer": ["agent_integration_system config validator"],
+      "contract": "module:callable"
+    },
+    {
+      "type": "dynamic-import",
+      "producer": "OpenManus vendored app modules",
+      "consumer": ["redsentinel.adapters.engine.openmanus_agent.real_openmanus"],
+      "contract": "app.tool and app.agent runtime objects"
+    },
+    {
+      "type": "artifact",
+      "producer": ["run.py", "COMP1-COMP4 modules", "experiments"],
+      "consumer": ["docs/competition evidence", "frontend report views", "report-table renderer"],
+      "contract": "JSON reports, trajectories, audit refs, PNG/SVG and Markdown"
+    },
+    {
+      "type": "artifact",
+      "producer": ["ProductEvaluationService"],
+      "consumer": ["Product API", "frontend", "comparison and dashboard summary"],
+      "contract": "runs/product/<tenant>/evaluations/<id>"
+    },
+    {
+      "type": "cli",
+      "producer": ["run.py", "main.py", "run-comp*.py", "run-demo.py", "run-openmanus-real.py"],
+      "consumer": ["README", "reproduce-all.sh", "docs/competition"],
+      "contract": "exit code, key=value summary and artifact paths"
+    }
+  ],
+  "marker_dispositions": [
+    {
+      "marker": "pass",
+      "paths": [
+        "auto_defense_system/rag/retriever.py",
+        "auto_defense_system/agent/graph.py",
+        "auto_defense_system/security/firewall/classifier.py",
+        "auto_attack_system/doc_poison.py",
+        "auto_evaluation_system/benchmarks/doc_poison_eval.py",
+        "auto_evaluation_system/runners/pdf_parser_comparison.py",
+        "auto_evaluation_system/scripts/run_full_garak.py"
+      ],
+      "disposition": "keep-review",
+      "reason": "Best-effort parsing, optional dependency cleanup or exception isolation. Replace broad suppression with explicit logging only during the owning capability migration."
+    },
+    {
+      "marker": "pass",
+      "paths": ["auto_defense_system/security/policy/engine.py"],
+      "disposition": "keep",
+      "reason": "Abstract policy rule method and explicitly non-blocking audit failure; both have intentional semantics."
+    },
+    {
+      "marker": "pass",
+      "paths": [
+        "auto_defense_system/security/audit.py",
+        "auto_evaluation_system/product_api/auth_service.py",
+        "main.py"
+      ],
+      "disposition": "keep",
+      "reason": "Exception marker classes intentionally have empty bodies."
+    },
+    {
+      "marker": "pass",
+      "paths": ["auto_attack_system/tests/test_static_analysis.py"],
+      "disposition": "keep",
+      "reason": "Pass statements are fixture source text used by static-analysis tests."
+    },
+    {
+      "marker": "NotImplemented",
+      "paths": ["auto_evaluation_system/sandbox/backends/autogen.py"],
+      "disposition": "archive",
+      "reason": "Explicit unsupported scaffold with regression tests preventing accidental dispatch."
+    },
+    {
+      "marker": "NotImplemented",
+      "paths": ["auto_evaluation_system/runner/core.py"],
+      "disposition": "keep-review",
+      "reason": "Parallel execution is an explicit MVP limitation; unified experiment runner must choose either implementation or a validated serial-only contract."
+    },
+    {
+      "marker": "demo/simulated/offline_trace",
+      "paths": [
+        "COMP1-COMP4 modules",
+        "auto_defense_system/ecommerce_agent",
+        "auto_defense_system/openmanus_agent",
+        "auto_evaluation_system/product_api",
+        "frontend/index.html"
+      ],
+      "disposition": "keep-relabel",
+      "reason": "These paths provide deterministic fixtures and product demonstrations. They are not redundant, but must be isolated from real-runtime research evidence and labeled by evidence tier."
+    },
+    {
+      "marker": "TODO/FIXME",
+      "paths": [],
+      "disposition": "none-found-in-formal-source-scan",
+      "reason": "No release-blocking TODO/FIXME marker was identified in the formal source roots; placeholder token checks in CLI are runtime validation, not TODOs."
+    }
+  ],
+  "delete_candidates": [
+    {
+      "path": "optimize_frontend.py",
+      "replacement": "frontend/index.html plus frontend rendering tests",
+      "static_references": 0,
+      "dynamic_reference_risk": "low; not a module entrypoint and not declared in pyproject or shell reproduction",
+      "actual_deletion_performed": true,
+      "deletion_evidence": "frontend and Product API regression passed after the reviewed dashboard source became canonical"
+    }
+  ],
+  "conclusion": {
+    "actual_deletions": 1,
+    "safe_to_delete_now": [],
+    "delete_after_gate": [],
+    "not_delete_candidates": [
+      "legacy package namespaces",
+      "AutoGen boundary tests",
+      "deterministic demo fixtures",
+      "third_party/OpenManus"
+    ],
+    "compatibility_exit_decision": "retain alias packages until 1.0.0 removal conditions are all evidenced",
+    "root_wrappers": "all root run*.py entrypoints are thin compatibility wrappers",
+    "task26_migration": "complete: formal redsentinel source has zero direct imports of old business namespaces; migrated duplicate implementations were removed",
+    "third_party": "third_party/OpenManus and historical data/config fixtures remain for reproducibility and are isolated from formal domain imports"
+  }
+}

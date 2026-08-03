@@ -1,0 +1,67 @@
+{
+  "schema_version": "public-api-documentation-v1",
+  "policy": {
+    "scope": "Stable research entry points only",
+    "exclusions": [
+      "constants and Literal type aliases",
+      "legacy compatibility re-exports",
+      "implementation helpers and optional backend classes"
+    ],
+    "requirement": "Every listed class or function must have a non-empty docstring."
+  },
+  "modules": {
+    "redsentinel": [
+      "AgentProfile",
+      "AttackCandidate",
+      "DefenseCandidate",
+      "EvaluationResult",
+      "EvidenceRef",
+      "EvolutionState",
+      "ExperimentManifest",
+      "LegacyArtifact",
+      "Provenance",
+      "Trajectory",
+      "legacy_config_to_manifest",
+      "migrate_legacy_artifact",
+      "read_legacy_artifact"
+    ],
+    "redsentinel.application": [
+      "AgentManagementService",
+      "EvaluationApplicationService",
+      "ProductApplicationService",
+      "ReportingApplicationService"
+    ],
+    "redsentinel.profiling": [
+      "build_agent_security_profile"
+    ],
+    "redsentinel.research": [
+      "BaselineMatrixRunner",
+      "CoEvolutionEngine",
+      "SingleRoundExperimentRunner",
+      "analyze_files",
+      "capture_provenance",
+      "load_rq_experiment_matrix",
+      "persist_run_evidence",
+      "render_paper_tables",
+      "write_analysis_artifacts"
+    ],
+    "redsentinel.attacks": [
+      "load_attack_cases",
+      "select_unique",
+      "validate_attack_case"
+    ],
+    "redsentinel.adapters": [
+      "adapter_class",
+      "create_adapter"
+    ],
+    "redsentinel.reporting": [
+      "safe_report_payload",
+      "write_report_artifacts",
+      "write_structured_report"
+    ],
+    "redsentinel.cli": [
+      "build_parser",
+      "main"
+    ]
+  }
+}

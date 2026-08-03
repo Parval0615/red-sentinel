@@ -163,7 +163,7 @@ Supporting:
 ## 引用路径
 
 - Cases: `docs/attack_scenarios/<scenario>/cases.jsonl`
-- Scripts: `auto_attack_system/src/auto_attack_system/scripts/attack_<scenario>.py`
+- Scripts: `src/redsentinel/attacks/engine/scripts/attack_<scenario>.py`
 - ASR runner: `experiments/run_asr_experiment.py`
 - Table and figure renderer: `experiments/render_report_tables.py`
 - Report: `docs/security-risk-report.md`

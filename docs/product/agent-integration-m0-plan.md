@@ -76,8 +76,8 @@ The first version supports:
 
 - The example `redsentinel.yaml` validates successfully.
 - The CLI can write an `agent_profile.json`.
-- `AgentManifest`, `AgentProfile`, and `OptimizationDirective` have JSON Schema files under `auto_evaluation_system/schemas/`.
+- `AgentManifest`, `AgentProfile`, and `OptimizationDirective` have JSON Schema files under `schemas/`.
 - Cross-system contract tests validate examples against those JSON Schema files.
 - Invalid configs return clear validation errors.
 - Tests cover loader, validator, and profile builder.
-- Existing attack, defense, and evaluation behavior remains unchanged; the only shared-package change is adding lightweight frozen contracts under `auto_evaluation_system.contracts` / `auto_evaluation_system/schemas`.
+- Existing attack, defense, and evaluation behavior remains unchanged; the only shared-package change is adding lightweight frozen contracts under `auto_evaluation_system.contracts` / `schemas`.

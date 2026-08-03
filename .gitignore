@@ -29,6 +29,7 @@ mlruns/
 # Experiment outputs (reproducible from configs + seed)
 outputs/
 results/
+artifacts/
 runs/
 attack-runs/
 defense-runs/

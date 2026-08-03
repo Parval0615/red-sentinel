@@ -2,16 +2,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "auto_evaluation_system" / "src"))
 
-from auto_evaluation_system.detection.trajectory_risk import TrajectoryAnomalyDetector  # noqa: E402
+from redsentinel.evaluation.engine.detection.trajectory_risk import TrajectoryAnomalyDetector
 
 
 def main() -> int:

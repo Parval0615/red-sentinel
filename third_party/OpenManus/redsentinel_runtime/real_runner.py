@@ -38,6 +38,7 @@ async def _run(args: argparse.Namespace, writer: EventWriter) -> int:
     from app.agent.toolcall import ToolCallAgent
     from app.config import config
     from app.prompt.manus import NEXT_STEP_PROMPT, SYSTEM_PROMPT
+    from app.tool.browser_use_tool import BrowserUseTool
     from app.tool import Terminate, ToolCollection
     from app.tool.ask_human import AskHuman
     from app.tool.python_execute import PythonExecute
@@ -118,6 +119,7 @@ async def _run(args: argparse.Namespace, writer: EventWriter) -> int:
             default_factory=lambda: ToolCollection(
                 PythonExecute(),
                 StrReplaceEditor(),
+                BrowserUseTool(),
                 AskHuman(),
                 Terminate(),
             )

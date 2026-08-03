@@ -1,0 +1,149 @@
+{
+  "schema_version": "compatibility-matrix-v1",
+  "policy": {
+    "deprecation_warning": "redsentinel.compatibility.RedSentinelDeprecationWarning",
+    "warning_channel": "Python warnings (stderr when enabled); never structured stdout",
+    "removal_target": "1.0.0",
+    "exit_decision": "retain",
+    "exit_decision_reason": "Implementations are canonical under redsentinel; legacy import paths remain as thin aliases until external consumers and archived reproductions satisfy the 1.0 removal conditions.",
+    "removal_conditions": [
+      "repository source and active documentation no longer import the legacy path",
+      "legacy CLI, dynamic-import, and artifact-consumer scans are empty",
+      "new-path contract, integration, and regression tests pass",
+      "archived reproduction instructions either pin an old release or use the new path"
+    ]
+  },
+  "imports": [
+    {
+      "legacy": "auto_evaluation_system.contracts.AgentProfile",
+      "replacement": "redsentinel.core.AgentProfile",
+      "status": "forwarded"
+    },
+    {
+      "legacy": "auto_evaluation_system.contracts.AgentProfileNode",
+      "replacement": "redsentinel.core.AgentProfileNode",
+      "status": "forwarded"
+    },
+    {
+      "legacy": "auto_evaluation_system.contracts.AgentProfileTool",
+      "replacement": "redsentinel.core.AgentProfileTool",
+      "status": "forwarded"
+    },
+    {
+      "legacy": "auto_attack_system.*",
+      "replacement": "redsentinel.attacks.*",
+      "status": "forwarded",
+      "note": "Legacy package and leaf modules alias redsentinel.attacks.engine; object identity is preserved."
+    },
+    {
+      "legacy": "auto_defense_system.*",
+      "replacement": "redsentinel.defenses.*",
+      "status": "forwarded",
+      "note": "Generic defenses are canonical under redsentinel.defenses; ecommerce and OpenManus integrations are isolated under redsentinel.adapters."
+    },
+    {
+      "legacy": "auto_evaluation_system.*",
+      "replacement": "redsentinel.evaluation.* / redsentinel.runtime.*",
+      "status": "forwarded",
+      "note": "Evaluation, reporting, runtime and Product API implementations are canonical in their redsentinel domains."
+    },
+    {
+      "legacy": "agent_integration_system.*",
+      "replacement": "redsentinel.profiling.*",
+      "status": "forwarded",
+      "note": "Legacy profiling modules forward to the canonical redsentinel.profiling implementation."
+    },
+    {
+      "legacy": "agent_security_sdk.*",
+      "replacement": "redsentinel.adapters.*",
+      "status": "forwarded",
+      "note": "The separately packaged SDK is a compatibility alias to redsentinel.adapters.engine."
+    }
+  ],
+  "cli": [
+    {
+      "legacy": "python run.py --demo",
+      "replacement": "redsentinel evaluate",
+      "status": "forwarded-wrapper"
+    },
+    {
+      "legacy": "python run-comp2.py --offline",
+      "replacement": "redsentinel experiment",
+      "status": "forwarded-wrapper"
+    },
+    {
+      "legacy": "python run-comp3.py --offline",
+      "replacement": "redsentinel experiment",
+      "status": "forwarded-wrapper"
+    },
+    {
+      "legacy": "python run-comp4.py --offline",
+      "replacement": "redsentinel evolve / redsentinel report",
+      "status": "forwarded-wrapper"
+    },
+    {
+      "legacy": "python -m agent_integration_system.cli",
+      "replacement": "redsentinel profile",
+      "status": "deprecated-wrapper"
+    },
+    {
+      "legacy": "python run-demo.py",
+      "replacement": "redsentinel evaluate",
+      "status": "forwarded-wrapper",
+      "note": "The deprecated all-in-one product/OpenManus demo is narrowed to the deterministic supported research evaluation."
+    },
+    {
+      "legacy": "python run-openmanus-real.py",
+      "replacement": "redsentinel.legacy_entrypoints.run_openmanus_real_main",
+      "status": "forwarded-wrapper",
+      "note": "Real-runtime behavior is retained behind the wrapper until a first-class CLI adapter command is available."
+    }
+  ],
+  "config": [
+    {
+      "legacy": "redsentinel.yaml / AgentManifest",
+      "replacement": "redsentinel.core.ExperimentManifest plus AgentProfile",
+      "status": "convertible",
+      "converter": "redsentinel.migration.legacy_config_to_manifest"
+    },
+    {
+      "legacy": "configs/scenarios/*.yaml",
+      "replacement": "redsentinel.core.ExperimentManifest",
+      "status": "convertible",
+      "converter": "redsentinel.migration.legacy_config_to_manifest"
+    },
+    {
+      "legacy": "agent_config.example.json",
+      "replacement": "redsentinel.core.ExperimentManifest",
+      "status": "convertible",
+      "converter": "redsentinel.migration.legacy_config_to_manifest",
+      "note": "Credentials are deliberately omitted from the converted research manifest."
+    }
+  ],
+  "artifacts": [
+    {
+      "legacy": "COMP1/COMP4/report/profile JSON",
+      "replacement": "legacy-artifact-envelope-v1 plus experiment-manifest-v1, provenance-v1 and evidence-index-v1",
+      "status": "convertible",
+      "reader": "redsentinel.migration.read_legacy_artifact",
+      "converter": "redsentinel.migration.migrate_legacy_artifact"
+    }
+  ],
+  "direct_legacy_dependencies": {
+    "status": "migrated",
+    "scope": [],
+    "canonical_domains": [
+      "redsentinel.profiling",
+      "redsentinel.attacks",
+      "redsentinel.defenses",
+      "redsentinel.evaluation",
+      "redsentinel.runtime",
+      "redsentinel.adapters",
+      "redsentinel.reporting",
+      "redsentinel.application"
+    ],
+    "legacy_packages": "Thin compatibility aliases/re-exports only; no new implementation logic is permitted.",
+    "third_party_exception": "third_party/OpenManus and historical fixtures remain in place for reproducibility. Formal redsentinel modules do not import the old business namespaces; OpenManus access is isolated behind redsentinel.adapters.",
+    "evidence": "research/refactor/task26-verification.json"
+  }
+}

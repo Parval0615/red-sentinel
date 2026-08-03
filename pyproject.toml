@@ -1,7 +1,7 @@
 [project]
-name = "ai-security-integrated-system"
+name = "redsentinel"
 version = "0.1.0"
-description = "Integrated automatic defense, attack, and evaluation systems for AI security research"
+description = "Trajectory-level Agent security evaluation and co-evolution research framework"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
@@ -11,6 +11,12 @@ dependencies = [
   "python-dotenv>=1",
   "matplotlib>=3.7",
 ]
+
+[project.scripts]
+redsentinel = "redsentinel.cli:main"
+redsentinel-agent = "redsentinel.apps.evaluation_cli:main"
+redsentinel-defense = "redsentinel.apps.defense_cli:main"
+redsentinel-openmanus = "redsentinel.apps.openmanus_cli:openmanus_cli_boundary"
 
 [project.optional-dependencies]
 evaluation = [
@@ -45,9 +51,14 @@ attack = [
   "numpy",
   "Pillow",
 ]
-dev = ["pytest", "ruff", "jsonschema>=4"]
+dev = [
+  "pytest",
+  "ruff",
+  "jsonschema>=4",
+  "tomli>=2; python_version<'3.11'",
+]
 all = [
-  "ai-security-integrated-system[attack,defense,evaluation,product,dev]",
+  "redsentinel[attack,defense,evaluation,product,dev]",
 ]
 
 [build-system]
@@ -55,20 +66,12 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-where = [
-  "auto_attack_system/src",
-  "auto_defense_system/src",
-  "auto_evaluation_system/src",
-  "agent_integration_system/src",
-  "sdk/python/src",
-]
+where = ["src"]
 
 [tool.ruff]
 line-length = 120
 target-version = "py310"
 extend-exclude = [
-  "auto_defense_system/legacy_*",
-  "auto_evaluation_system/research_notes",
   "third_party/OpenManus/upstream",
 ]
 
@@ -89,16 +92,23 @@ ignore = [
 ]
 
 [tool.pytest.ini_options]
+addopts = "-m fast"
 testpaths = [
-  "agent_integration_system/tests",
-  "auto_attack_system/tests",
-  "auto_defense_system/tests",
-  "auto_evaluation_system/tests",
+  "tests",
+  "frontend/tests",
+  "experiments/tests",
 ]
 pythonpath = [
-  "agent_integration_system/src",
-  "auto_attack_system/src",
-  "auto_defense_system/src",
-  "auto_evaluation_system/src",
-  "sdk/python/src",
+  "src",
+]
+markers = [
+  "fast: deterministic offline tests used by the default suite",
+  "docker: tests that require a reachable Docker daemon or real container execution",
+  "external_model: tests that require network access or external model credentials",
+  "research_full: extended offline research experiments excluded from quick feedback when explicitly requested",
+  "unit: isolated tests for one function, class, or module",
+  "contract: schema, protocol, compatibility, and architecture boundary tests",
+  "integration: cross-module tests without external infrastructure",
+  "research: experiment, baseline, ablation, statistics, and provenance tests",
+  "regression: legacy behavior and user-facing workflow regression tests",
 ]

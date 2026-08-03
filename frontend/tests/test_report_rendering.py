@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from auto_evaluation_system.product_api.contracts import (
+from redsentinel.application.contracts import (
     AgentSecurityReport,
     Finding,
     ReportArtifacts,
@@ -410,7 +410,7 @@ def test_write_dashboard_html(tmp_path: Path) -> None:
 
 
 def test_render_markdown_report() -> None:
-    from auto_evaluation_system.product_api.reports import render_markdown_report
+    from redsentinel.reporting.engine.reports import render_markdown_report
 
     report = AgentSecurityReport(
         tenant_id="test_tenant",
@@ -439,7 +439,7 @@ def test_render_markdown_report() -> None:
 
 
 def test_write_report_artifacts_with_dashboard(tmp_path: Path) -> None:
-    from auto_evaluation_system.product_api.reports import write_report_artifacts
+    from redsentinel.reporting.engine.reports import write_report_artifacts
 
     report = AgentSecurityReport(
         tenant_id="test_tenant",
@@ -474,7 +474,7 @@ def test_write_report_artifacts_with_dashboard(tmp_path: Path) -> None:
 
 
 def test_risk_level_from_findings() -> None:
-    from auto_evaluation_system.product_api.reports import risk_level_from_findings
+    from redsentinel.reporting.engine.reports import risk_level_from_findings
 
     assert risk_level_from_findings([]) == "low"
     assert risk_level_from_findings([Finding(finding_id="F1", scenario_id="S1", severity="low", title="t", description="d", business_impact="i", recommendation="r")]) == "low"
@@ -488,7 +488,7 @@ def test_risk_level_from_findings() -> None:
 
 
 def test_score_from_findings() -> None:
-    from auto_evaluation_system.product_api.reports import score_from_findings
+    from redsentinel.reporting.engine.reports import score_from_findings
 
     assert score_from_findings([]) == 100
     assert score_from_findings([Finding(finding_id="F1", scenario_id="S1", severity="low", title="t", description="d", business_impact="i", recommendation="r")]) == 95

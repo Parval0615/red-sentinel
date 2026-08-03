@@ -2,7 +2,9 @@
 
 ## Overview
 
-`frontend/index.html` 是 RedSentinel 产品的单文件前端入口，包含公开首页、登录/注册认证页和登录后可访问的 Agent 安全评测工作区。工作区继续展示 `auto_evaluation_system.product_api.reports` 产出的 `AgentSecurityReport`，并通过同源 `/v1/...` Product API 完成 Agent 接入、评测、报告、日志和 next-round 操作。
+`frontend/index.html` 是可选的研究结果展示 dashboard，包含公开首页、登录/注册认证页和登录后可访问的 Agent 安全评测工作区。它不是研究算法或指标计算的实现层；工作区只展示结构化 `AgentSecurityReport` 和实验产物，并通过同源 `/v1/...` Product API 完成 Agent 接入、评测、报告、日志和 next-round 操作。
+
+当前继续保留单文件实现以维持离线演示和既有交付兼容。新增研究逻辑不得写入该文件；后续只有在交互继续扩展时，才按 `auth`、`api`、`report`、`supervision` 四个边界拆分前端模块。
 
 ## Product Views
 
@@ -172,9 +174,9 @@ frontend/
 
 ```bash
 PY=/Users/bytedance/.pyenv/versions/3.10.14/bin/python
-export PYTHONPATH="agent_integration_system/src:auto_attack_system/src:auto_defense_system/src:auto_evaluation_system/src:sdk/python/src"
+export PYTHONPATH="src"
 $PY -m pip install -e ".[product]"
-$PY -m uvicorn auto_evaluation_system.product_api.app:create_app --factory --host 127.0.0.1 --port 8000
+$PY -m uvicorn redsentinel.application.engine.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
 打开 `http://127.0.0.1:8000/` 后可按“首页 → 注册/登录 → 产品工作区”的顺序访问。直接用 `file://` 打开 `index.html` 时，公开静态内容和 mock/fallback 报告可见，但认证和受保护 API 请求不会作为完整产品链路工作。

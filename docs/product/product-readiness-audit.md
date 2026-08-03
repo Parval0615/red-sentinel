@@ -38,9 +38,9 @@ defense, and evaluation workstreams.
   `auto_evaluation_system.contracts.AgentProfile`,
   `auto_evaluation_system.contracts.OptimizationDirective`
 - JSON Schema:
-  `auto_evaluation_system/schemas/agent-manifest-v1.schema.json`,
-  `auto_evaluation_system/schemas/agent-profile-v1.schema.json`,
-  `auto_evaluation_system/schemas/optimization-directive-v1.schema.json`
+  `schemas/agent-manifest-v1.schema.json`,
+  `schemas/agent-profile-v1.schema.json`,
+  `schemas/optimization-directive-v1.schema.json`
 
 ## Fixed During Audit
 

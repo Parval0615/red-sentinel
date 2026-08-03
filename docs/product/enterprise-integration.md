@@ -20,17 +20,17 @@ and the CLI generates an `agent-profile-v1` security profile for downstream
 attack, defense, and evaluation workflows.
 
 ```powershell
-$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli validate agent_integration_system/examples/simple_agent/redsentinel.yaml
-$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli profile agent_integration_system/examples/simple_agent/redsentinel.yaml --output runs/m0-agent-profile.json
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli validate examples/agents/simple_agent/redsentinel.yaml
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli profile examples/agents/simple_agent/redsentinel.yaml --output runs/m0-agent-profile.json
 ```
 
 The frozen shared contracts are:
 
 | Contract | Location | Purpose |
 |---|---|---|
-| `agent-manifest-v1` | `auto_evaluation_system/schemas/agent-manifest-v1.schema.json` | Enterprise-provided onboarding manifest |
-| `agent-profile-v1` | `auto_evaluation_system/schemas/agent-profile-v1.schema.json` | Shared attack / defense / evaluation profile |
-| `optimization-directive-v1` | `auto_evaluation_system/schemas/optimization-directive-v1.schema.json` | Evaluation-to-attack / defense optimization directive |
+| `agent-manifest-v1` | `schemas/agent-manifest-v1.schema.json` | Enterprise-provided onboarding manifest |
+| `agent-profile-v1` | `schemas/agent-profile-v1.schema.json` | Shared attack / defense / evaluation profile |
+| `optimization-directive-v1` | `schemas/optimization-directive-v1.schema.json` | Evaluation-to-attack / defense optimization directive |
 
 The Pydantic models are exported from `auto_evaluation_system.contracts`.
 

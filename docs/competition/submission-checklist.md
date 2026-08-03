@@ -53,8 +53,8 @@ python run.py --comp2 --offline
 python run.py --comp3 --offline
 python run.py --comp4 --offline
 python run-openmanus-real.py --build-image --require-real
-$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli validate agent_integration_system/examples/simple_agent/redsentinel.yaml
-$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli profile agent_integration_system/examples/simple_agent/redsentinel.yaml --output runs/m0-agent-profile.json
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli validate examples/agents/simple_agent/redsentinel.yaml
+$env:PYTHONPATH="agent_integration_system/src;auto_evaluation_system/src"; python -m agent_integration_system.cli profile examples/agents/simple_agent/redsentinel.yaml --output runs/m0-agent-profile.json
 python -m pytest -q
 python -m pytest agent_integration_system/tests auto_evaluation_system/tests/contracts -q
 python -m compileall -q agent_integration_system auto_attack_system auto_defense_system auto_evaluation_system sdk

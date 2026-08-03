@@ -96,4 +96,4 @@ Explicitly out of scope for dashboard v0.1:
 - `merchant_operations`
 
 These presets are stored in
-`auto_evaluation_system/configs/scenarios/ecommerce/pilot-presets-v0.1.yaml`.
+`configs/scenarios/ecommerce/pilot-presets-v0.1.yaml`.

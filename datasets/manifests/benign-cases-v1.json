@@ -1,0 +1,24 @@
+{
+  "schema_version": "dataset-manifest-v1",
+  "dataset_id": "redsentinel-benign-cases",
+  "version": "v1.0",
+  "description": "Authored benign counterexamples used to measure utility retention and false positives.",
+  "source": ["docs/attack_scenarios/_benign/benign_cases.jsonl"],
+  "license": "Apache-2.0",
+  "labels": ["scenario", "canonical_category", "call_type", "expected_block"],
+  "generation": "frozen_authored",
+  "validation_command": "python -m redsentinel.datasets.verify datasets/manifests/benign-cases-v1.json --repo-root . --expected-version v1.0",
+  "files": [
+    {
+      "path": "docs/attack_scenarios/_benign/benign_cases.jsonl",
+      "sha256": "d529bb3cfaf279ada57d3a5a9bdbcff4c050d2edc627134ac6de09f11d7e3f45",
+      "format": "jsonl"
+    }
+  ],
+  "split_policy": {
+    "names": ["development", "holdout"],
+    "group_by": ["scenario"],
+    "seed": 2026,
+    "holdout_fraction": 0.2
+  }
+}

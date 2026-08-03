@@ -1,0 +1,66 @@
+{
+  "schema_version": "dataset-manifest-v1",
+  "dataset_id": "redsentinel-attack-cases",
+  "version": "v1.0",
+  "description": "Seven-category authored Agent security attack cases with source-level payload provenance.",
+  "source": [
+    "docs/attack_scenarios",
+    "src/redsentinel/attacks/engine/payloads"
+  ],
+  "license": "Apache-2.0",
+  "labels": [
+    "canonical_category",
+    "payload_category",
+    "payload_subcategory",
+    "severity",
+    "expected_block"
+  ],
+  "generation": "generated",
+  "generation_seed": 2026,
+  "generator": "python -m redsentinel.attacks.engine.scripts.build_case_sets --dry-run --seed 2026",
+  "write_command": "python -m redsentinel.attacks.engine.scripts.build_case_sets --write --seed 2026",
+  "validation_command": "python -m redsentinel.datasets.verify datasets/manifests/attack-cases-v1.json --repo-root . --expected-version v1.0",
+  "files": [
+    {
+      "path": "docs/attack_scenarios/environment_awareness_pollution/cases.jsonl",
+      "sha256": "62fa3ff0fdf843d2d0e0e61654e4298b4d7c3a32259ec574fce0f1b4dfd3298d",
+      "format": "jsonl"
+    },
+    {
+      "path": "docs/attack_scenarios/goal_drift/cases.jsonl",
+      "sha256": "f842cf1fddc23e905390110c56c4bb82449753f7ad30c6a6917b1386961bb233",
+      "format": "jsonl"
+    },
+    {
+      "path": "docs/attack_scenarios/jailbreak/cases.jsonl",
+      "sha256": "128e9ab5fa6ec128df1f46151caa1956b7dab85a25b6c878c713b9ffcb2d22b0",
+      "format": "jsonl"
+    },
+    {
+      "path": "docs/attack_scenarios/memory_poisoning/cases.jsonl",
+      "sha256": "c3e51ce5246999c1aa9847999a0f0f390ec9e6b52253cc7c7b9874b40056340b",
+      "format": "jsonl"
+    },
+    {
+      "path": "docs/attack_scenarios/prompt_injection/cases.jsonl",
+      "sha256": "00e5e4502238630109a20afc6c7b442b466b20d1fb987cb46ac1684e715efbf2",
+      "format": "jsonl"
+    },
+    {
+      "path": "docs/attack_scenarios/tool_tampering/cases.jsonl",
+      "sha256": "4e7e12746dcef6360f0d7983f882082cad2d98e411cdb79ff758f7fb0b68b684",
+      "format": "jsonl"
+    },
+    {
+      "path": "docs/attack_scenarios/training_data_leakage/cases.jsonl",
+      "sha256": "9e77e1e9cab01afaeba543166c95b5eb098db975a559c4e5dff5d405dc58d5c6",
+      "format": "jsonl"
+    }
+  ],
+  "split_policy": {
+    "names": ["development", "holdout"],
+    "group_by": ["payload_source.path", "payload_subcategory"],
+    "seed": 2026,
+    "holdout_fraction": 0.2
+  }
+}

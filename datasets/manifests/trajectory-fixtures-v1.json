@@ -1,0 +1,42 @@
+{
+  "schema_version": "dataset-manifest-v1",
+  "dataset_id": "redsentinel-trajectory-fixtures",
+  "version": "v1.0",
+  "description": "Deterministic golden and controlled trajectory fixtures for contract and detector evaluation.",
+  "source": [
+    "schemas/fixtures",
+    "datasets/annotated/phase2"
+  ],
+  "license": "Apache-2.0",
+  "labels": ["framework", "injection_mode", "risk_type", "expected_decision"],
+  "generation": "frozen_authored",
+  "validation_command": "python -m redsentinel.datasets.verify datasets/manifests/trajectory-fixtures-v1.json --repo-root . --expected-version v1.0",
+  "files": [
+    {
+      "path": "schemas/fixtures/golden-5step-trajectory.json",
+      "sha256": "3f7d05aacb6726f547187d429f4a354fec83d1298c24103087da2758e2340497",
+      "format": "json"
+    },
+    {
+      "path": "datasets/annotated/phase2/trajectories/p2-goal-perturb-controlled-direct-api.json",
+      "sha256": "8a065798728e2ea18fd9ef2a36d1fd635faa62b1ac1d385a2b53f5c8558a04d2",
+      "format": "json"
+    },
+    {
+      "path": "datasets/annotated/phase2/trajectories/p2-memory-poison-controlled-direct-api.json",
+      "sha256": "646abe1c8673de8a57f74a5efbaf793758f4e337445f79ab7b0586d26d8a56cb",
+      "format": "json"
+    },
+    {
+      "path": "datasets/annotated/phase2/trajectories/p2-tool-tamper-controlled-direct-api.json",
+      "sha256": "d78d3fd50501a676a9884b50903d5340b1d2c718aaa6b3bd074c164cca4ad52e",
+      "format": "json"
+    }
+  ],
+  "split_policy": {
+    "names": ["development", "holdout"],
+    "group_by": ["experiment_id"],
+    "seed": 2026,
+    "holdout_fraction": 0.25
+  }
+}

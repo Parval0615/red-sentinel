@@ -11,11 +11,11 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 for source_root in (
-    ROOT / "auto_defense_system" / "src",
+    ROOT / "redsentinel.defenses.engine" / "src",
 ):
     sys.path.insert(0, str(source_root))
 
-from auto_defense_system import monitor_plugin  # noqa: E402
+from redsentinel.defenses.engine import monitor_plugin  # noqa: E402
 
 
 SCHEMA_VERSION = "asr-before-after-v0.2"
