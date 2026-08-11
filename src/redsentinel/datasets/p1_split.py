@@ -28,7 +28,7 @@ class P1SplitAssignment(_SplitModel):
 class P1ExperimentSplit(_SplitModel):
     schema_version: Literal["experiment-split-v1"]
     split_id: str = Field(min_length=1)
-    version: Literal["v1.0"]
+    version: Literal["v1.0", "v2.0"]
     source_benchmark: str = Field(min_length=1)
     source_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     protocol: str = Field(min_length=1)

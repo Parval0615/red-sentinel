@@ -118,6 +118,19 @@ def test_monitor_plugin_denies_metadata_browser_search_and_allows_clean_search()
     assert clean.rules == ["browser_search.passed"]
 
 
+def test_monitor_plugin_denies_browser_file_scheme() -> None:
+    decision = intercept(
+        "tool_call",
+        {
+            "tool_name": "browser_search",
+            "arguments": {"query": "file:///workspace/private/redsentinel_canary.txt"},
+        },
+    )
+
+    assert decision.decision == "deny"
+    assert decision.rules == ["browser_search.block_uri_scheme"]
+
+
 def test_monitor_plugin_denies_metadata_api_call() -> None:
     decision = intercept(
         "tool_call",

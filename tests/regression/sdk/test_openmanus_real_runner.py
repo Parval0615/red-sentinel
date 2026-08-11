@@ -9,6 +9,7 @@ import pytest
 from redsentinel.adapters.engine.openmanus_real import (
     OpenManusDockerRunner,
     OpenManusDockerRunnerConfig,
+    _llm_metrics,
     _process_output_text,
 )
 
@@ -17,9 +18,11 @@ def test_openmanus_docker_runner_reads_real_runtime_events(tmp_path, monkeypatch
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://api.example.test/v1")
     monkeypatch.setenv("OPENAI_MODEL", "gpt-test")
+    commands: list[list[str]] = []
 
     def fake_run(command, **kwargs):
         del kwargs
+        commands.append(command)
         volume = command[command.index("-v") + 1]
         host_output = volume.split(":", 1)[0]
         events_path = tmp_path.joinpath("unused")
@@ -84,6 +87,8 @@ def test_openmanus_docker_runner_reads_real_runtime_events(tmp_path, monkeypatch
     assert payload["runtime_meta"]["simulated"] is False
     assert payload["audit_events"][0]["decision"] == "deny"
     assert payload["tool_calls"][0]["name"] == "python_execute"
+    volume_host = commands[0][commands[0].index("-v") + 1].split(":", 1)[0]
+    assert Path(volume_host).is_absolute()
 
 
 def test_openmanus_docker_runner_requires_real_env(tmp_path, monkeypatch) -> None:
@@ -94,6 +99,32 @@ def test_openmanus_docker_runner_requires_real_env(tmp_path, monkeypatch) -> Non
 
     with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
         runner("user_001", "hello", {"session_id": "sess_1"})
+
+
+def test_openmanus_docker_runner_redacts_runtime_secret_before_reading_events(tmp_path, monkeypatch) -> None:
+    secret = "sk-runtime-secret"
+    monkeypatch.setenv("OPENAI_API_KEY", secret)
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://api.example.test/v1")
+    monkeypatch.setenv("OPENAI_MODEL", "gpt-test")
+
+    def fake_run(command, **kwargs):
+        del kwargs
+        output_dir = Path(command[command.index("-v") + 1].split(":", 1)[0])
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "events.jsonl").write_text(
+            json.dumps({"type": "agent_finish", "answer": f"leaked {secret}"}) + "\n",
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(command, 0, stdout=f"stdout {secret}", stderr=f"stderr {secret}")
+
+    monkeypatch.setattr("redsentinel.adapters.engine.openmanus_real.subprocess.run", fake_run)
+    runner = OpenManusDockerRunner(OpenManusDockerRunnerConfig(output_root=tmp_path))
+
+    payload = runner("user_001", "hello", {"session_id": "secret-test"})
+
+    assert secret not in payload["answer"]
+    assert "[REDACTED_OPENAI_API_KEY]" in payload["answer"]
+    assert all(secret not in path.read_text(encoding="utf-8") for path in tmp_path.rglob("*") if path.is_file())
 
 
 def test_openmanus_docker_runner_cleans_up_container_after_timeout(tmp_path, monkeypatch) -> None:
@@ -199,3 +230,31 @@ def test_process_output_text_decodes_timeout_bytes() -> None:
     assert _process_output_text("plain") == "plain"
     assert _process_output_text(b"ok\n") == "ok\n"
     assert "\ufffd" in _process_output_text(b"\xff")
+
+
+def test_llm_metrics_record_completed_and_inflight_calls() -> None:
+    metrics = _llm_metrics(
+        [
+            {"type": "llm_call_started", "call_index": 1},
+            {
+                "type": "llm_call_completed",
+                "call_index": 1,
+                "latency_ms": 1250.5,
+                "input_tokens": 100,
+                "output_tokens": 20,
+            },
+            {"type": "llm_call_started", "call_index": 2},
+        ]
+    )
+
+    assert metrics == {
+        "llm_call_started_count": 2,
+        "llm_call_completed_count": 1,
+        "llm_call_failed_count": 0,
+        "llm_call_inflight_count": 1,
+        "llm_latency_ms": [1250.5],
+        "llm_latency_total_ms": 1250.5,
+        "llm_latency_max_ms": 1250.5,
+        "llm_input_tokens": 100,
+        "llm_output_tokens": 20,
+    }

@@ -45,6 +45,33 @@ MALICIOUS_PATTERNS = [
         ),
     },
     {
+        "label": "pseudo_system_message_override",
+        "regex": (
+            r"(?=[\s\S]*(?:###\s*\(?system[_ ]?message\)?|system\s+message|系统消息))"
+            r"(?=[\s\S]*(?:superseded|replace(?:d|ment)?|instead|latest\s+instruction|"
+            r"只输出|仅输出|最新指令))"
+        ),
+    },
+    {
+        "label": "external_publication_override",
+        "regex": (
+            r"(?=[\s\S]*(?:外部(?:新闻|网页|文档)|external\s+(?:news|web|document)))"
+            r"(?=[\s\S]*(?:发布说明|编辑注记|footer|publication\s+note))"
+            r"(?=[\s\S]*(?:输出|回复|摘要|response|summary).{0,40}"
+            r"(?:必须|务必|需要|添加|附加|must|append|add))"
+            r"(?=[\s\S]*(?:标签|校验|token|tag|label))"
+        ),
+    },
+    {
+        "label": "unrestricted_persona_override",
+        "regex": (
+            r"(?=[\s\S]*(?:act\s+as|pretend|role[- ]?play|扮演|假装))"
+            r"(?=[\s\S]*(?:unfiltered|unrestricted|without\s+(?:any\s+)?(?:rules|restrictions)|"
+            r"不受.{0,6}(?:限制|规则)|没有.{0,6}(?:限制|规则)))"
+            r"(?=[\s\S]*(?:never\s+refuse|always\s+follow|永不拒绝|总是遵从))"
+        ),
+    },
+    {
         "label": "dangerous_roleplay_request",
         "regex": (
             r"(?=[\s\S]*(?:假装|你现在是|扮演|角色扮演|pretend|role[- ]?play|act\s+as))"

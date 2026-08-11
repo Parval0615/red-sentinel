@@ -32,7 +32,7 @@ class OpenManusDockerRunner:
 
     def __init__(self, config: OpenManusDockerRunnerConfig | None = None) -> None:
         self.config = config or OpenManusDockerRunnerConfig()
-        self.output_root = Path(self.config.output_root)
+        self.output_root = Path(self.config.output_root).resolve()
         self.output_root.mkdir(parents=True, exist_ok=True)
 
     def __call__(self, user_id: str, message: str, context: dict[str, Any]) -> dict[str, Any]:
@@ -82,8 +82,10 @@ class OpenManusDockerRunner:
             error = f"docker timed out after {self.config.timeout_seconds}s"
             cleanup_error = self._cleanup_container(container_name)
 
+        _redact_runtime_artifacts(turn_dir, [os.environ.get("OPENAI_API_KEY", "")])
         events = _read_events(turn_dir / "events.jsonl")
         duration_ms = round((time.time() - started) * 1000, 3)
+        llm_metrics = _llm_metrics(events)
         runtime_meta = {
             "schema_version": "openmanus-real-runtime-meta-v0.1",
             "image": self.config.image,
@@ -100,6 +102,7 @@ class OpenManusDockerRunner:
             "container_name": container_name,
             "real_runtime": True,
             "simulated": False,
+            **llm_metrics,
         }
         if cleanup_error is not None:
             runtime_meta["cleanup_error"] = cleanup_error
@@ -146,8 +149,8 @@ class OpenManusDockerRunner:
             self.config.memory_limit,
             "--cpus",
             self.config.cpus,
-            "--add-host",
-            "169.254.169.254:127.0.0.1",
+            "-e",
+            "NO_PROXY=169.254.169.254,127.0.0.1,localhost",
             "-e",
             "OPENAI_API_KEY",
             "-e",
@@ -272,7 +275,18 @@ def _payload_from_events(
     planned = [event for event in events if event.get("type") == "tool_call_planned"]
     finish = next((event for event in reversed(events) if event.get("type") == "agent_finish"), None)
     answer = str((finish or {}).get("answer") or error or "OpenManus real run completed.")
-    audit_events = [_audit_event_from_monitor(event, runtime_meta) for event in events if event.get("type") == "monitor_decision"]
+    audit_events = [
+        _audit_event_from_runtime(event, runtime_meta)
+        for event in events
+        if event.get("type")
+        in {
+            "monitor_decision",
+            "model_refusal",
+            "llm_call_completed",
+            "llm_call_failed",
+            "agent_termination",
+        }
+    ]
     if error:
         audit_events.append(
             {
@@ -302,7 +316,75 @@ def _payload_from_events(
     }
 
 
-def _audit_event_from_monitor(event: dict[str, Any], runtime_meta: dict[str, Any]) -> dict[str, Any]:
+def _redact_runtime_artifacts(root: Path, secrets: list[str]) -> None:
+    active_secrets = [secret for secret in secrets if secret]
+    if not active_secrets:
+        return
+    for path in root.rglob("*"):
+        if not path.is_file() or path.suffix not in {".json", ".jsonl", ".log", ".txt"}:
+            continue
+        try:
+            content = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        redacted = content
+        for secret in active_secrets:
+            redacted = redacted.replace(secret, "[REDACTED_OPENAI_API_KEY]")
+        if redacted != content:
+            path.write_text(redacted, encoding="utf-8")
+
+
+def _audit_event_from_runtime(event: dict[str, Any], runtime_meta: dict[str, Any]) -> dict[str, Any]:
+    if event.get("type") == "model_refusal":
+        return {
+            "event_type": "model_refusal",
+            "call_type": "model",
+            "tool_name": "",
+            "decision": "refuse",
+            "risk_score": 0.0,
+            "reason": event.get("reason") or "Model refusal.",
+            "rules": ["model.refusal"],
+            "source": "openmanus_real_runner",
+            "scenario_id": event.get("scenario_id"),
+            "case_type": event.get("case_type"),
+            "defense_mode": event.get("defense_mode"),
+            "runtime_meta": runtime_meta,
+        }
+    if event.get("type") in {"llm_call_completed", "llm_call_failed"}:
+        failed = event.get("type") == "llm_call_failed"
+        return {
+            "event_type": event.get("type"),
+            "call_type": "model",
+            "tool_name": "",
+            "decision": "error" if failed else "complete",
+            "risk_score": 0.0,
+            "reason": event.get("error") or "",
+            "rules": ["model.call_failed" if failed else "model.call_completed"],
+            "source": "openmanus_real_runner",
+            "scenario_id": event.get("scenario_id"),
+            "case_type": event.get("case_type"),
+            "defense_mode": event.get("defense_mode"),
+            "call_index": event.get("call_index"),
+            "latency_ms": event.get("latency_ms"),
+            "input_tokens": event.get("input_tokens"),
+            "output_tokens": event.get("output_tokens"),
+            "runtime_meta": runtime_meta,
+        }
+    if event.get("type") == "agent_termination":
+        return {
+            "event_type": "agent_termination",
+            "call_type": "agent",
+            "tool_name": "",
+            "decision": "finish",
+            "risk_score": 0.0,
+            "reason": event.get("reason") or "",
+            "rules": ["agent.termination"],
+            "source": "openmanus_real_runner",
+            "scenario_id": event.get("scenario_id"),
+            "case_type": event.get("case_type"),
+            "defense_mode": event.get("defense_mode"),
+            "runtime_meta": runtime_meta,
+        }
     return {
         "event_type": "monitor_decision",
         "call_type": event.get("monitor_call_type") or "tool_call",
@@ -344,6 +426,38 @@ def _read_events(path: Path) -> list[dict[str, Any]]:
         if isinstance(payload, dict):
             events.append(payload)
     return events
+
+
+def _llm_metrics(events: list[dict[str, Any]]) -> dict[str, Any]:
+    started = [event for event in events if event.get("type") == "llm_call_started"]
+    completed = [event for event in events if event.get("type") == "llm_call_completed"]
+    failed = [event for event in events if event.get("type") == "llm_call_failed"]
+    finished_indexes = {
+        event.get("call_index")
+        for event in [*completed, *failed]
+        if event.get("call_index") is not None
+    }
+    inflight = [
+        event
+        for event in started
+        if event.get("call_index") is not None and event.get("call_index") not in finished_indexes
+    ]
+    latencies = [
+        float(event.get("latency_ms"))
+        for event in [*completed, *failed]
+        if event.get("latency_ms") is not None
+    ]
+    return {
+        "llm_call_started_count": len(started),
+        "llm_call_completed_count": len(completed),
+        "llm_call_failed_count": len(failed),
+        "llm_call_inflight_count": len(inflight),
+        "llm_latency_ms": latencies,
+        "llm_latency_total_ms": round(sum(latencies), 3),
+        "llm_latency_max_ms": round(max(latencies), 3) if latencies else None,
+        "llm_input_tokens": sum(int(event.get("input_tokens") or 0) for event in completed),
+        "llm_output_tokens": sum(int(event.get("output_tokens") or 0) for event in completed),
+    }
 
 
 def _safe_path(value: str) -> str:

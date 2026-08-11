@@ -1,0 +1,20 @@
+{
+  "schema_version": "p1-model-metadata-v1",
+  "slot_id": "model_a",
+  "status": "frozen_for_w2",
+  "provider": "SiliconFlow",
+  "api_compatibility": "openai-compatible",
+  "base_url_host": "api.siliconflow.cn",
+  "family": "DeepSeek-V4",
+  "model": "deepseek-ai/DeepSeek-V4-Flash",
+  "temperature": 0,
+  "max_tokens": 4096,
+  "cache_policy": "disabled",
+  "price_snapshot": {
+    "status": "unavailable",
+    "checked_at": "2026-08-03",
+    "provider_models_endpoint": "model_found_without_pricing_fields",
+    "estimated_usd_policy": "report_not_evaluated_until_authoritative_price_is_frozen"
+  },
+  "credential_policy": "environment_only"
+}

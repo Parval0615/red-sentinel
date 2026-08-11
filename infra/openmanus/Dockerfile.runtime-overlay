@@ -1,0 +1,10 @@
+FROM redsentinel/openmanus-real:local
+
+COPY third_party/OpenManus/redsentinel_runtime/ /opt/openmanus/redsentinel_runtime/
+COPY src/ /opt/redsentinel/src/
+COPY configs/ /opt/redsentinel/configs/
+COPY datasets/ /opt/redsentinel/datasets/
+COPY schemas/ /opt/redsentinel/schemas/
+COPY infra/openmanus/entrypoint.sh /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh

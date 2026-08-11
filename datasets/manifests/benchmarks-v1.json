@@ -16,7 +16,12 @@
     },
     {
       "path": "configs/scenarios/openmanus/attack-pack-v0.1.yaml",
-      "sha256": "ddc78ad6e69b2963f0417426d0e7aa71ae6ba4d288f057e75a380747d9c8caa1",
+      "sha256": "8b6d67c647b4f448fc6d0137d8e3cc520f4db17a5c8474929de71ecb87e32df2",
+      "format": "yaml"
+    },
+    {
+      "path": "configs/scenarios/openmanus/attack-pack-v0.2.yaml",
+      "sha256": "9ad125df24fcdac5fd6c8f76907395571983c276e2ced75b050b8533ed1bc2b8",
       "format": "yaml"
     },
     {

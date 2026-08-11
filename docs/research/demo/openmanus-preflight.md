@@ -2,9 +2,9 @@
 
 ## 当前状态
 
-状态：`not_evaluated`
+状态：`evaluated_go`（P1-W2 rerun10）
 
-最近检查：P1 启动环境修复后。
+最近检查：2026-08-07，P1-W2 rerun10 完整批次。
 
 | 检查项 | 固定值或要求 | 当前结果 |
 |---|---|---|
@@ -12,23 +12,26 @@
 | Commit | `52a13f2a57d8c7f6737eefb02ccf569594d44273` | 已固定 |
 | License | MIT | 已记录 |
 | Dockerfile | `infra/openmanus/Dockerfile` | 存在 |
-| Image | `redsentinel/openmanus-real:local` | 已构建 |
-| Image digest | 固定当前运行镜像 | `sha256:a9957e...a377` |
+| Image | `redsentinel/openmanus-real:w2-rerun10` | 已构建并保留 |
+| Image digest | 固定当前运行镜像 | `sha256:a987cbd65b7795cde51480864c4115e13dbfe300175f8636268d2f45f7406070` |
 | Docker daemon | `docker version` 成功 | 可用，server 29.6.1/arm64 |
 | Browser runtime | BrowserUseTool + Chromium | import、实例化和 headless launch 通过 |
-| Benchmark | `openmanus-security-v0.1` / `v0.1` | 已固定 |
-| `OPENAI_API_KEY` | 仅通过环境传入 | 缺失 |
-| `OPENAI_BASE_URL` | OpenAI-compatible endpoint | 缺失 |
-| `OPENAI_MODEL` | 实验前固定具体模型 | 缺失 |
+| Benchmark | `openmanus-security-v0.1` / `v0.2` | 已固定 |
+| `OPENAI_API_KEY` | 仅通过环境传入 | 已配置，值不记录 |
+| `OPENAI_BASE_URL` | OpenAI-compatible endpoint | `https://api.siliconflow.cn/v1` |
+| `OPENAI_MODEL` | 实验前固定具体模型 | `deepseek-ai/DeepSeek-V4-Flash` |
 
-Docker 和镜像问题已经解决。由于模型配置仍缺失，本阶段尚未生成满足 `real_runtime=true`、`simulated=false` 的报告，任何 OpenManus 效果数字均不可用于简历或论文。
+Docker、镜像和模型配置均已完成。P1-W2 rerun10 已生成满足
+`real_runtime=true`、`simulated=false` 的完整报告，并通过运行稳定性、完整性、比较和
+证据门禁。结果仅覆盖 5/6 个适用风险 pair，且 evidence bundle 为 post-hoc capture，
+对外使用时必须同时披露这两项限制。
 
 ## 固定资产
 
 - 版本证据：`third_party/OpenManus/VERSION.json`
 - Vendoring 规则：`third_party/OpenManus/VENDORING.md`
 - Runtime overlay：`third_party/OpenManus/redsentinel_runtime/`
-- Benchmark：`configs/scenarios/openmanus/attack-pack-v0.1.yaml`
+- Benchmark：`configs/scenarios/openmanus/attack-pack-v0.2.yaml`
 - Docker runner：`src/redsentinel/adapters/engine/openmanus_real.py`
 - 执行入口：`redsentinel-openmanus`
 
@@ -43,7 +46,7 @@ test -f third_party/OpenManus/upstream/requirements.txt
 test -f infra/openmanus/Dockerfile
 
 docker version
-docker image inspect redsentinel/openmanus-real:local
+docker image inspect redsentinel/openmanus-real:w2-rerun10
 
 redsentinel doctor --real-openmanus
 
@@ -76,11 +79,10 @@ export OPENAI_BASE_URL="https://<provider>/v1"
 export OPENAI_MODEL="<exact-model-version>"
 
 redsentinel-openmanus \
-  --build-image \
   --require-real \
-  --image redsentinel/openmanus-real:local \
+  --image redsentinel/openmanus-real:w2-rerun10 \
   --benchmark openmanus-security-v0.1 \
-  --version v0.1 \
+  --version v0.2 \
   --storage-root artifacts/openmanus-real
 ```
 
@@ -150,4 +152,5 @@ DSR=...
 5. 检查失败归因后再执行 3-seed pilot；
 6. pilot 通过后才进入 5-10 seed 正式实验。
 
-当前 1–2 已完成；第 3 项模型配置仍阻塞真实运行。
+当前 1–4 已完成，W2 已通过 `Go`。进入 3-seed pilot 前仍须完成 W3 第二 Agent 和
+W4 第二模型家族的选择、接入与 connectivity 门禁。

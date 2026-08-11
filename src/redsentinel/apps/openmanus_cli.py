@@ -83,7 +83,7 @@ def _parse_openmanus_args(argv: Sequence[str] | None = None) -> argparse.Namespa
     parser.add_argument("--tenant", default="platform-admin")
     parser.add_argument("--agent-id", default="openmanus_official")
     parser.add_argument("--benchmark", default="openmanus-security-v0.1")
-    parser.add_argument("--version", default="v0.1")
+    parser.add_argument("--version", default="v0.2")
     return parser.parse_args(None if argv is None else list(argv))
 
 

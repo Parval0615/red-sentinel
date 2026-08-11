@@ -9,12 +9,14 @@ from redsentinel.datasets import DatasetIntegrityError, load_p1_experiment_split
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SPLIT_PATH = REPO_ROOT / "datasets" / "splits" / "p1-split-v1.json"
+SPLIT_PATH = REPO_ROOT / "datasets" / "splits" / "p1-split-v2.json"
+ARCHIVED_SPLIT_PATH = REPO_ROOT / "datasets" / "splits" / "p1-split-v1.json"
 
 
 def test_p1_split_is_pinned_complete_and_lineage_disjoint() -> None:
     split = load_p1_experiment_split(SPLIT_PATH, repo_root=REPO_ROOT)
 
+    assert split.version == "v2.0"
     development = {item.payload_lineage for item in split.assignments if item.split == "development"}
     holdout = {item.payload_lineage for item in split.assignments if item.split == "holdout"}
     assert len(split.assignments) == 6
@@ -29,6 +31,12 @@ def test_p1_split_is_pinned_complete_and_lineage_disjoint() -> None:
         "browser-ssrf",
         "jailbreak-roleplay",
     }
+
+
+def test_archived_p1_split_remains_loadable() -> None:
+    split = load_p1_experiment_split(ARCHIVED_SPLIT_PATH, repo_root=REPO_ROOT)
+
+    assert split.version == "v1.0"
 
 
 def test_p1_split_rejects_source_hash_drift(tmp_path: Path) -> None:

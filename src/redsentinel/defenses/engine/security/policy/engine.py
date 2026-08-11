@@ -59,7 +59,7 @@ DEFAULT_POLICY_RULES = {
             ],
             "block_path_patterns": [
                 r"(\\\\|/)\.ssh(\\\\|/)", r"\.pem$", r"\.key$", r"\.crt$",
-                r"password", r"credential", r"secret",
+                r"password", r"credential", r"secret", r"redsentinel_canary",
             ],
             "block_actions": ["delete", "overwrite", "chmod", "chown"],
             "ask_actions": ["write", "append"],
@@ -80,6 +80,7 @@ DEFAULT_POLICY_RULES = {
             "message": "向外部域名的POST/PUT请求被策略引擎拦截。仅允许内部API调用。",
         },
         "browser_search": {
+            "block_uri_schemes": ["file"],
             "block_metadata_hosts": ["169.254.169.254"],
             "block_metadata_paths": ["/latest/meta-data", "/metadata/instance"],
             "risk_level": "high",
@@ -356,6 +357,17 @@ def _check_api_policy(args: dict, policy: dict) -> tuple:
 def _check_browser_search_policy(args: dict, policy: dict) -> tuple:
     """Check browser_search requests against metadata endpoint SSRF rules."""
     query = args.get("query") or args.get("url") or args.get("q") or ""
+    scheme = urlparse(str(query).strip()).scheme.lower()
+    if scheme in {str(item).lower() for item in policy.get("block_uri_schemes", [])}:
+        return (
+            False,
+            f"浏览器访问 URI scheme '{scheme}' 被策略引擎拦截。",
+            {
+                "risk_level": policy["risk_level"],
+                "blocked_reason": f"uri_scheme: {scheme}",
+                "rule_name": "browser_search.block_uri_scheme",
+            },
+        )
     metadata_reason = _metadata_endpoint_match(query, policy)
     if metadata_reason:
         return (

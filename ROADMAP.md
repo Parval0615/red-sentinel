@@ -57,7 +57,7 @@
 | 阶段 | 建议周期 | 核心目标 | 主要交付 | 当前状态 |
 |---|---:|---|---|---|
 | P0 简历可投版本 | 2 周 | 让项目能被快速理解、运行和追问 | 项目定位、简历 bullet、5 分钟 demo、证据卡、面试题库 | 已完成，真实 OpenManus 延后 |
-| P1 真实实验版本 | 3–4 周 | 消除“只有合成 demo”的质疑 | 两个真实 Agent、两个模型家族、四基线、多 seed | 进行中：W0 协议冻结 |
+| P1 真实实验版本 | 3–4 周 | 消除“只有合成 demo”的质疑 | 两个真实 Agent、两个模型家族、四基线、多 seed | 进行中：W2 rerun10 已通过 Go；下一工作包为 W3 |
 | P2 算法深化版本 | 4–6 周 | 形成毕业论文核心贡献 | 双种群形式化、多目标适应度、Pareto 选择、收敛与消融 | 计划中 |
 | P3 可信证据版本 | 3 周 | 强化密码学与可信安全标签 | 威胁模型、签名/哈希链、篡改实验、开销分析 | 计划中 |
 | P4 论文与求职交付 | 持续 | 形成可公开、可答辩、可投稿的材料 | 中英文项目页、视频、技术汇报、论文和复现包 | 计划中 |
@@ -308,9 +308,21 @@ README 首屏必须展示：
 
 - 详细计划：[`docs/research/stages/p1-plan.md`](docs/research/stages/p1-plan.md)
 - 实施日志：[`docs/research/stages/p1-execution-log.md`](docs/research/stages/p1-execution-log.md)
-- 当前工作包：P1-W1 OpenManus 监控与真实运行归因
+- 当前状态：P1-W2 已通过 `Go` 收口；下一工作包为 P1-W3 第二真实 Agent
 - 已完成：P1-W0 协议、split、Oracle、失败分类、指标和 pilot matrix 冻结
-- 当前环境阻塞：两个模型家族配置；Docker daemon 和 OpenManus image 已就绪
+- 已完成：OpenManus effect-only Oracle、model refusal、not-applicable、metadata mock 和
+  跨工具策略修复
+- 已完成：Agent 终止语义和逐次 LLM latency telemetry；rerun6 15/15 运行成功，
+  30/30 LLM 调用完成，runtime failure 0%，runtime stability gate `Pass`
+- 已完成：v0.2 受控 baseline、prompt clean 输入和 runtime input-guard 边界；
+  rerun7–rerun9 的历史 `No-Go` 均保留在实施日志和独立审计中
+- W2 rerun10 最终协议审计：15/15 真实运行成功，runtime failure 0%；5/5 适用 pair
+  建立 baseline exploitability，effect-comparable completeness 100%
+- W2 最终指标：baseline ASR 100%，guarded ASR 0%，DSR 100%，clean utility 100%，
+  FPR 0%；运行稳定性、完整性、比较和证据门禁全部通过
+- 当前决策：允许启动 W3，但在 W3/W4 冻结前不得进入 W5；OpenManus 无等价
+  `send_email`，applicability coverage 为 5/6，且 rerun10 evidence bundle 为
+  post-hoc capture
 
 ## 5. P2：算法深化版本
 

@@ -31,6 +31,7 @@ class EcommerceAttackScenario(BaseModel):
     expected_tools: list[str] = Field(default_factory=list)
     baseline_success_markers: list[str] = Field(default_factory=list)
     guarded_block_rules: list[str] = Field(default_factory=list)
+    source_reference: str | None = None
     mock_services: list[str] = Field(default_factory=list)
     requires_real_runtime: bool = False
 
@@ -46,7 +47,7 @@ class EcommerceAttackPack(BaseModel):
 class OpenManusAttackPack(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: Literal["openmanus-attack-pack-v0.1"] = "openmanus-attack-pack-v0.1"
+    schema_version: Literal["openmanus-attack-pack-v0.2"] = "openmanus-attack-pack-v0.2"
     benchmark: Literal["openmanus-security-v0.1"] = "openmanus-security-v0.1"
     scenarios: list[EcommerceAttackScenario] = Field(min_length=1)
 
@@ -67,7 +68,7 @@ def default_openmanus_attack_pack_path() -> Path:
         / "configs"
         / "scenarios"
         / "openmanus"
-        / "attack-pack-v0.1.yaml"
+        / "attack-pack-v0.2.yaml"
     )
 
 
